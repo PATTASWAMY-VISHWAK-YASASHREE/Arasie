@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    @apply bg-ar-black text-ar-gray-300 font-inter min-h-screen;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-poppins font-bold text-ar-white;
+  }
+}
+
+/* Professional glassmorphism utility */
+.glass-card {
+  background: rgba(18, 18, 18, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(42, 42, 42, 0.6);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
+}
+
+.glass-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Smooth transitions for all interactive elements */
+.transition-smooth {
+  transition: all 0.3s ease;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-ar-black;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-ar-blue rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-ar-blue-light;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-ar-blue-light;
+}
