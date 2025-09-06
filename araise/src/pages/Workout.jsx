@@ -444,7 +444,7 @@ function FormAnalyzer() {
   const exerciseNames=exerciseName.toLowerCase().replace('-','')
   useEffect(() => {
     initializePoseLandmarker();
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${exerciseNames}`);
+    const ws = new WebSocket(`wss://araise-backend-1012835535994.asia-south1.run.app/ws/${exerciseNames}`);
     
     ws.onopen = () => {
       console.log("WebSocket Connected");
