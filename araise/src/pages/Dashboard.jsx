@@ -79,7 +79,7 @@ export default function Dashboard() {
   const calendarDays = generateCalendar()
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8 pt-6">
       {/* Top Section - Greeting, Level, Streak */}
       <motion.div 
         className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
@@ -88,11 +88,11 @@ export default function Dashboard() {
         transition={{ duration: 0.6 }}
       >
         <div>
-          <h1 className="text-4xl md:text-5xl font-bold text-ar-white mb-2">
+          <h1 className="text-4xl md:text-5xl font-hagrid font-light text-ar-white mb-2 tracking-tight">
             Hello, {name}!
           </h1>
           <motion.p 
-            className="text-ar-gray-400 text-lg italic"
+            className="text-ar-gray-400 text-lg italic font-hagrid font-light"
             key={currentQuote}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -104,7 +104,7 @@ export default function Dashboard() {
         
         <div className="flex items-center gap-4">
           {/* Level Badge */}
-          <div className="bg-ar-blue text-ar-white px-6 py-2 rounded-full font-bold text-lg shadow-card-hover">
+          <div className="bg-ar-blue text-ar-white px-6 py-2 rounded-full font-hagrid font-light text-lg shadow-card-hover">
             Level {level}
           </div>
           
@@ -128,8 +128,8 @@ export default function Dashboard() {
                 </motion.div>
               )}
             </div>
-            <span className="text-2xl font-bold">{streakCount}</span>
-            <span className="text-sm text-ar-gray-400">day streak</span>
+            <span className="text-2xl font-hagrid font-light">{streakCount}</span>
+            <span className="text-sm text-ar-gray-400 font-hagrid font-light">day streak</span>
           </div>
         </div>
       </motion.div>
@@ -143,14 +143,14 @@ export default function Dashboard() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <h2 className="text-2xl font-bold mb-6 text-center">Today's Progress</h2>
+          <h2 className="text-2xl font-hagrid font-light mb-6 text-center tracking-tight">Today's Progress</h2>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData}>
                 <PolarGrid gridType="polygon" stroke="#22D2FF" strokeWidth={0.5} />
                 <PolarAngleAxis 
                   dataKey="subject" 
-                  tick={{ fill: '#D4D4D4', fontSize: 14, fontWeight: 'bold' }}
+                  tick={{ fill: '#D4D4D4', fontSize: 14, fontWeight: 'light', fontFamily: 'Hagrid' }}
                 />
                 <PolarRadiusAxis 
                   angle={90} 
@@ -179,10 +179,10 @@ export default function Dashboard() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <h2 className="text-2xl font-bold mb-6 text-center">Streak Calendar</h2>
+          <h2 className="text-2xl font-hagrid font-light mb-6 text-center tracking-tight">Streak Calendar</h2>
           <div className="grid grid-cols-7 gap-2">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-              <div key={day} className="text-center text-sm text-ar-gray-400 font-medium">
+              <div key={day} className="text-center text-sm text-ar-gray-400 font-hagrid font-light">
                 {day}
               </div>
             ))}
@@ -190,7 +190,7 @@ export default function Dashboard() {
               <motion.div
                 key={index}
                 className={`
-                  aspect-square rounded-lg border-2 flex items-center justify-center text-xs font-bold
+                  aspect-square rounded-lg border-2 flex items-center justify-center text-xs font-hagrid font-light
                   ${day.completed 
                     ? 'bg-ar-blue border-ar-blue text-ar-white shadow-card-hover' 
                     : day.isToday
@@ -205,8 +205,8 @@ export default function Dashboard() {
               </motion.div>
             ))}
           </div>
-          <div className="mt-4 text-center text-sm text-ar-gray-400">
-            <span className="text-ar-blue font-bold">{streakStats.thisWeek}/7</span> days completed this week
+          <div className="mt-4 text-center text-sm text-ar-gray-400 font-hagrid font-light">
+            <span className="text-ar-blue font-medium">{streakStats.thisWeek}/7</span> days completed this week
           </div>
         </motion.div>
       </div>
@@ -230,14 +230,14 @@ export default function Dashboard() {
               <Target className="text-red-400" size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-bold">Workout</h3>
-              <p className="text-ar-gray-400">Train your body</p>
+              <h3 className="text-xl font-hagrid font-light tracking-tight">Workout</h3>
+              <p className="text-ar-gray-400 font-hagrid font-light">Train your body</p>
             </div>
           </div>
           <div className="mb-4">
-            <div className="flex justify-between text-sm mb-2">
+            <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
               <span>Progress</span>
-              <span className="text-red-400 font-bold">{Math.round(progressStats.workout)}%</span>
+              <span className="text-red-400 font-medium">{Math.round(progressStats.workout)}%</span>
             </div>
             <div className="w-full bg-ar-gray-800 rounded-full h-3">
               <div 
@@ -246,7 +246,7 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          <button className="w-full bg-red-500 hover:bg-red-400 text-white font-bold py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
+          <button className="w-full bg-red-500 hover:bg-red-400 text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
             {progressStats.workout === 100 ? 'Completed ✓' : 'Start Training'}
           </button>
         </motion.div>
@@ -263,14 +263,14 @@ export default function Dashboard() {
               <Zap className="text-ar-blue" size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-bold">Water</h3>
-              <p className="text-ar-gray-400">Stay hydrated</p>
+              <h3 className="text-xl font-hagrid font-light tracking-tight">Water</h3>
+              <p className="text-ar-gray-400 font-hagrid font-light">Stay hydrated</p>
             </div>
           </div>
           <div className="mb-4">
-            <div className="flex justify-between text-sm mb-2">
+            <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
               <span>Progress</span>
-              <span className="text-ar-blue font-bold">{Math.round(progressStats.water)}%</span>
+              <span className="text-ar-blue font-medium">{Math.round(progressStats.water)}%</span>
             </div>
             <div className="w-full bg-ar-gray-800 rounded-full h-3">
               <div 
@@ -279,7 +279,7 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          <button className="w-full bg-ar-blue hover:bg-ar-blue-light text-white font-bold py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
+          <button className="w-full bg-ar-blue hover:bg-ar-blue-light text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
             {progressStats.water >= 100 ? 'Goal Reached ✓' : 'Log Water'}
           </button>
         </motion.div>
@@ -296,14 +296,14 @@ export default function Dashboard() {
               <Trophy className="text-ar-green" size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-bold">Diet</h3>
-              <p className="text-ar-gray-400">Fuel your body</p>
+              <h3 className="text-xl font-hagrid font-light tracking-tight">Diet</h3>
+              <p className="text-ar-gray-400 font-hagrid font-light">Fuel your body</p>
             </div>
           </div>
           <div className="mb-4">
-            <div className="flex justify-between text-sm mb-2">
+            <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
               <span>Progress</span>
-              <span className="text-ar-green font-bold">{Math.round(progressStats.diet)}%</span>
+              <span className="text-ar-green font-medium">{Math.round(progressStats.diet)}%</span>
             </div>
             <div className="w-full bg-ar-gray-800 rounded-full h-3">
               <div 
@@ -312,7 +312,7 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          <button className="w-full bg-ar-green hover:bg-ar-green-light text-white font-bold py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
+          <button className="w-full bg-ar-green hover:bg-ar-green-light text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
             {progressStats.diet >= 100 ? 'Goals Met ✓' : 'Log Meal'}
           </button>
         </motion.div>

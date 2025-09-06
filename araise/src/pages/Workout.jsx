@@ -150,9 +150,11 @@ function LevelSelection() {
               <button 
                 className={`
                   w-full font-bold py-3 rounded-xl transition-all duration-300
-                  ${level.color === 'green' ? 'bg-green-500 hover:bg-green-400 text-white' : 
-                    level.color === 'blue' ? 'bg-ar-blue hover:bg-ar-blue/80 text-white hover:shadow-glow-blue' :
-                    'bg-ar-violet hover:bg-ar-violet/80 text-white hover:shadow-glow-violet'}
+                  bg-white/10 backdrop-blur-sm border border-white/20 text-white
+                  hover:bg-white/20 hover:border-white/30 hover:shadow-lg
+                  ${level.color === 'green' ? 'hover:shadow-glow-green' : 
+                    level.color === 'blue' ? 'hover:shadow-glow-blue' :
+                    'hover:shadow-glow-violet'}
                 `}
               >
                 View Plans

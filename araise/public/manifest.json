@@ -4,22 +4,16 @@
   "description": "Professional fitness and wellness tracking app with AI-powered workouts, water intake monitoring, and diet planning",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0D0D0D",
-  "theme_color": "#22D2FF",
+  "background_color": "#121212",
+  "theme_color": "#121212",
   "orientation": "portrait-primary",
   "categories": ["health", "fitness", "lifestyle"],
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -28,42 +22,28 @@
       "short_name": "Dashboard",
       "description": "View your fitness overview",
       "url": "/dashboard",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/vite.svg", "sizes": "any" }]
     },
     {
       "name": "Workout",
       "short_name": "Workout",
       "description": "Start a workout session",
       "url": "/workout",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/vite.svg", "sizes": "any" }]
     },
     {
       "name": "Water Tracker",
       "short_name": "Water",
       "description": "Log water intake",
       "url": "/water",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/vite.svg", "sizes": "any" }]
     },
     {
       "name": "Diet Planner",
       "short_name": "Diet",
       "description": "Track your meals",
       "url": "/diet",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "/screenshot-narrow.png",
-      "sizes": "375x812",
-      "type": "image/png",
-      "form_factor": "narrow"
+      "icons": [{ "src": "/vite.svg", "sizes": "any" }]
     }
   ]
 }

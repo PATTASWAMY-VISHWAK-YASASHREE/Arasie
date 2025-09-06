@@ -4,9 +4,11 @@ import { persist } from 'zustand/middleware'
 export const useUserStore = create(
   persist(
     (set, get) => ({
-      // User profile
+      // User profile & authentication
       name: 'Guest',
       level: 1,
+      isAuthenticated: false,
+      email: null,
       
       // Gamification
       streakCount: 0,
@@ -28,6 +30,35 @@ export const useUserStore = create(
       // User actions
       updateName: (name) => set({ name }),
       updateLevel: (level) => set({ level }),
+      
+      // Authentication methods
+      login: (email, name) => set({ 
+        isAuthenticated: true, 
+        email, 
+        name: name || email.split('@')[0] 
+      }),
+      
+      logout: () => set({ 
+        isAuthenticated: false, 
+        email: null, 
+        name: 'Guest',
+        // Reset daily progress on logout
+        waterProgress: 0,
+        dietCalories: 0,
+        workoutCompleted: false,
+        waterGoalMet: false,
+        dietGoalMet: false,
+        meals: [],
+        waterLogs: []
+      }),
+      
+      signup: (email, name) => set({ 
+        isAuthenticated: true, 
+        email, 
+        name,
+        level: 1,
+        streakCount: 0 
+      }),
       
       // Streak management
       addStreak: (date) => set(state => ({
@@ -157,6 +188,8 @@ export const useUserStore = create(
       partialize: (state) => ({
         name: state.name,
         level: state.level,
+        isAuthenticated: state.isAuthenticated,
+        email: state.email,
         streakCount: state.streakCount,
         calendar: state.calendar,
         workoutHistory: state.workoutHistory,
