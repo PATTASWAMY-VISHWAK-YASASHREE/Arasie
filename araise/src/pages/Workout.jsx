@@ -31,10 +31,10 @@ const workoutPlans = {
       calories: '150 cal',
       description: 'Perfect for getting started with strength training',
       exercises: [
-        { id: 1, name: 'Push-ups', reps: '3 sets × 8-12 reps', description: 'Classic upper body exercise' },
-        { id: 2, name: 'Bodyweight Squats', reps: '3 sets × 10-15 reps', description: 'Great for leg strength' },
-        { id: 3, name: 'Plank Hold', reps: '3 sets × 30 seconds', description: 'Core stability exercise' },
-        { id: 4, name: 'Lunges', reps: '3 sets × 8 each leg', description: 'Single leg strength' }
+        { id: 1, name: 'Biceps', reps: '3 sets × 8-12 reps', description: 'Classic upper body exercise' },
+        { id: 2, name: 'Squats', reps: '3 sets × 10-15 reps', description: 'Great for leg strength' },
+        { id: 3, name: 'Push-ups', reps: '3 sets × 30 seconds', description: 'Core stability exercise' },
+        { id: 4, name: 'Plank', reps: '3 sets × 8 each leg', description: 'Single leg strength' }
       ]
     },
     {
@@ -339,7 +339,7 @@ function WorkoutSession() {
   }
 
   const handleAnalyzer = () => {
-    navigate(`/workout/${level}/${planId}/session/${exercise.id}/analyzer`)
+    navigate(`/workout/${level}/${planId}/session/${exercise.id}/analyzer/${exercise.name}`)
   }
 
   return (
@@ -424,7 +424,7 @@ function WorkoutSession() {
 
 // Form Analyzer Component
 function FormAnalyzer() {
-  const { level, planId, exerciseId } = useParams()
+  const { level, planId, exerciseId,exerciseName } = useParams()
   const navigate = useNavigate()
   const videoRef = useRef(null)
   const canvasRef = useRef(null);
@@ -439,10 +439,10 @@ function FormAnalyzer() {
 
   const plan = workoutPlans[level]?.find(p => p.id === planId)
   const exercise = plan?.exercises.find(e => e.id === parseInt(exerciseId))
-
+  const exerciseNames=exerciseName.toLowerCase().replace('-','')
   useEffect(() => {
     initializePoseLandmarker();
-    const ws = new WebSocket("ws://localhost:8000/ws");
+    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${exerciseNames}`);
     
     ws.onopen = () => {
       console.log("WebSocket Connected");
@@ -824,7 +824,7 @@ export default function Workout() {
       <Route path="/:level" element={<PlansList />} />
       <Route path="/:level/:planId" element={<PlanDetail />} />
       <Route path="/:level/:planId/session" element={<WorkoutSession />} />
-      <Route path="/:level/:planId/session/:exerciseId/analyzer" element={<FormAnalyzer />} />
+      <Route path="/:level/:planId/session/:exerciseId/analyzer/:exerciseName" element={<FormAnalyzer />} />
       <Route path="/:level/:planId/complete" element={<WorkoutComplete />} />
     </Routes>
   )
