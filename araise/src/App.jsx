@@ -1,14 +1,19 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { useEffect } from "react"
 import Navigation from "./components/Navigation"
+import ProtectedRoute from "./components/ProtectedRoute"
 import Dashboard from "./pages/Dashboard"
 import Workout from "./pages/Workout"
 import Water from "./pages/Water"
 import Diet from "./pages/Diet"
+import Login from "./pages/Login"
+import Signup from "./pages/Signup"
+import Welcome from "./pages/Welcome"
 import { useUserStore } from "./store/userStore"
 
 function App() {
   const resetDaily = useUserStore(state => state.resetDaily)
+  const isAuthenticated = useUserStore(state => state.isAuthenticated)
   
   // Reset daily progress on app start
   useEffect(() => {
@@ -18,17 +23,43 @@ function App() {
   return (
     <BrowserRouter>
       <div className="flex min-h-screen bg-ar-black">
-        <Navigation />
+        {/* Show navigation only when authenticated */}
+        {isAuthenticated && <Navigation />}
         
-        {/* Main content area with proper spacing for navigation */}
-        <main className="flex-1 md:ml-64 mb-16 md:mb-0 p-4 md:p-6 lg:p-8">
-          <div className="max-w-7xl mx-auto">
+        {/* Main content area with conditional spacing */}
+        <main className={`flex-1 ${isAuthenticated ? 'md:ml-64 pb-24 md:pb-0 pt-20 md:pt-0 p-4 md:p-6 lg:p-8' : ''}`}>
+          <div className={`${isAuthenticated ? 'max-w-7xl mx-auto' : 'w-full'}`}>
             <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/workout/*" element={<Workout />} />
-              <Route path="/water" element={<Water />} />
-              <Route path="/diet" element={<Diet />} />
+              {/* Public routes */}
+              <Route path="/" element={
+                isAuthenticated ? <Navigate to="/dashboard" replace /> : <Welcome />
+              } />
+              <Route path="/login" element={
+                isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />
+              } />
+              <Route path="/signup" element={
+                isAuthenticated ? <Navigate to="/dashboard" replace /> : <Signup />
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/workout/*" element={
+                <ProtectedRoute>
+                  <Workout />
+                </ProtectedRoute>
+              } />
+              <Route path="/water" element={
+                <ProtectedRoute>
+                  <Water />
+                </ProtectedRoute>
+              } />
+              <Route path="/diet" element={
+                <ProtectedRoute>
+                  <Diet />
+                </ProtectedRoute>
+              } />
             </Routes>
           </div>
         </main>

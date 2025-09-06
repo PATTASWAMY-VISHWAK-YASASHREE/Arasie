@@ -37,6 +37,27 @@ export default {
         'ar-warning': '#F59E0B',
         'ar-error': '#EF4444',
         'ar-info': '#3B82F6',
+
+        // Design System Colors (for UI components)
+        background: '#0A0A0A',
+        foreground: '#FFFFFF',
+        card: '#121212',
+        'card-foreground': '#FFFFFF',
+        popover: '#121212',
+        'popover-foreground': '#FFFFFF',
+        primary: '#FFFFFF',
+        'primary-foreground': '#0A0A0A',
+        secondary: '#2D2D2D',
+        'secondary-foreground': '#FFFFFF',
+        muted: '#2D2D2D',
+        'muted-foreground': '#9CA3AF',
+        accent: '#3A3A3A',
+        'accent-foreground': '#FFFFFF',
+        destructive: '#EF4444',
+        'destructive-foreground': '#FFFFFF',
+        border: '#2D2D2D',
+        input: '#2D2D2D',
+        ring: '#3B82F6',
       },
       boxShadow: {
         'glass': '0 4px 16px 0 rgba(0, 0, 0, 0.1)',
@@ -49,6 +70,8 @@ export default {
       fontFamily: {
         inter: ['Inter', 'sans-serif'],
         poppins: ['Poppins', 'sans-serif'],
+        hurion: ['Playfair Display', 'serif'], // Using Playfair Display as Hurion alternative
+        hagrid: ['Hagrid', 'system-ui', 'sans-serif'],
       },
       backdropBlur: {
         xs: '2px',
@@ -66,6 +89,8 @@ export default {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'pulse-slow': 'pulse 2s infinite',
+        'liquid-flow': 'liquidFlow 4s ease-in-out infinite',
+        'liquid-flow-reverse': 'liquidFlowReverse 3s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -76,6 +101,42 @@ export default {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
+        liquidFlow: {
+          '0%, 100%': { 
+            backgroundPosition: '0% 50%',
+            filter: 'hue-rotate(0deg) brightness(1) contrast(1.2)'
+          },
+          '25%': { 
+            backgroundPosition: '100% 50%',
+            filter: 'hue-rotate(10deg) brightness(1.1) contrast(1.3)'
+          },
+          '50%': { 
+            backgroundPosition: '200% 50%',
+            filter: 'hue-rotate(0deg) brightness(1.2) contrast(1.4)'
+          },
+          '75%': { 
+            backgroundPosition: '300% 50%',
+            filter: 'hue-rotate(-10deg) brightness(1.1) contrast(1.3)'
+          }
+        },
+        liquidFlowReverse: {
+          '0%, 100%': { 
+            backgroundPosition: '200% 50%',
+            filter: 'hue-rotate(0deg) brightness(1.1) contrast(1.3)'
+          },
+          '25%': { 
+            backgroundPosition: '100% 50%',
+            filter: 'hue-rotate(-15deg) brightness(1.2) contrast(1.4)'
+          },
+          '50%': { 
+            backgroundPosition: '0% 50%',
+            filter: 'hue-rotate(0deg) brightness(1.3) contrast(1.5)'
+          },
+          '75%': { 
+            backgroundPosition: '150% 50%',
+            filter: 'hue-rotate(15deg) brightness(1.2) contrast(1.4)'
+          }
+        }
       },
     },
   },

@@ -369,16 +369,14 @@ export default function Diet() {
                 placeholder="Meal name"
                 value={mealForm.name}
                 onChange={(e) => setMealForm({...mealForm, name: e.target.value})}
-                className="w-full bg-transparent border border-ar-blue/30 rounded-xl px-4 py-3 placeholder-ar-gray-400 focus:outline-none focus:border-ar-blue focus:shadow-card"
-                style={{ color: '#ffffff' }}
+                className="w-full bg-ar-gray-800 border border-ar-blue/30 rounded-xl px-4 py-3 text-ar-white placeholder-ar-gray-400 focus:outline-none focus:border-ar-blue focus:shadow-card"
               />
               <input
                 type="number"
                 placeholder="Calories"
                 value={mealForm.calories}
                 onChange={(e) => setMealForm({...mealForm, calories: e.target.value})}
-                className="w-full bg-transparent border border-ar-blue/30 rounded-xl px-4 py-3 placeholder-ar-gray-400 focus:outline-none focus:border-ar-blue focus:shadow-card"
-                style={{ color: '#ffffff' }}
+                className="w-full bg-ar-gray-800 border border-ar-blue/30 rounded-xl px-4 py-3 text-ar-white placeholder-ar-gray-400 focus:outline-none focus:border-ar-blue focus:shadow-card"
               />
               <div className="grid grid-cols-3 gap-4">
                 <input
@@ -386,24 +384,21 @@ export default function Diet() {
                   placeholder="Protein (g)"
                   value={mealForm.protein}
                   onChange={(e) => setMealForm({...mealForm, protein: e.target.value})}
-                  className="bg-transparent border border-ar-blue/30 rounded-xl px-3 py-2 placeholder-ar-gray-400 focus:outline-none focus:border-ar-blue text-sm focus:shadow-card"
-                  style={{ color: '#ffffff' }}
+                  className="bg-ar-gray-800 border border-ar-blue/30 rounded-xl px-3 py-2 text-ar-white placeholder-ar-gray-400 focus:outline-none focus:border-ar-blue text-sm focus:shadow-card"
                 />
                 <input
                   type="number"
                   placeholder="Carbs (g)"
                   value={mealForm.carbs}
                   onChange={(e) => setMealForm({...mealForm, carbs: e.target.value})}
-                  className="bg-transparent border border-ar-green/30 rounded-xl px-3 py-2 placeholder-ar-gray-400 focus:outline-none focus:border-ar-green text-sm focus:shadow-card"
-                  style={{ color: '#ffffff' }}
+                  className="bg-ar-gray-800 border border-ar-green/30 rounded-xl px-3 py-2 text-ar-white placeholder-ar-gray-400 focus:outline-none focus:border-ar-green text-sm focus:shadow-card"
                 />
                 <input
                   type="number"
                   placeholder="Fat (g)"
                   value={mealForm.fat}
                   onChange={(e) => setMealForm({...mealForm, fat: e.target.value})}
-                  className="bg-transparent border border-ar-orange/30 rounded-xl px-3 py-2 placeholder-ar-gray-400 focus:outline-none focus:border-ar-orange text-sm focus:shadow-card"
-                  style={{ color: '#ffffff' }}
+                  className="bg-ar-gray-800 border border-ar-orange/30 rounded-xl px-3 py-2 text-ar-white placeholder-ar-gray-400 focus:outline-none focus:border-ar-orange text-sm focus:shadow-card"
                 />
               </div>
             </div>
