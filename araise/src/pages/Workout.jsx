@@ -715,13 +715,16 @@ function WorkoutComplete() {
 
   useEffect(() => {
     // Mark workout as completed
-    setWorkoutCompleted({
-      planId,
-      level,
-      duration: plan?.duration,
-      calories: plan?.calories,
-      exercises: plan?.exercises.length
-    })
+    const markCompleted = async () => {
+      await setWorkoutCompleted({
+        planId,
+        level,
+        duration: plan?.duration,
+        calories: plan?.calories,
+        exercises: plan?.exercises.length
+      })
+    }
+    markCompleted()
   }, [setWorkoutCompleted, planId, level, plan])
 
   if (!plan) {

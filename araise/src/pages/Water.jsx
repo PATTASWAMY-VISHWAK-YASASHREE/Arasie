@@ -19,18 +19,18 @@ export default function Water() {
 
   const quickAddAmounts = [250, 500, 750, 1000]
 
-  const handleQuickAdd = (amount) => {
-    logWater(amount)
+  const handleQuickAdd = async (amount) => {
+    await logWater(amount)
     // Show celebration animation if goal is reached
     if (waterProgress + amount >= waterGoal) {
       // Could add confetti animation here
     }
   }
 
-  const handleCustomAdd = () => {
+  const handleCustomAdd = async () => {
     const amount = parseInt(customAmount)
     if (amount > 0 && amount <= 2000) {
-      logWater(amount)
+      await logWater(amount)
       setCustomAmount("")
     }
   }

@@ -4,6 +4,7 @@ import { Flame, Target, Zap, Trophy } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts"
 import { useNavigate } from "react-router-dom"
+import { useAuth } from "../contexts/AuthContext"
 
 // Motivational quotes
 const quotes = [
@@ -17,16 +18,35 @@ const quotes = [
 export default function Dashboard() {
   const navigate = useNavigate()
   const [currentQuote, setCurrentQuote] = useState(0)
+  const { currentUser, loading } = useAuth()
   
   const {
     name,
     level,
     streakCount,
+    isAuthenticated,
     getProgressStats,
     getStreakStats,
     calendar,
     checkStreak
   } = useUserStore()
+
+  // Immediate authentication check - don't render anything if not properly authenticated
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-ar-black">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <p className="text-white">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If not authenticated or no current user or guest, don't render anything - let ProtectedRoute handle redirect
+  if (!loading && (!isAuthenticated || !currentUser || name === 'Guest')) {
+    return null // Return nothing, let the ProtectedRoute component handle the redirect
+  }
 
   const progressStats = getProgressStats()
   const streakStats = getStreakStats()
@@ -41,8 +61,8 @@ export default function Dashboard() {
 
   // Check for streak updates every few seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      checkStreak()
+    const interval = setInterval(async () => {
+      await checkStreak()
     }, 3000)
     return () => clearInterval(interval)
   }, [checkStreak])

@@ -22,7 +22,7 @@ import {
   Flame,
   User,
 } from "lucide-react";
-import { useUserStore } from '../../store/userStore'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function ModernSignup() {
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +37,7 @@ export default function ModernSignup() {
   const [errors, setErrors] = useState({})
   
   const navigate = useNavigate()
-  const { signup } = useUserStore()
+  const { signup, googleSignIn } = useAuth()
 
   const canvasRef = useRef(null);
   
@@ -153,16 +153,37 @@ export default function ModernSignup() {
     setIsLoading(true)
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Register user
-      signup(formData.email, formData.name.trim())
-      
-      // Navigate to dashboard
+      await signup(formData.email, formData.password, formData.name.trim())
       navigate('/dashboard')
     } catch (error) {
-      setErrors({ general: 'Registration failed. Please try again.' })
+      console.error('Signup error:', error)
+      let errorMessage = 'Registration failed. Please try again.'
+      
+      // Handle specific Firebase auth errors
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'An account with this email already exists.'
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address.'
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please use a stronger password.'
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = 'Email/password accounts are not enabled.'
+      }
+      
+      setErrors({ general: errorMessage })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true)
+      await googleSignIn()
+      navigate('/dashboard')
+    } catch (error) {
+      console.error('Google sign in error:', error)
+      setErrors({ general: 'Google sign in failed. Please try again.' })
     } finally {
       setIsLoading(false)
     }
@@ -404,12 +425,9 @@ export default function ModernSignup() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-10 rounded-lg border-zinc-800 bg-zinc-950 text-zinc-50 hover:bg-zinc-900/80 flex items-center gap-2"
-                onClick={() => {
-                  // Google OAuth sign-up logic here
-                  // For now, redirect to dashboard
-                  navigate('/dashboard');
-                }}
+                disabled={isLoading}
+                className="w-full h-10 rounded-lg border-zinc-800 bg-zinc-950 text-zinc-50 hover:bg-zinc-900/80 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleGoogleSignIn}
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

@@ -10,15 +10,54 @@ import Login from "./pages/Login"
 import Signup from "./pages/Signup"
 import Welcome from "./pages/Welcome"
 import { useUserStore } from "./store/userStore"
+import { AuthProvider, useAuth } from "./contexts/AuthContext"
 
-function App() {
+function AppContent() {
   const resetDaily = useUserStore(state => state.resetDaily)
   const isAuthenticated = useUserStore(state => state.isAuthenticated)
+  const setUser = useUserStore(state => state.setUser)
+  const logout = useUserStore(state => state.logout)
+  const initializeAuth = useUserStore(state => state.initializeAuth)
+  const { currentUser, loading } = useAuth()
   
-  // Reset daily progress on app start
+  // Initialize auth state on app start
   useEffect(() => {
-    resetDaily()
-  }, [resetDaily])
+    initializeAuth();
+  }, [initializeAuth]);
+  
+  // Sync Firebase auth state with Zustand store
+  useEffect(() => {
+    const syncUser = async () => {
+      if (currentUser) {
+        await setUser(currentUser)
+      } else {
+        logout()
+      }
+    }
+    
+    if (!loading) {
+      syncUser()
+    }
+  }, [currentUser, loading, setUser, logout])
+  
+  // Reset daily progress on app start (only when authenticated)
+  useEffect(() => {
+    if (isAuthenticated) {
+      resetDaily()
+    }
+  }, [resetDaily, isAuthenticated])
+
+  // Show loading screen while Firebase initializes
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-ar-black">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <p className="text-white">Initializing...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <BrowserRouter>
@@ -65,6 +104,14 @@ function App() {
         </main>
       </div>
     </BrowserRouter>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 

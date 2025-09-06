@@ -40,9 +40,9 @@ export default function Diet() {
     { name: 'Fat', value: macros.fat, color: '#F59E0B' }
   ]
 
-  const handleMealSubmit = () => {
+  const handleMealSubmit = async () => {
     if (mealForm.name && mealForm.calories) {
-      logMeal({
+      await logMeal({
         name: mealForm.name,
         calories: parseInt(mealForm.calories) || 0,
         protein: parseInt(mealForm.protein) || 0,
@@ -60,7 +60,7 @@ export default function Diet() {
     }
   }
 
-  const mockFoodScan = () => {
+  const mockFoodScan = async () => {
     const mockFoods = [
       { name: "Apple", calories: 95, protein: 0, carbs: 25, fat: 0 },
       { name: "Chicken Breast (100g)", calories: 231, protein: 31, carbs: 0, fat: 5 },
@@ -70,7 +70,7 @@ export default function Diet() {
     ]
     const randomFood = mockFoods[Math.floor(Math.random() * mockFoods.length)]
     
-    logMeal(randomFood)
+    await logMeal(randomFood)
     setShowFoodScanModal(false)
   }
 
