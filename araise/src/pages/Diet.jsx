@@ -92,7 +92,7 @@ export default function Diet() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">Diet Planner</h1>
+        <h1 className="text-4xl md:text-5xl font-bold mb-4">Diet Tracker</h1>
         <p className="text-ar-gray-400 text-lg">
           Fuel your body with the right nutrition
         </p>
