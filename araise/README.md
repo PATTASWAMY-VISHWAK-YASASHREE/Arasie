@@ -28,7 +28,7 @@
 
 **Core Contributors:**
 
-**[SatyaViswas](https://github.com/SatyaViswas)**
+**[Vishwak](https://github.com/PATTASWAMY-VISHWAK-YASASHREE)**
 
 - Frontend development and optimization
 - Component architecture and responsive design
