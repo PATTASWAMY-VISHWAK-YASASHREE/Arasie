@@ -142,7 +142,6 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
     setFeedback('');
     setPoseStatus('Adjust');
     setError(null);
-    onBack()
     console.log('✅ Complete cleanup finished');
   }, [isRecording]);
 
@@ -444,7 +443,7 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-ar-black/80 backdrop-blur-sm z-10">
         <button
-          onClick={stopCameraAndDisconnect}
+          onClick={() => { stopCameraAndDisconnect(); onBack(); }}
           className="flex items-center gap-2 text-ar-gray hover:text-white transition-colors"
         >
           <ArrowLeft size={24} />
@@ -707,7 +706,7 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
       <div className="p-4 pb-6 bg-ar-black/90 backdrop-blur-sm border-t border-gray-800 safe-area-bottom">
         <div className="flex gap-3 justify-center max-w-sm mx-auto">
           <button
-            onClick={stopCameraAndDisconnect}
+            onClick={() => { stopCameraAndDisconnect(); onBack(); }}
             className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-xl transition-colors flex-1 text-sm"
           >
             Back
@@ -739,7 +738,7 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
 
           {reps > 0 && (
             <button
-              onClick={onComplete}
+              onClick={() => { stopCameraAndDisconnect(); onComplete(); }}
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition-colors flex-1 text-sm"
             >
               Complete
