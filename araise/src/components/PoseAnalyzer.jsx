@@ -467,6 +467,133 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
         </motion.div>
       )}
 
+      {/* AI Assistant Loading Overlay */}
+      {(!isInitialized || !connectionStatus.isConnected) && !error && (
+        <motion.div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-ar-black/80 backdrop-blur-md rounded-2xl p-6 sm:p-8 mx-4 max-w-sm w-full border border-ar-blue/20"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="text-center">
+              {/* Animated Robot/AI Icon */}
+              <motion.div
+                className="relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6"
+                animate={{ 
+                  rotate: [0, 360],
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ 
+                  rotate: { duration: 3, repeat: Infinity, ease: "linear" },
+                  scale: { duration: 2, repeat: Infinity }
+                }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-ar-blue to-ar-violet rounded-full flex items-center justify-center">
+                  <Target size={32} className="text-white sm:w-10 sm:h-10" />
+                </div>
+                <motion.div
+                  className="absolute -inset-2 bg-gradient-to-r from-ar-blue/20 to-ar-violet/20 rounded-full"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.5, 0.8, 0.5]
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              </motion.div>
+              
+              {/* Loading Text */}
+              <motion.h2
+                className="text-lg sm:text-xl font-bold text-white mb-2 sm:mb-3"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                Connecting to your AI assistant
+              </motion.h2>
+              
+              <motion.p
+                className="text-ar-gray-400 text-sm sm:text-base mb-4 sm:mb-6"
+                animate={{ opacity: [0.5, 0.8, 0.5] }}
+                transition={{ duration: 1.8, repeat: Infinity }}
+              >
+                Setting up pose detection model...
+              </motion.p>
+              
+              {/* Progress Indicator */}
+              <div className="space-y-2 sm:space-y-3">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
+                  <span className={`flex items-center gap-2 ${isInitialized ? 'text-green-400' : 'text-ar-gray-400'}`}>
+                    {isInitialized ? (
+                      <CheckCircle size={16} />
+                    ) : (
+                      <motion.div
+                        className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-ar-blue border-t-transparent rounded-full"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                    )}
+                    Pose Detection
+                  </span>
+                  {isInitialized && <span className="text-green-400 text-xs">✓</span>}
+                </div>
+                
+                <div className="flex items-center justify-between text-xs sm:text-sm">
+                  <span className={`flex items-center gap-2 ${connectionStatus.isConnected ? 'text-green-400' : 'text-ar-gray-400'}`}>
+                    {connectionStatus.isConnected ? (
+                      <CheckCircle size={16} />
+                    ) : (
+                      <motion.div
+                        className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-ar-violet border-t-transparent rounded-full"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                      />
+                    )}
+                    AI Assistant
+                  </span>
+                  {connectionStatus.isConnected && <span className="text-green-400 text-xs">✓</span>}
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="w-full bg-ar-gray-800 rounded-full h-1 sm:h-2 mt-4 sm:mt-6 overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-ar-blue to-ar-violet"
+                  initial={{ width: "0%" }}
+                  animate={{ 
+                    width: isInitialized && connectionStatus.isConnected ? "100%" : 
+                           isInitialized ? "50%" : "25%"
+                  }}
+                  transition={{ duration: 0.8, ease: "easeInOut" }}
+                />
+              </div>
+              
+              {/* Status Text */}
+              <motion.p
+                className="text-ar-gray-500 text-xs sm:text-sm mt-3 sm:mt-4"
+                animate={{ opacity: [0.6, 0.9, 0.6] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                {isInitialized && connectionStatus.isConnected ? 
+                  "Ready to start workout!" :
+                  isInitialized ? 
+                  "Connecting to AI assistant..." : 
+                  "Loading pose detection..."
+                }
+              </motion.p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
       {/* Main Video Container - Full Width, responsive height */}
       <div className="flex-1 relative bg-gray-900 min-h-[60vh] max-h-[70vh]">
         {/* Video and Canvas */}
