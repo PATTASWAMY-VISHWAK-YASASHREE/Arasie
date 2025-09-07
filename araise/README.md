@@ -18,6 +18,30 @@
 
 ---
 
+## 👥 **Team**
+
+**Lead Developer:** [Ruthwik000](https://github.com/Ruthwik000)
+
+- Full-stack development
+- AI integration and optimization
+- UI/UX design and implementation
+
+**Core Contributors:**
+
+**[SatyaViswas](https://github.com/SatyaViswas)**
+
+- Frontend development and optimization
+- Component architecture and responsive design
+- User experience enhancements
+
+**[vara-prasad-07](https://github.com/vara-prasad-07)**
+
+- Backend integration and API development
+- Database optimization and state management
+- Performance improvements and testing
+
+---
+
 ## 🎯 **Overview**
 
 **ARAISE** is a next-generation fitness tracking application that revolutionizes how users approach their health and wellness journey. Built with cutting-edge technologies including **React 19**, **Firebase**, and **MediaPipe AI**, it offers real-time form correction, comprehensive progress tracking, and an intuitive user experience optimized for all devices.
@@ -513,30 +537,6 @@ npm run dev
 ## 📄 **License**
 
 This project is licensed under the **MIT License** - see the [LICENSE](./LICENSE) file for details.
-
----
-
-## 👥 **Team**
-
-**Lead Developer:** [Ruthwik000](https://github.com/Ruthwik000)
-
-- Full-stack development
-- AI integration and optimization
-- UI/UX design and implementation
-
-**Core Contributors:**
-
-**[SatyaViswas](https://github.com/SatyaViswas)**
-
-- Frontend development and optimization
-- Component architecture and responsive design
-- User experience enhancements
-
-**[vara-prasad-07](https://github.com/vara-prasad-07)**
-
-- Backend integration and API development
-- Database optimization and state management
-- Performance improvements and testing
 
 ---
 
