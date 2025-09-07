@@ -15,11 +15,7 @@ import {
   Star
 } from "lucide-react"
 import { useUserStore } from "../store/userStore"
-import {
-  PoseLandmarker,
-  FilesetResolver,
-  DrawingUtils
-} from "https://cdn.skypack.dev/@mediapipe/tasks-vision@0.10.0";
+import PoseAnalyzer from "../components/PoseAnalyzer"
 
 // Mock workout data
 const workoutPlans = {
@@ -426,282 +422,35 @@ function WorkoutSession() {
 
 // Form Analyzer Component
 function FormAnalyzer() {
-  const { level, planId, exerciseId,exerciseName } = useParams()
+  const { level, planId, exerciseId, exerciseName } = useParams()
   const navigate = useNavigate()
-  const videoRef = useRef(null)
-  const canvasRef = useRef(null);
-  const [socket, setSocket] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [feedback, setFeedback] = useState("");
-  const [reps, setReps] = useState(0);
-  const [pose, setPose] = useState(null);
-  const [poseLandmarker, setPoseLandmarker] = useState(null);
-  const [webcamRunning, setWebcamRunning] = useState(false);
-  const drawingUtilsRef = useRef(null);
 
   const plan = workoutPlans[level]?.find(p => p.id === planId)
   const exercise = plan?.exercises.find(e => e.id === parseInt(exerciseId))
-  const exerciseNames=exerciseName.toLowerCase().replace('-','')
-  useEffect(() => {
-    initializePoseLandmarker();
-    const ws = new WebSocket(`wss://araise-backend-1012835535994.asia-south1.run.app/ws/${exerciseNames}`);
-    
-    ws.onopen = () => {
-      console.log("WebSocket Connected");
-      setIsConnected(true);
-      setSocket(ws);
-    };
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setReps(data.reps);
-      setFeedback(data.feedback);
-    };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    return () => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.close();
-      }
-    };
-  }, [])
-
-  // Handle canvas size
-  useEffect(() => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const handleResize = () => {
-      const videoEl = videoRef.current;
-      const canvasEl = canvasRef.current;
-      
-      // Set canvas size to match video dimensions
-      canvasEl.width = videoEl.offsetWidth;
-      canvasEl.height = videoEl.offsetHeight;
-    };
-
-    // Set initial size
-    handleResize();
-
-    // Update on window resize
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (!poseLandmarker || !webcamRunning || !videoRef.current || !canvasRef.current) return;
-
-    let lastVideoTime = -1;
-    const canvasCtx = canvasRef.current.getContext('2d');
-    const drawingUtils = new DrawingUtils(canvasCtx);
-
-    async function predictWebcam() {
-      if (lastVideoTime !== videoRef.current.currentTime) {
-        lastVideoTime = videoRef.current.currentTime;
-        const startTimeMs = performance.now();
-        
-        // Detect poses
-        const results = await poseLandmarker.detectForVideo(videoRef.current, startTimeMs);
-        
-        // Clear the canvas
-        canvasCtx.save();
-        canvasCtx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        
-        // Draw the landmarks and connections
-        for (const landmark of results.landmarks) {
-          drawingUtils.drawLandmarks(landmark, {
-            radius: (data) => DrawingUtils.lerp(data.from?.z || 0, -0.15, 0.1, 5, 1)
-          });
-          drawingUtils.drawConnectors(landmark, PoseLandmarker.POSE_CONNECTIONS);
-        }
-        canvasCtx.restore();
-
-        // Send frame data to WebSocket if connected
-        if (socket && socket.readyState === WebSocket.OPEN) {
-          try {
-            // Create a temporary canvas to capture the frame
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = videoRef.current.videoWidth;
-            tempCanvas.height = videoRef.current.videoHeight;
-            const tempCtx = tempCanvas.getContext('2d');
-            
-            // Draw the current video frame
-            tempCtx.drawImage(videoRef.current, 0, 0, tempCanvas.width, tempCanvas.height);
-            
-            // Convert to base64 and send
-            const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.8);
-            const base64Data = dataUrl.split(',')[1]; // Remove the data URL header
-            
-            // Ensure the base64 string is properly padded
-            const paddedBase64 = base64Data + '='.repeat((4 - base64Data.length % 4) % 4);
-            socket.send(paddedBase64);
-          } catch (error) {
-            console.error('Error sending frame:', error);
-          }
-        }
-      }
-
-      if (webcamRunning) {
-        window.requestAnimationFrame(predictWebcam);
-      }
-    }
-
-    predictWebcam();
-
-    return () => {
-      setWebcamRunning(false);
-    };
-  }, [poseLandmarker, webcamRunning, socket]);
-
-const initializePoseLandmarker = async () => {
-      const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
-      );
-      
-      const poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
-          delegate: "GPU"
-        },
-        runningMode: "VIDEO",
-        numPoses: 2
-      });
-      
-      setPoseLandmarker(poseLandmarker);
-      
-      // Initialize drawing utils
-      const canvasCtx = canvasRef.current.getContext("2d");
-      drawingUtilsRef.current = new DrawingUtils(canvasCtx);
-      
-      // Start camera
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setWebcamRunning(true);
-      } catch (err) {
-        console.error("Error accessing camera:", err);
-      }
-    };
-
- const stopCamera = () => {
-    // Stop the camera stream
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    
-    // Stop webcam running state
-    setWebcamRunning(false);
-    
-    // Close WebSocket connection if open
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.close();
-    }
-  }    
   const handleBack = () => {
-    stopCamera();
     navigate(`/workout/${level}/${planId}/session`)
   }
   
-  const handleDone = () => {
-    stopCamera()
+  const handleComplete = () => {
     navigate(`/workout/${level}/${planId}/session`)
   }
 
   if (!exercise) {
     return <div className="text-center text-ar-gray-400">Exercise not found</div>
   }
-  console.log(reps,feedback)
+
   return (
-    <div className="fixed inset-0 bg-ar-black flex flex-col md:pl-[280px] h-full overflow-hidden">
-      {/* Header with mobile responsiveness */}
-      <motion.div
-        className="flex items-center justify-between p-4 bg-ar-darker/95 backdrop-blur-lg border-b border-ar-gray-800 sticky top-0 z-10"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-ar-white">Form Analyzer</h1>
-          <span className="text-ar-gray-400">{exercise.name}</span>
-        </div>
-      </motion.div>
-
-      {/* Full Screen Camera with Scrollable Container */}
-      <motion.div
-        className="flex-1 relative overflow-y-auto"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-      >
-        <div className="relative w-full h-full">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-            style={{ transform: 'scaleX(-1)' }}
-          />
-          <canvas
-            ref={canvasRef}
-            className="absolute top-0 left-0 w-full h-full"
-            style={{ transform: 'scaleX(-1)' }}
-          />
-          
-          {/* Stats Overlay */}
-          <div className="absolute top-4 left-4 flex gap-4">
-            <div className="bg-ar-black/80 text-ar-white px-4 py-2 rounded-xl border border-ar-blue/50">
-              <div className="flex items-center gap-2">
-                <Target size={16} className="text-ar-blue" />
-                <span className="font-bold">Reps: {reps}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Feedback Overlay */}
-          {feedback && (
-            <div className="absolute top-4 right-4">
-              <div className="bg-ar-black/80 text-ar-white px-4 py-2 rounded-xl border border-ar-violet/50">
-                <div className="flex items-center gap-2">
-                  <Star size={16} className="text-ar-violet" />
-                  <span>{feedback}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Bottom Controls */}
-      <motion.div
-        className="p-6 bg-ar-darker/95 backdrop-blur-lg border-t border-ar-gray-800 mb-5"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
-      >
-        <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-          <button
-            onClick={handleBack}
-            className="bg-ar-gray-700 hover:bg-ar-gray-600 text-ar-white font-bold py-4 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover flex items-center justify-center gap-2"
-          >
-            <ArrowLeft size={20} />
-            Back
-          </button>
-          
-          <button
-            onClick={handleDone}
-            className="bg-ar-blue hover:bg-ar-blue-light text-white font-bold py-4 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover flex items-center justify-center gap-2"
-          >
-            <CheckCircle size={20} />
-            Done
-          </button>
-        </div>
-      </motion.div>
+    <div className="fixed inset-0 bg-ar-black flex flex-col md:pl-[280px] h-full">
+      <div className="p-6 flex-1">
+        <PoseAnalyzer
+          exerciseName={exerciseName}
+          planId={planId}
+          level={level}
+          onComplete={handleComplete}
+          onBack={handleBack}
+        />
+      </div>
     </div>
   )
 }
