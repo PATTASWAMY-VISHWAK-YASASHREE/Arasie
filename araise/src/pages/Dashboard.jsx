@@ -4,6 +4,7 @@ import { Flame, Target, Zap, Trophy } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts"
 import { useNavigate } from "react-router-dom"
+import { useAuth } from "../contexts/AuthContext"
 
 // Motivational quotes
 const quotes = [
@@ -17,16 +18,35 @@ const quotes = [
 export default function Dashboard() {
   const navigate = useNavigate()
   const [currentQuote, setCurrentQuote] = useState(0)
+  const { currentUser, loading } = useAuth()
   
   const {
     name,
     level,
     streakCount,
+    isAuthenticated,
     getProgressStats,
     getStreakStats,
     calendar,
     checkStreak
   } = useUserStore()
+
+  // Immediate authentication check - don't render anything if not properly authenticated
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-ar-black">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <p className="text-white">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If not authenticated or no current user or guest, don't render anything - let ProtectedRoute handle redirect
+  if (!loading && (!isAuthenticated || !currentUser || name === 'Guest')) {
+    return null // Return nothing, let the ProtectedRoute component handle the redirect
+  }
 
   const progressStats = getProgressStats()
   const streakStats = getStreakStats()
@@ -41,8 +61,8 @@ export default function Dashboard() {
 
   // Check for streak updates every few seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      checkStreak()
+    const interval = setInterval(async () => {
+      await checkStreak()
     }, 3000)
     return () => clearInterval(interval)
   }, [checkStreak])
@@ -79,10 +99,10 @@ export default function Dashboard() {
   const calendarDays = generateCalendar()
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pt-6">
+    <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pt-6">
       {/* Top Section - Greeting, Level, Streak */}
       <motion.div 
-        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
+        className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -135,22 +155,23 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Middle Section - Radar Chart & Calendar Heatmap */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-6">
         {/* Progress Radar Chart */}
         <motion.div
-          className="glass-card p-6 rounded-2xl"
+          className="glass-card p-4 md:p-6 rounded-2xl"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <h2 className="text-2xl font-hagrid font-light mb-6 text-center tracking-tight">Today's Progress</h2>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData}>
+          <h2 className="text-xl md:text-2xl font-hagrid font-light mb-3 md:mb-4 text-center tracking-tight">Today's Progress</h2>
+          <div className="h-96 md:h-[32rem] flex items-center justify-center">
+            <ResponsiveContainer width="98%" height="98%">
+              <RadarChart data={radarData} margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
                 <PolarGrid gridType="polygon" stroke="#22D2FF" strokeWidth={0.5} />
                 <PolarAngleAxis 
                   dataKey="subject" 
-                  tick={{ fill: '#D4D4D4', fontSize: 14, fontWeight: 'light', fontFamily: 'Hagrid' }}
+                  tick={{ fill: '#D4D4D4', fontSize: 16, fontWeight: 'light', fontFamily: 'Hagrid' }}
+                  tickOffset={25}
                 />
                 <PolarRadiusAxis 
                   angle={90} 
@@ -174,12 +195,12 @@ export default function Dashboard() {
 
         {/* Streak Calendar Heatmap */}
         <motion.div
-          className="glass-card p-6 rounded-2xl"
+          className="glass-card p-4 md:p-6 rounded-2xl"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <h2 className="text-2xl font-hagrid font-light mb-6 text-center tracking-tight">Streak Calendar</h2>
+          <h2 className="text-xl md:text-2xl font-hagrid font-light mb-4 md:mb-6 text-center tracking-tight">Streak Calendar</h2>
           <div className="grid grid-cols-7 gap-2">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
               <div key={day} className="text-center text-sm text-ar-gray-400 font-hagrid font-light">
@@ -213,19 +234,19 @@ export default function Dashboard() {
 
       {/* Bottom Section - Action Cards */}
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
         {/* Workout Card */}
         <motion.div
-          className="glass-card p-6 rounded-2xl cursor-pointer group"
+          className="glass-card p-4 md:p-6 rounded-2xl cursor-pointer group"
           onClick={() => navigate('/workout')}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
             <div className="p-3 bg-red-500/20 rounded-xl">
               <Target className="text-red-400" size={24} />
             </div>
@@ -234,14 +255,14 @@ export default function Dashboard() {
               <p className="text-ar-gray-400 font-hagrid font-light">Train your body</p>
             </div>
           </div>
-          <div className="mb-4">
+          <div className="mb-3 md:mb-4">
             <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
               <span>Progress</span>
               <span className="text-red-400 font-medium">{Math.round(progressStats.workout)}%</span>
             </div>
-            <div className="w-full bg-ar-gray-800 rounded-full h-3">
+            <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-3">
               <div 
-                className="bg-red-400 h-3 rounded-full transition-all duration-500"
+                className="bg-red-400 h-2 md:h-3 rounded-full transition-all duration-500"
                 style={{ width: `${progressStats.workout}%` }}
               />
             </div>

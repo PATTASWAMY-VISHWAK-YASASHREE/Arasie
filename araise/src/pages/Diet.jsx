@@ -40,9 +40,9 @@ export default function Diet() {
     { name: 'Fat', value: macros.fat, color: '#F59E0B' }
   ]
 
-  const handleMealSubmit = () => {
+  const handleMealSubmit = async () => {
     if (mealForm.name && mealForm.calories) {
-      logMeal({
+      await logMeal({
         name: mealForm.name,
         calories: parseInt(mealForm.calories) || 0,
         protein: parseInt(mealForm.protein) || 0,
@@ -60,7 +60,7 @@ export default function Diet() {
     }
   }
 
-  const mockFoodScan = () => {
+  const mockFoodScan = async () => {
     const mockFoods = [
       { name: "Apple", calories: 95, protein: 0, carbs: 25, fat: 0 },
       { name: "Chicken Breast (100g)", calories: 231, protein: 31, carbs: 0, fat: 5 },
@@ -70,7 +70,7 @@ export default function Diet() {
     ]
     const randomFood = mockFoods[Math.floor(Math.random() * mockFoods.length)]
     
-    logMeal(randomFood)
+    await logMeal(randomFood)
     setShowFoodScanModal(false)
   }
 
@@ -84,7 +84,7 @@ export default function Diet() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
       {/* Header */}
       <motion.div
         className="text-center"
@@ -92,39 +92,39 @@ export default function Diet() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">Diet Planner</h1>
+        <h1 className="text-4xl md:text-5xl font-bold mb-4">Diet Tracker</h1>
         <p className="text-ar-gray-400 text-lg">
           Fuel your body with the right nutrition
         </p>
       </motion.div>
 
       {/* Progress Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-2 gap-3 md:gap-8">
         {/* Calorie Progress */}
         <motion.div
-          className="glass-card p-6 rounded-2xl"
+          className="glass-card p-4 md:p-6 rounded-2xl"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <h2 className="text-2xl font-bold mb-6 text-center">Calorie Intake</h2>
+          <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6 text-center">Calorie Intake</h2>
           
-          <div className="text-center mb-6">
-            <div className="text-4xl font-bold text-ar-white mb-2">
+          <div className="text-center mb-4 md:mb-6">
+            <div className="text-3xl md:text-4xl font-bold text-ar-white mb-2">
               {dietCalories}
             </div>
-            <div className="text-ar-gray-400">
+            <div className="text-ar-gray-400 text-sm md:text-base mb-2">
               of {dailyCalorieGoal} calories
             </div>
-            <div className="text-ar-orange font-bold text-xl">
+            <div className="text-ar-orange font-bold text-base md:text-xl">
               {Math.round(progressPercentage)}%
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-ar-gray-800 rounded-full h-4 mb-6">
+          <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-4 mb-4 md:mb-6">
             <motion.div 
-              className="bg-ar-orange h-4 rounded-full transition-all duration-1000"
+              className="bg-ar-orange h-2 md:h-4 rounded-full transition-all duration-1000"
               style={{ width: `${progressPercentage}%` }}
               initial={{ width: 0 }}
               animate={{ width: `${progressPercentage}%` }}
@@ -132,67 +132,53 @@ export default function Diet() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2 md:gap-4">
             <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Target size={20} className="text-ar-blue" />
-                <span className="font-bold">Remaining</span>
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <Target size={14} className="text-ar-blue md:w-5 md:h-5" />
+                <span className="font-bold text-xs md:text-base">Remaining</span>
               </div>
-              <div className="text-xl font-bold text-ar-blue">
+              <div className="text-lg md:text-xl font-bold text-ar-blue">
                 {Math.max(dailyCalorieGoal - dietCalories, 0)}
               </div>
             </div>
             <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Utensils size={20} className="text-ar-green" />
-                <span className="font-bold">Meals</span>
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <Utensils size={14} className="text-ar-green md:w-5 md:h-5" />
+                <span className="font-bold text-xs md:text-base">Meals</span>
               </div>
-              <div className="text-xl font-bold text-ar-green">
+              <div className="text-lg md:text-xl font-bold text-ar-green">
                 {meals.length}/3
               </div>
             </div>
           </div>
 
-          {/* Goal Status */}
-          {dietGoalMet && (
-            <motion.div
-              className="bg-ar-green/20 border border-ar-green/50 rounded-xl p-4 mt-6"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: "spring", bounce: 0.5 }}
-            >
-              <div className="text-ar-green font-bold">
-                🎯 Daily meal goal achieved!
-              </div>
-              <div className="text-ar-gray-400 text-sm">
-                You've logged {meals.length} meals today
-              </div>
-            </motion.div>
-          )}
+          {/* Goal Status - removed from here */}
         </motion.div>
 
         {/* Macros Pie Chart */}
         <motion.div
-          className="glass-card p-6 rounded-2xl"
+          className="glass-card p-3 md:p-6 rounded-2xl"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <h2 className="text-2xl font-bold mb-6 text-center">Macronutrients</h2>
+          <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-6 text-center">Macronutrients</h2>
           
           {macroData.some(macro => macro.value > 0) ? (
             <>
-              <div className="h-48 mb-4">
+              <div className="h-40 md:h-56 mb-2 md:mb-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={macroData.filter(macro => macro.value > 0)}
                       cx="50%"
                       cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      paddingAngle={5}
+                      innerRadius={25}
+                      outerRadius={60}
+                      paddingAngle={3}
                       dataKey="value"
+                      className="md:inner-radius-40 md:outer-radius-90"
                     >
                       {macroData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -211,17 +197,17 @@ export default function Diet() {
                 </ResponsiveContainer>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-1 md:space-y-2">
                 {macroData.map(macro => (
                   <div key={macro.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 md:gap-2">
                       <div 
-                        className="w-3 h-3 rounded-full"
+                        className="w-2 h-2 md:w-3 md:h-3 rounded-full"
                         style={{ backgroundColor: macro.color }}
                       />
-                      <span className="text-ar-gray-400">{macro.name}</span>
+                      <span className="text-ar-gray-400 text-xs md:text-base">{macro.name}</span>
                     </div>
-                    <span className="font-bold" style={{ color: macro.color }}>
+                    <span className="font-bold text-xs md:text-base" style={{ color: macro.color }}>
                       {macro.value}g
                     </span>
                   </div>
@@ -229,48 +215,67 @@ export default function Diet() {
               </div>
             </>
           ) : (
-            <div className="text-center py-8 text-ar-gray-400">
-              <TrendingUp size={48} className="mx-auto mb-4 opacity-50" />
-              <p>No macro data yet</p>
-              <p className="text-sm">Start logging meals to see your breakdown!</p>
+            <div className="text-center py-4 md:py-8 text-ar-gray-400">
+              <TrendingUp size={24} className="mx-auto mb-2 md:mb-4 opacity-50 md:w-12 md:h-12" />
+              <p className="text-xs md:text-base">No macro data yet</p>
+              <p className="text-xs md:text-sm">Start logging meals!</p>
             </div>
           )}
         </motion.div>
       </div>
 
+      {/* Goal Status - Full Width */}
+      {dietGoalMet && (
+        <motion.div
+          className="bg-ar-green/20 border border-ar-green/50 rounded-xl p-3 md:p-4"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", bounce: 0.5 }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="text-ar-green font-bold text-sm md:text-base">
+              🎯 Daily meal goal achieved!
+            </div>
+            <div className="text-ar-gray-400 text-xs md:text-sm">
+              {meals.length} meals logged
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Action Buttons */}
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
         <button
           onClick={() => setShowMealModal(true)}
-          className="glass-card p-6 rounded-2xl hover:border-ar-green/50 transition-all duration-300 hover:shadow-card-hover group"
+          className="glass-card p-4 md:p-6 rounded-2xl hover:border-ar-green/50 transition-all duration-300 hover:shadow-card-hover group"
         >
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-3 md:gap-4">
             <div className="p-3 bg-ar-green/20 rounded-xl group-hover:bg-ar-green/30 transition-colors">
-              <Plus className="text-ar-green" size={24} />
+              <Plus className="text-ar-green" size={20} />
             </div>
             <div className="text-left">
-              <h3 className="text-xl font-bold">Manual Entry</h3>
-              <p className="text-ar-gray-400">Log your meal details</p>
+              <h3 className="text-lg md:text-xl font-bold">Manual Entry</h3>
+              <p className="text-ar-gray-400 text-sm md:text-base">Log your meal details</p>
             </div>
           </div>
         </button>
 
         <button
           onClick={() => setShowFoodScanModal(true)}
-          className="glass-card p-6 rounded-2xl hover:border-ar-blue/50 transition-all duration-300 hover:shadow-card-hover group"
+          className="glass-card p-4 md:p-6 rounded-2xl hover:border-ar-blue/50 transition-all duration-300 hover:shadow-card-hover group"
         >
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-3 md:gap-4">
             <div className="p-3 bg-ar-blue/20 rounded-xl group-hover:bg-ar-blue/30 transition-colors">
-              <Camera className="text-ar-blue" size={24} />
+              <Camera className="text-ar-blue" size={20} />
             </div>
             <div className="text-left">
-              <h3 className="text-xl font-bold">Food Scan</h3>
-              <p className="text-ar-gray-400">Quick nutrition lookup</p>
+              <h3 className="text-lg md:text-xl font-bold">Food Scan</h3>
+              <p className="text-ar-gray-400 text-sm md:text-base">Quick nutrition lookup</p>
             </div>
           </div>
         </button>
@@ -278,12 +283,12 @@ export default function Diet() {
 
       {/* Meal Log */}
       <motion.div
-        className="glass-card p-6 rounded-2xl"
+        className="glass-card p-4 md:p-6 rounded-2xl"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.6 }}
       >
-        <h2 className="text-2xl font-bold mb-6">Today's Meals</h2>
+        <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Today's Meals</h2>
         
         {meals.length === 0 ? (
           <div className="text-center py-8 text-ar-gray-400">
@@ -292,7 +297,7 @@ export default function Diet() {
             <p className="text-sm">Start tracking your nutrition above!</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2 md:space-y-3">
             {meals.slice().reverse().map((meal, index) => (
               <motion.div
                 key={meal.id}

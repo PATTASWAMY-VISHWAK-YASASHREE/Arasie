@@ -3,6 +3,7 @@ import { Home, Dumbbell, Droplet, Utensils, Flame, User, Settings, LogOut, Chevr
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useUserStore } from "../store/userStore"
+import { useAuth } from "../contexts/AuthContext"
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
@@ -34,11 +35,16 @@ function useMediaQuery(query) {
 export default function Navigation() {
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const { logout, name, level } = useUserStore()
+  const { name, level } = useUserStore()
+  const { logout } = useAuth()
 
-  const handleLogout = () => {
-    logout()
-    setShowProfileMenu(false)
+  const handleLogout = async () => {
+    try {
+      await logout()
+      setShowProfileMenu(false)
+    } catch (error) {
+      console.error('Failed to log out:', error)
+    }
   }
 
   if (isMobile) {

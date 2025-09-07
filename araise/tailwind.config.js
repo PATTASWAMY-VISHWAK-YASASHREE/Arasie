@@ -71,7 +71,7 @@ export default {
         inter: ['Inter', 'sans-serif'],
         poppins: ['Poppins', 'sans-serif'],
         hurion: ['Playfair Display', 'serif'], // Using Playfair Display as Hurion alternative
-        hagrid: ['Hagrid', 'system-ui', 'sans-serif'],
+        hagrid: ['Roboto', 'system-ui', 'sans-serif'], // Using Roboto as Hagrid alternative
       },
       backdropBlur: {
         xs: '2px',
