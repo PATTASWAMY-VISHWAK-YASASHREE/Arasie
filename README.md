@@ -12,7 +12,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.17-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 
-[🚀 Live Demo](https://arasie.vercel.app/) | [📖 Documentation](./USER_FLOW_CHART.md) | [🐛 Report Bug](https://github.com/Ruthwik000/Arasie/issues) | [💡 Request Feature](https://github.com/Ruthwik000/Arasie/issues)
+[🚀 Live Demo](https://arasie.vercel.app/) | [📖 Documentation](./USER_FLOW_CHART.md) | [🐛 Report Bug](#) | [💡 Request Feature](#)
 
 </div>
 
@@ -33,43 +33,21 @@
 
 ---
 
-## 📸 **Feature Screenshots**
+## � **Feature Screenshots**
 
-<div align="center">
+_Screenshots and feature demos will be added here_
 
-### 🏠 **Dashboard Overview**
-
-<!-- Add dashboard screenshot here -->
-
-![Dashboard Screenshot](./screenshots/dashboard.png)
-_Real-time progress tracking with radar charts and streak calendar_
-
-### 💪 **AI-Powered Workout Analysis**
-
-<!-- Add workout analysis screenshot here -->
-
-![Workout Analysis Screenshot](./screenshots/workout-analysis.png)
-_Live form correction using MediaPipe pose detection_
-
-### 💧 **Water & 🍽️ Diet Tracking**
-
-<!-- Add tracking features screenshot here -->
-
-![Tracking Features Screenshot](./screenshots/tracking-features.png)
-_Intuitive progress visualization and goal management_
-
-### 📱 **Mobile-Responsive Design**
-
-<!-- Add mobile screenshots here -->
-
-![Mobile Screenshots](./screenshots/mobile-responsive.png)
-_Seamless experience across all device sizes_
-
-</div>
+<!-- Add your feature screenshots here:
+- Dashboard overview
+- Workout session with AI analysis
+- Water tracking interface
+- Diet logging and macro visualization
+- Mobile responsive views
+-->
 
 ---
 
-## 🚀 **Core Features**
+## �🚀 **Core Features**
 
 ### 💪 **Smart Workout System**
 
@@ -524,19 +502,19 @@ This project is licensed under the **MIT License** - see the [LICENSE](./LICENSE
 - AI integration and optimization
 - UI/UX design and implementation
 
-**Core Contributors:**
+**Contributors:**
 
-**[SatyaViswas](https://github.com/SatyaViswas)**
+**[PATTASWAMY-VISHWAK-YASASHREE](https://github.com/PATTASWAMY-VISHWAK-YASASHREE)**
 
-- Frontend development and optimization
-- Component architecture and responsive design
-- User experience enhancements
+- Frontend development
+- UI/UX enhancements
+- Feature implementation
 
 **[vara-prasad-07](https://github.com/vara-prasad-07)**
 
-- Backend integration and API development
-- Database optimization and state management
-- Performance improvements and testing
+- Backend development
+- Firebase integration
+- Performance optimization
 
 ---
 
