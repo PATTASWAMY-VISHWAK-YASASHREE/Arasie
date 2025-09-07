@@ -345,15 +345,15 @@ function WorkoutSession() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-3 md:space-y-4">
       {/* Progress Bar */}
       <motion.div
-        className="glass-card p-4 rounded-2xl"
+        className="glass-card p-3 md:p-4 rounded-2xl"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="flex justify-between items-center mb-2">
+        <div className="flex justify-between items-center mb-1 md:mb-2">
           <span className="text-ar-gray">Progress</span>
           <span className="text-ar-blue font-bold">
             {currentExercise + 1} / {plan.exercises.length}
@@ -371,51 +371,66 @@ function WorkoutSession() {
 
       {/* Exercise Display */}
       <motion.div
-        className="glass-card p-8 rounded-2xl text-center"
+        className="glass-card p-3 md:p-4 rounded-2xl text-center"
         key={currentExercise}
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Exercise Animation/GIF Placeholder */}
-        <div className="w-48 h-48 mx-auto mb-6 bg-ar-blue/20 rounded-2xl flex items-center justify-center">
-          <motion.div
-            animate={{ 
-              scale: [1, 1.1, 1],
-              rotate: [0, 5, -5, 0] 
-            }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity,
-              ease: "easeInOut" 
-            }}
-          >
-            <Dumbbell className="text-ar-blue" size={64} />
-          </motion.div>
+        {/* Exercise Video */}
+        <div className="w-64 h-96 md:w-72 md:h-[28rem] mx-auto mb-3 md:mb-4 bg-ar-blue/20 rounded-2xl overflow-hidden">
+          {exercise.name === 'Biceps' ? (
+            <video
+              src="/videos/biceps.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover rounded-2xl"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0] 
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity,
+                  ease: "easeInOut" 
+                }}
+              >
+                <Dumbbell className="text-ar-blue" size={64} />
+              </motion.div>
+            </div>
+          )}
         </div>
 
-        <h2 className="text-3xl font-bold mb-4">{exercise.name}</h2>
-        <p className="text-ar-blue text-xl font-bold mb-2">{exercise.reps}</p>
-        <p className="text-ar-gray mb-8">{exercise.description}</p>
+        <h2 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">{exercise.name}</h2>
+        <p className="text-ar-blue text-lg md:text-xl font-bold mb-1">{exercise.reps}</p>
+        <p className="text-ar-gray mb-3 md:mb-4">{exercise.description}</p>
 
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-col gap-2 md:gap-3 justify-center px-4 md:px-0">
           <button
-            onClick={handleNext}
-            className="flex-1 max-w-xs bg-ar-blue hover:bg-ar-blue/80 text-white font-bold py-4 rounded-xl transition-all duration-300 hover:shadow-glow-blue"
+            onClick={handleAnalyzer}
+            className="w-full bg-ar-violet hover:bg-ar-violet/80 text-white font-bold py-3 md:py-4 rounded-xl transition-all duration-300 hover:shadow-glow-violet"
           >
             <div className="flex items-center justify-center gap-2">
-              <CheckCircle size={20} />
-              {isLastExercise ? 'Finish Workout' : 'Exercise Done'}
+              <Camera size={18} className="md:w-5 md:h-5" />
+              <span className="text-sm md:text-base">Form Analyzer</span>
             </div>
           </button>
           
           <button
-            onClick={handleAnalyzer}
-            className="flex-1 max-w-xs bg-ar-violet hover:bg-ar-violet/80 text-white font-bold py-4 rounded-xl transition-all duration-300 hover:shadow-glow-violet"
+            onClick={handleNext}
+            className="w-full bg-ar-blue hover:bg-ar-blue/80 text-white font-bold py-3 md:py-4 rounded-xl transition-all duration-300 hover:shadow-glow-blue"
           >
             <div className="flex items-center justify-center gap-2">
-              <Camera size={20} />
-              Form Analyzer
+              <CheckCircle size={18} className="md:w-5 md:h-5" />
+              <span className="text-sm md:text-base">
+                {isLastExercise ? 'Finish Workout' : 'Exercise Done'}
+              </span>
             </div>
           </button>
         </div>
