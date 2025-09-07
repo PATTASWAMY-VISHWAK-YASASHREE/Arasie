@@ -1,12 +1,20 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { motion } from "framer-motion"
-import { Utensils, Plus, Camera, Clock, Target, Zap, TrendingUp } from "lucide-react"
+import { Utensils, Plus, Camera, Clock, Target, Zap, TrendingUp, Upload, X, Check } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 
 export default function Diet() {
   const [showMealModal, setShowMealModal] = useState(false)
   const [showFoodScanModal, setShowFoodScanModal] = useState(false)
+  const [showScanOptions, setShowScanOptions] = useState(false)
+  const [showScanResults, setShowScanResults] = useState(false)
+  const [isScanning, setIsScanning] = useState(false)
+  const [scanResults, setScanResults] = useState(null)
+  const [selectedImage, setSelectedImage] = useState(null)
+  const fileInputRef = useRef(null)
+  const cameraInputRef = useRef(null)
+  
   const [mealForm, setMealForm] = useState({
     name: "",
     calories: "",
@@ -58,6 +66,108 @@ export default function Diet() {
       })
       setShowMealModal(false)
     }
+  }
+
+  // Food Scanning Functions
+  const handleFoodScan = () => {
+    setShowFoodScanModal(false)
+    setShowScanOptions(true)
+  }
+
+  const handleImageSelect = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+      setSelectedImage(file)
+      scanFoodImage(file)
+    }
+  }
+
+  const handleCameraCapture = () => {
+    // Trigger camera input for mobile back camera
+    if (cameraInputRef.current) {
+      cameraInputRef.current.click()
+    }
+  }
+
+  const handleImportImage = () => {
+    // Trigger file input for image import
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }
+
+  const scanFoodImage = async (imageFile) => {
+    setIsScanning(true)
+    setShowScanOptions(false)
+    
+    try {
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp','image/jpg']
+      if (!allowedTypes.includes(imageFile.type)) {
+        throw new Error('Please select a valid image file (JPEG, PNG, GIF, or WebP)')
+      }
+
+      const formData = new FormData()
+      formData.append('file', imageFile) // Changed from 'image' to 'file'
+
+      const response = await fetch('https://food-45609451577.asia-south1.run.app/analyze-food', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        let errorMessage = 'An error occurred while analyzing the image'
+        try {
+          const error = await response.json()
+          errorMessage = error.detail || response.statusText
+        } catch {
+          errorMessage = response.statusText
+        }
+        throw new Error(errorMessage)
+      }
+
+      const data = await response.json()
+      console.log('Food analysis result:', data)
+      
+      // Extract required data from API response
+      const foodData = {
+        name: data.food_identification?.primary_dish || 'Unknown Food',
+        calories: Math.round(data.macronutrients?.calories || 0),
+        protein: Math.round(data.macronutrients?.protein || 0),
+        carbohydrates: Math.round(data.macronutrients?.carbohydrates || 0),
+        fat: Math.round(data.macronutrients?.fat || 0)
+      }
+
+      setScanResults(foodData)
+      setShowScanResults(true)
+    } catch (error) {
+      console.error('Food scanning error:', error)
+      alert(`Failed to analyze food: ${error.message}`)
+      resetScanStates()
+    } finally {
+      setIsScanning(false)
+    }
+  }
+
+  const handleAddScannedMeal = async () => {
+    if (scanResults) {
+      await logMeal({
+        name: scanResults.name,
+        calories: scanResults.calories,
+        protein: scanResults.protein,
+        carbs: scanResults.carbohydrates,
+        fat: scanResults.fat
+      })
+      resetScanStates()
+    }
+  }
+
+  const resetScanStates = () => {
+    setShowScanOptions(false)
+    setShowScanResults(false)
+    setIsScanning(false)
+    setScanResults(null)
+    setSelectedImage(null)
   }
 
   const mockFoodScan = async () => {
@@ -266,7 +376,7 @@ export default function Diet() {
         </button>
 
         <button
-          onClick={() => setShowFoodScanModal(true)}
+          onClick={handleFoodScan}
           className="glass-card p-4 md:p-6 rounded-2xl hover:border-ar-blue/50 transition-all duration-300 hover:shadow-card-hover group"
         >
           <div className="flex items-center gap-3 md:gap-4">
@@ -427,7 +537,175 @@ export default function Diet() {
         </motion.div>
       )}
 
-      {/* Food Scan Modal */}
+      {/* Hidden File Inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageSelect}
+        style={{ display: 'none' }}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleImageSelect}
+        style={{ display: 'none' }}
+      />
+
+      {/* Food Scan Options Modal */}
+      {showScanOptions && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="glass-card p-6 rounded-2xl max-w-md w-full"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+          >
+            <h2 className="text-2xl font-bold mb-6 text-center">Food Scanner</h2>
+            
+            <div className="text-center py-4">
+              <Camera size={64} className="mx-auto mb-4 text-ar-blue" />
+              <p className="text-ar-gray mb-6">
+                Choose how you want to scan your food
+              </p>
+              
+              <div className="space-y-4">
+                <button
+                  onClick={handleCameraCapture}
+                  className="w-full bg-ar-blue hover:bg-ar-blue-light text-white font-bold py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-3"
+                >
+                  <Camera size={20} />
+                  Take Photo
+                </button>
+                
+                <button
+                  onClick={handleImportImage}
+                  className="w-full bg-ar-green hover:bg-ar-green/80 text-white font-bold py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-3"
+                >
+                  <Upload size={20} />
+                  Import Image
+                </button>
+              </div>
+              
+              <button
+                onClick={resetScanStates}
+                className="w-full mt-4 bg-ar-gray-700 hover:bg-ar-gray-600 text-ar-white font-bold py-3 rounded-xl transition-all duration-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Scanning Progress Modal */}
+      {isScanning && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <motion.div
+            className="glass-card p-6 rounded-2xl max-w-md w-full text-center"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+          >
+            <div className="py-8">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-ar-blue mx-auto mb-4"></div>
+              <h2 className="text-xl font-bold mb-2">Analyzing Food...</h2>
+              <p className="text-ar-gray">Please wait while we identify your food</p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Scan Results Modal */}
+      {showScanResults && scanResults && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="glass-card p-6 rounded-2xl max-w-md w-full max-h-[80vh] overflow-y-auto"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">Scan Results</h2>
+              <button
+                onClick={resetScanStates}
+                className="p-2 hover:bg-ar-gray-700 rounded-lg transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Food Name */}
+              <div className="text-center p-4 bg-ar-dark-gray/30 rounded-xl">
+                <h3 className="text-xl font-bold text-ar-white mb-2">
+                  {scanResults.name}
+                </h3>
+                <div className="text-3xl font-bold text-ar-orange">
+                  {scanResults.calories} cal
+                </div>
+              </div>
+
+              {/* Nutritional Info */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-3 bg-ar-blue/20 rounded-xl border border-ar-blue/30">
+                  <div className="text-lg font-bold text-ar-blue">
+                    {scanResults.protein}g
+                  </div>
+                  <div className="text-sm text-ar-gray">Protein</div>
+                </div>
+                
+                <div className="text-center p-3 bg-ar-green/20 rounded-xl border border-ar-green/30">
+                  <div className="text-lg font-bold text-ar-green">
+                    {scanResults.carbohydrates}g
+                  </div>
+                  <div className="text-sm text-ar-gray">Carbs</div>
+                </div>
+                
+                <div className="text-center p-3 bg-ar-orange/20 rounded-xl border border-ar-orange/30">
+                  <div className="text-lg font-bold text-ar-orange">
+                    {scanResults.fat}g
+                  </div>
+                  <div className="text-sm text-ar-gray">Fat</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={resetScanStates}
+                className="flex-1 bg-ar-gray-700 hover:bg-ar-gray-600 text-ar-white font-bold py-3 rounded-xl transition-all duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddScannedMeal}
+                className="flex-1 bg-ar-green hover:bg-ar-green/80 text-white font-bold py-3 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <Check size={18} />
+                Add Meal
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Food Scan Modal - Legacy (keep for backward compatibility) */}
       {showFoodScanModal && (
         <motion.div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"

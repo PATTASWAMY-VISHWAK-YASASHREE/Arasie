@@ -99,6 +99,53 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
     }
   }, []);
 
+  // Stop camera and disconnect from WebSocket - Complete cleanup function
+  const stopCameraAndDisconnect = useCallback(() => {
+    console.log('🛑 Starting complete cleanup - stopping camera and disconnecting WebSocket');
+    
+    // Stop recording if active
+    if (isRecording) {
+      setIsRecording(false);
+      console.log('📹 Stopping recording');
+    }
+    
+    // Cancel animation frame if running
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+      console.log('🎬 Animation frame cancelled');
+    }
+    
+    // Stop camera and release all tracks
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach(track => {
+        track.stop();
+        console.log(`📷 Stopped ${track.kind} track`);
+      });
+      videoRef.current.srcObject = null;
+      console.log('📷 Camera stopped and video source cleared');
+    }
+    
+    // Disconnect from WebSocket
+    webSocketService.disconnect();
+    setConnectionStatus({ isConnected: false });
+    console.log('🔌 WebSocket disconnected');
+    
+    // Reset camera permission state
+    setCameraPermission('prompt');
+    // Reset states
+    setIsInitialized(false);
+    setReps(0);
+    setAngle(0);
+    setStage('');
+    setFeedback('');
+    setPoseStatus('Adjust');
+    setError(null);
+    onBack()
+    console.log('✅ Complete cleanup finished');
+  }, [isRecording]);
+
   // Initialize pose detection and websocket
   useEffect(() => {
     const initialize = async () => {
@@ -211,8 +258,7 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
     return () => {
       webSocketService.disconnect();
     };
-  }, [exerciseName, startCamera]);
-
+  }, [exerciseName, startCamera]);   
   // Process video frame
   const processFrame = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || cameraPermission !== 'granted') {
@@ -398,7 +444,7 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-ar-black/80 backdrop-blur-sm z-10">
         <button
-          onClick={onBack}
+          onClick={stopCameraAndDisconnect}
           className="flex items-center gap-2 text-ar-gray hover:text-white transition-colors"
         >
           <ArrowLeft size={24} />
@@ -531,10 +577,10 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
       </div>
 
       {/* Bottom Controls - Always accessible with proper spacing */}
-      <div className="mt-auto p-4 pb-6 bg-ar-black/90 backdrop-blur-sm border-t border-gray-800 safe-area-bottom">
+      <div className="p-4 pb-6 bg-ar-black/90 backdrop-blur-sm border-t border-gray-800 safe-area-bottom">
         <div className="flex gap-3 justify-center max-w-sm mx-auto">
           <button
-            onClick={onBack}
+            onClick={stopCameraAndDisconnect}
             className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-xl transition-colors flex-1 text-sm"
           >
             Back

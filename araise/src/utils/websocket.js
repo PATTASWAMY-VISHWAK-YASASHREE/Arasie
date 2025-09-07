@@ -17,13 +17,13 @@ class WebSocketService {
   connect(exercise = null, baseUrl = null) {
     // Determine base WebSocket URL
     const defaultBaseUrl = import.meta.env.VITE_WS_BASE_URL;
-    const wsBaseUrl = 'ws://127.0.0.1:8000'
+    const wsBaseUrl = "`wss://araise-backend-code.onrender.com"
     
     // Build complete WebSocket URL with exercise path parameter
     let wsUrl;
     if (exercise) {
       // Normalize exercise name (lowercase, spaces to hyphens)
-      const normalizedExercise = exercise.toLowerCase().replace(/\s+/g, '-');
+      const normalizedExercise = exercise.toLowerCase().replace("-","");
       wsUrl = `wss://araise-backend-code.onrender.com/ws/${normalizedExercise}`;
       this.currentExercise = normalizedExercise;
       console.log('🔗 Connecting to WebSocket URL:', wsUrl);
