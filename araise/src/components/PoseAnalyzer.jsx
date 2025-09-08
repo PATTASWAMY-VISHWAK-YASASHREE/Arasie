@@ -14,7 +14,11 @@ import {
   AlertTriangle,
   XCircle,
   Target,
-  RotateCcw
+  RotateCcw,
+  Trophy,
+  Clock,
+  RefreshCw,
+  ArrowRight
 } from 'lucide-react';
 import { poseDetectionService } from '../utils/poseDetection';
 import { webSocketService } from '../utils/websocket';
@@ -34,6 +38,9 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
   const [angle, setAngle] = useState(0);
   const [stage, setStage] = useState('');
   const [cameraPermission, setCameraPermission] = useState('prompt');
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [startTime, setStartTime] = useState(null);
+  const [timeTaken, setTimeTaken] = useState(0);
 
   // Start video feed display
   const startVideoFeed = useCallback(() => {
@@ -390,6 +397,7 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
 
     setIsRecording(true);
     setReps(0);
+    setStartTime(Date.now());
     setFeedback('Position yourself in frame and start the exercise');
     
     // Send workout start signal
@@ -403,6 +411,13 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
   const stopRecording = useCallback(() => {
     setIsRecording(false);
     
+    // Calculate time taken
+    if (startTime) {
+      const endTime = Date.now();
+      const timeTakenMs = endTime - startTime;
+      setTimeTaken(Math.round(timeTakenMs / 1000)); // Convert to seconds
+    }
+    
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
@@ -411,7 +426,80 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
     webSocketService.sendWorkoutEnd(exerciseName);
     
     setFeedback('Recording stopped. Great job!');
+  }, [exerciseName, startTime]);
+
+  // Generate feedback based on rep count
+  const generateCompletionFeedback = useCallback((repCount) => {
+    const exerciseLower = exerciseName.toLowerCase();
+    
+    if (repCount === 8) {
+      const perfectFeedbacks = [
+        `Perfect! You completed exactly 8 ${exerciseLower}s with excellent form! 🎯`,
+        `Outstanding work! 8 ${exerciseLower}s completed - that's exactly what we were aiming for! 💪`,
+        `Brilliant execution! You nailed the target of 8 ${exerciseLower}s perfectly! ⭐`,
+        `Fantastic! 8 perfect ${exerciseLower}s - your form and consistency are impressive! 🔥`
+      ];
+      return perfectFeedbacks[Math.floor(Math.random() * perfectFeedbacks.length)];
+    } else if (repCount < 8) {
+      const motivationalFeedbacks = [
+        `Great start! You completed ${repCount} ${exerciseLower}s. Every rep counts - you're building strength! 💪`,
+        `Good effort! ${repCount} ${exerciseLower}s down. Keep pushing - consistency leads to progress! 🌟`,
+        `Nice work! You did ${repCount} ${exerciseLower}s. Each workout gets you closer to your goal! 🎯`,
+        `Well done! ${repCount} ${exerciseLower}s completed. Progress over perfection - keep it up! 🚀`
+      ];
+      return motivationalFeedbacks[Math.floor(Math.random() * motivationalFeedbacks.length)];
+    } else if (repCount > 8 && repCount <= 12) {
+      const encouragingFeedbacks = [
+        `Impressive! You went above and beyond with ${repCount} ${exerciseLower}s! Your dedication shows! 🌟`,
+        `Amazing effort! ${repCount} ${exerciseLower}s - you're pushing your limits and crushing it! 🔥`,
+        `Excellent work! ${repCount} ${exerciseLower}s completed. Your strength is definitely improving! 💪`,
+        `Superb performance! ${repCount} ${exerciseLower}s - you're exceeding expectations! Keep this energy! ⚡`
+      ];
+      return encouragingFeedbacks[Math.floor(Math.random() * encouragingFeedbacks.length)];
+    } else {
+      const cautionaryFeedbacks = [
+        `Wow! ${repCount} ${exerciseLower}s is incredible endurance! Remember to focus on form over quantity. 💯`,
+        `Outstanding stamina! ${repCount} ${exerciseLower}s completed! Make sure to rest and recover properly. 🏆`,
+        `Phenomenal effort! ${repCount} ${exerciseLower}s shows great determination! Quality over quantity is key. 🎯`,
+        `Exceptional work! ${repCount} ${exerciseLower}s is impressive! Remember to listen to your body. 🌟`
+      ];
+      return cautionaryFeedbacks[Math.floor(Math.random() * cautionaryFeedbacks.length)];
+    }
   }, [exerciseName]);
+
+  // Format time taken for display
+  const formatTime = useCallback((seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  }, []);
+
+  // Handle exercise completion
+  const handleCompleteWorkout = useCallback(() => {
+    // Stop recording if still active
+    if (isRecording) {
+      stopRecording();
+    }
+    
+    // Show completion modal
+    setShowCompletionModal(true);
+  }, [isRecording, stopRecording]);
+
+  // Continue exercise (restart)
+  const handleContinueExercise = useCallback(() => {
+    setShowCompletionModal(false);
+    setReps(0);
+    setTimeTaken(0);
+    setStartTime(null);
+    setFeedback('Ready to continue! Position yourself and start when ready.');
+  }, []);
+
+  // Move to next exercise
+  const handleNextExercise = useCallback(() => {
+    setShowCompletionModal(false);
+    stopCameraAndDisconnect();
+    onComplete();
+  }, [stopCameraAndDisconnect, onComplete]);
 
   
   // Start video processing when camera is granted
@@ -738,7 +826,7 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
 
           {reps > 0 && (
             <button
-              onClick={() => { stopCameraAndDisconnect(); onComplete(); }}
+              onClick={handleCompleteWorkout}
               className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition-colors flex-1 text-sm"
             >
               Complete
@@ -746,6 +834,138 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
           )}
         </div>
       </div>
+
+      {/* Completion Modal */}
+      {showCompletionModal && (
+        <motion.div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-ar-black/90 backdrop-blur-md rounded-2xl p-6 sm:p-8 mx-4 max-w-md w-full border border-ar-blue/20 max-h-[80vh] overflow-y-auto"
+            initial={{ scale: 0.8, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: 20 }}
+            transition={{ type: "spring", duration: 0.5 }}
+          >
+            <div className="text-center">
+              {/* Trophy Icon */}
+              <motion.div
+                className="relative w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.2, type: "spring", duration: 0.8 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                  <Trophy size={40} className="text-white sm:w-12 sm:h-12" />
+                </div>
+                <motion.div
+                  className="absolute -inset-2 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 rounded-full"
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    opacity: [0.5, 0.8, 0.5]
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              </motion.div>
+
+              {/* Title */}
+              <motion.h2
+                className="text-2xl sm:text-3xl font-bold text-white mb-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                Workout Complete! 🎉
+              </motion.h2>
+
+              {/* Exercise Name */}
+              <motion.p
+                className="text-ar-gray-300 text-lg sm:text-xl mb-6 capitalize"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                {exerciseName}
+              </motion.p>
+
+              {/* Stats */}
+              <motion.div
+                className="grid grid-cols-2 gap-4 mb-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                {/* Reps */}
+                <div className="bg-ar-blue/20 rounded-xl p-4 border border-ar-blue/30">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Activity size={20} className="text-ar-blue" />
+                    <span className="text-ar-gray-400 text-sm font-medium">Reps</span>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-bold text-ar-blue">
+                    {reps}
+                  </div>
+                </div>
+
+                {/* Time */}
+                <div className="bg-ar-green/20 rounded-xl p-4 border border-ar-green/30">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <Clock size={20} className="text-ar-green" />
+                    <span className="text-ar-gray-400 text-sm font-medium">Time</span>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-bold text-ar-green">
+                    {formatTime(timeTaken)}
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Feedback */}
+              <motion.div
+                className="bg-ar-violet/20 rounded-xl p-4 mb-6 border border-ar-violet/30"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <p className="text-white text-sm sm:text-base leading-relaxed">
+                  {generateCompletionFeedback(reps)}
+                </p>
+              </motion.div>
+
+              {/* Action Buttons */}
+              <motion.div
+                className="space-y-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                {/* Continue Exercise Button */}
+                <button
+                  onClick={handleContinueExercise}
+                  className="w-full bg-ar-blue hover:bg-ar-blue/80 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
+                >
+                  <RefreshCw size={20} />
+                  <span>Continue Exercise</span>
+                </button>
+
+                {/* Move to Next Exercise Button */}
+                <button
+                  onClick={handleNextExercise}
+                  className="w-full bg-gradient-to-r from-ar-violet to-ar-blue hover:from-ar-violet/80 hover:to-ar-blue/80 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
+                >
+                  <span>Move to Next Exercise</span>
+                  <ArrowRight size={20} />
+                </button>
+              </motion.div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 };
