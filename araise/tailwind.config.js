@@ -31,6 +31,9 @@ export default {
         'ar-orange': '#F59E0B',
         'ar-red': '#EF4444',
         'ar-purple': '#8B5CF6',
+        'ar-violet': '#8B5CF6',
+        'ar-dark-gray': '#2D2D2D',
+        'ar-gray': '#9CA3AF',
         
         // Status colors
         'ar-success': '#10B981',
@@ -66,6 +69,10 @@ export default {
         'button': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
         'button-hover': '0 2px 4px 0 rgba(0, 0, 0, 0.1)',
         'inner': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)',
+        'glow-blue': '0 0 20px rgba(59, 130, 246, 0.5)',
+        'glow-green': '0 0 20px rgba(16, 185, 129, 0.5)',
+        'glow-violet': '0 0 20px rgba(139, 92, 246, 0.5)',
+        'glow-orange': '0 0 20px rgba(245, 158, 11, 0.5)',
       },
       fontFamily: {
         inter: ['Inter', 'sans-serif'],

@@ -1,240 +1,373 @@
 import { Routes, Route, useNavigate, useParams } from "react-router-dom"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { 
-  Dumbbell, 
-  Target, 
-  Zap, 
-  Play, 
-  CheckCircle, 
-  Camera, 
-  ArrowLeft, 
+import {
+  Dumbbell,
+  Target,
+  CheckCircle,
+  Camera,
+  ArrowLeft,
   Clock,
   Flame,
   Trophy,
-  Star
+  Sparkles,
+  Plus,
+  Heart
 } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import PoseAnalyzer from "../components/PoseAnalyzer"
+import WorkoutHub from "../components/workout/WorkoutHub"
+import CategorySelection from "../components/workout/CategorySelection"
+import SplitDetail from "../components/workout/SplitDetail"
+import WorkoutSession from "../components/workout/WorkoutSession"
+import { exerciseLibrary } from "../data/workoutData"
 
-// Mock workout data
-const workoutPlans = {
-  beginner: [
-    {
-      id: 'beginner-1',
-      title: 'Basic Strength',
-      duration: '20 mins',
-      calories: '150 cal',
-      description: 'Perfect for getting started with strength training',
-      exercises: [
-        { id: 1, name: 'Biceps', reps: '3 sets × 8-12 reps', description: 'Classic upper body exercise' },
-        { id: 2, name: 'Squats', reps: '3 sets × 10-15 reps', description: 'Great for leg strength' },
-        { id: 3, name: 'Push-ups', reps: '3 sets × 30 seconds', description: 'Core stability exercise' },
-        { id: 4, name: 'Plank', reps: '3 sets × 8 each leg', description: 'Single leg strength' }
-      ]
-    },
-    {
-      id: 'beginner-2',
-      title: 'Cardio Basics',
-      duration: '15 mins',
-      calories: '120 cal',
-      description: 'Light cardio to build endurance',
-      exercises: [
-        { id: 1, name: 'Jumping Jacks', reps: '3 sets × 30 seconds', description: 'Full body warm-up' },
-        { id: 2, name: 'High Knees', reps: '3 sets × 20 reps', description: 'Cardio movement' },
-        { id: 3, name: 'Butt Kicks', reps: '3 sets × 20 reps', description: 'Dynamic warm-up' },
-        { id: 4, name: 'Mountain Climbers', reps: '3 sets × 15 reps', description: 'Core and cardio' }
-      ]
-    }
-  ],
-  intermediate: [
-    {
-      id: 'intermediate-1',
-      title: 'Upper Body Power',
-      duration: '30 mins',
-      calories: '250 cal',
-      description: 'Build upper body strength and endurance',
-      exercises: [
-        { id: 1, name: 'Pike Push-ups', reps: '4 sets × 8-12 reps', description: 'Shoulder focused push-up' },
-        { id: 2, name: 'Diamond Push-ups', reps: '3 sets × 6-10 reps', description: 'Tricep emphasis' },
-        { id: 3, name: 'Burpees', reps: '3 sets × 8-12 reps', description: 'Full body exercise' },
-        { id: 4, name: 'Plank to Push-up', reps: '3 sets × 8 reps', description: 'Dynamic core and arms' }
-      ]
-    }
-  ],
-  advanced: [
-    {
-      id: 'advanced-1',
-      title: 'Elite Training',
-      duration: '45 mins',
-      calories: '400 cal',
-      description: 'High-intensity training for peak performance',
-      exercises: [
-        { id: 1, name: 'One-Arm Push-ups', reps: '3 sets × 5 each arm', description: 'Advanced upper body' },
-        { id: 2, name: 'Pistol Squats', reps: '3 sets × 8 each leg', description: 'Single leg squat' },
-        { id: 3, name: 'Handstand Hold', reps: '3 sets × 30 seconds', description: 'Balance and strength' },
-        { id: 4, name: 'Muscle-ups', reps: '3 sets × 5 reps', description: 'Advanced pull exercise' }
-      ]
-    }
-  ]
-}
-
-// Level Selection Component
-function LevelSelection() {
+// Form Analyzer Component
+function FormAnalyzer() {
+  const { category, splitId, dayId, exerciseId, exerciseName } = useParams()
   const navigate = useNavigate()
-  
-  const levels = [
-    {
-      level: 'beginner',
-      title: 'Beginner',
-      description: 'Perfect for those just starting their fitness journey',
-      color: 'green',
-      icon: '🌱'
-    },
-    {
-      level: 'intermediate',
-      title: 'Intermediate',
-      description: 'Ready to challenge yourself with moderate intensity',
-      color: 'blue',
-      icon: '💪'
-    },
-    {
-      level: 'advanced',
-      title: 'Advanced',
-      description: 'High-intensity workouts for experienced athletes',
-      color: 'violet',
-      icon: '🔥'
-    }
-  ]
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <motion.div
-        className="text-center"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">Choose Your Level</h1>
-        <p className="text-ar-gray text-lg">
-          Select your fitness level to get personalized workouts
-        </p>
-      </motion.div>
+  const handleBack = () => {
+    const sessionPath = dayId
+      ? `/workout/${category}/${splitId}/${dayId}/session`
+      : `/workout/${category}/${splitId}/session`
+    navigate(sessionPath)
+  }
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {levels.map((level, index) => (
-          <motion.div
-            key={level.level}
-            className="glass-card p-6 rounded-2xl cursor-pointer hover:border-ar-blue/50 transition-all duration-300 hover:shadow-glow-blue group"
-            onClick={() => navigate(`/workout/${level.level}`)}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: index * 0.2 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <div className="text-center">
-              <div className="text-4xl mb-4">
-                {level.icon}
-              </div>
-              <h3 className="text-2xl font-bold mb-4 text-ar-white">
-                {level.title}
-              </h3>
-              <p className="text-ar-gray mb-6">
-                {level.description}
-              </p>
-              <button 
-                className={`
-                  w-full font-bold py-3 rounded-xl transition-all duration-300
-                  bg-white/10 backdrop-blur-sm border border-white/20 text-white
-                  hover:bg-white/20 hover:border-white/30 hover:shadow-lg
-                  ${level.color === 'green' ? 'hover:shadow-glow-green' : 
-                    level.color === 'blue' ? 'hover:shadow-glow-blue' :
-                    'hover:shadow-glow-violet'}
-                `}
-              >
-                View Plans
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Plans List Component
-function PlansList() {
-  const { level } = useParams()
-  const navigate = useNavigate()
-  const plans = workoutPlans[level] || []
-
-  return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <motion.div
-        className="flex items-center gap-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <button
-          onClick={() => navigate('/workout')}
-          className="p-2 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300"
-        >
-          <ArrowLeft size={24} className="text-ar-blue" />
-        </button>
-        <div>
-          <h1 className="text-4xl font-bold capitalize">{level} Workouts</h1>
-          <p className="text-ar-gray">Choose a workout plan to get started</p>
-        </div>
-      </motion.div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {plans.map((plan, index) => (
-          <motion.div
-            key={plan.id}
-            className="glass-card p-6 rounded-2xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: index * 0.2 }}
-          >
-            <h3 className="text-2xl font-bold mb-4">{plan.title}</h3>
-            <div className="flex gap-4 mb-4">
-              <div className="flex items-center gap-2 text-ar-blue">
-                <Clock size={16} />
-                <span className="text-sm">{plan.duration}</span>
-              </div>
-              <div className="flex items-center gap-2 text-ar-violet">
-                <Zap size={16} />
-                <span className="text-sm">{plan.calories}</span>
-              </div>
-            </div>
-            <p className="text-ar-gray mb-6">{plan.description}</p>
-            <button
-              onClick={() => navigate(`/workout/${level}/${plan.id}`)}
-              className="w-full bg-ar-blue hover:bg-ar-blue/80 text-white font-bold py-3 rounded-xl transition-all duration-300 hover:shadow-glow-blue"
-            >
-              View Details
-            </button>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Plan Detail Component
-function PlanDetail() {
-  const { level, planId } = useParams()
-  const navigate = useNavigate()
-  const plan = workoutPlans[level]?.find(p => p.id === planId)
-
-  if (!plan) {
-    return <div className="text-center text-ar-gray">Plan not found</div>
+  const handleComplete = () => {
+    const sessionPath = dayId
+      ? `/workout/${category}/${splitId}/${dayId}/session`
+      : `/workout/${category}/${splitId}/session`
+    navigate(sessionPath)
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="fixed inset-0 bg-ar-black flex flex-col md:pl-[280px] h-full">
+      <div className="p-6 flex-1">
+        <PoseAnalyzer
+          exerciseName={exerciseName}
+          category={category}
+          splitId={splitId}
+          dayId={dayId}
+          onComplete={handleComplete}
+          onBack={handleBack}
+        />
+      </div>
+    </div>
+  )
+}
+
+// Workout Complete Component with Enhanced Animations
+function WorkoutComplete() {
+  const { category, splitId, dayId } = useParams()
+  const navigate = useNavigate()
+  const { setWorkoutCompleted } = useUserStore()
+  const [showConfetti, setShowConfetti] = useState(true)
+
+  const getCompletionData = () => {
+    // This would normally fetch from workoutData, but for now we'll use placeholder
+    return {
+      name: dayId ? `${splitId} - ${dayId}` : splitId,
+      type: category === 'gym' ? 'Strength' : category === 'calisthenics' ? 'Bodyweight' : 'Flexibility',
+      duration: '30 mins',
+      category
+    }
+  }
+
+  const completionData = getCompletionData()
+
+  useEffect(() => {
+    // Mark workout as completed
+    const markCompleted = async () => {
+      await setWorkoutCompleted({
+        category,
+        splitId,
+        dayId,
+        name: completionData?.name,
+        type: completionData?.type,
+        duration: completionData?.duration
+      })
+    }
+    if (completionData) {
+      markCompleted()
+    }
+  }, [setWorkoutCompleted, category, splitId, dayId, completionData])
+
+  useEffect(() => {
+    // Hide confetti after animation
+    const timer = setTimeout(() => setShowConfetti(false), 3000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (!completionData) {
+    return <div className="text-center text-ar-gray">Session not found</div>
+  }
+
+  const getAnimationByCategory = () => {
+    switch (category) {
+      case 'gym':
+      case 'calisthenics':
+        return {
+          emoji: '🎉',
+          title: 'Workout Complete!',
+          color: 'blue',
+          animation: 'confetti'
+        }
+      case 'stretching':
+        return {
+          emoji: '🧘‍♀️',
+          title: 'Session Complete!',
+          color: 'green',
+          animation: 'breathing'
+        }
+      default:
+        return {
+          emoji: '✨',
+          title: 'Complete!',
+          color: 'violet',
+          animation: 'sparkle'
+        }
+    }
+  }
+
+  const animationData = getAnimationByCategory()
+
+  const getCompletionColorClasses = () => {
+    switch (animationData.color) {
+      case 'green':
+        return {
+          text: 'text-ar-green',
+          bg: 'bg-ar-green',
+          bgLight: 'bg-ar-green/20',
+          border: 'border-ar-green/50',
+          hover: 'hover:bg-ar-green/80',
+          shadow: 'hover:shadow-glow-green'
+        }
+      case 'violet':
+        return {
+          text: 'text-ar-violet',
+          bg: 'bg-ar-violet',
+          bgLight: 'bg-ar-violet/20',
+          border: 'border-ar-violet/50',
+          hover: 'hover:bg-ar-violet/80',
+          shadow: 'hover:shadow-glow-violet'
+        }
+      default:
+        return {
+          text: 'text-ar-blue',
+          bg: 'bg-ar-blue',
+          bgLight: 'bg-ar-blue/20',
+          border: 'border-ar-blue/50',
+          hover: 'hover:bg-ar-blue/80',
+          shadow: 'hover:shadow-glow-blue'
+        }
+    }
+  }
+
+  const colors = getCompletionColorClasses()
+
+  return (
+    <div className="max-w-2xl mx-auto text-center space-y-8">
+      {/* Confetti Effect */}
+      {showConfetti && animationData.animation === 'confetti' && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          {[...Array(50)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 bg-ar-blue rounded-full"
+              initial={{
+                x: Math.random() * window.innerWidth,
+                y: -10,
+                rotate: 0
+              }}
+              animate={{
+                y: window.innerHeight + 10,
+                rotate: 360,
+                x: Math.random() * window.innerWidth
+              }}
+              transition={{
+                duration: 3,
+                delay: Math.random() * 2,
+                ease: "easeOut"
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      <motion.div
+        className="glass-card p-8 rounded-2xl relative overflow-hidden"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
+      >
+        {/* Plant Growth Animation for Streaks */}
+        <motion.div
+          className="absolute top-4 right-4"
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ delay: 1, duration: 0.8, type: "spring" }}
+        >
+          <div className="text-2xl">🌱</div>
+        </motion.div>
+
+        {/* Main Success Animation */}
+        <motion.div
+          className="text-8xl mb-6"
+          animate={
+            animationData.animation === 'breathing'
+              ? { scale: [1, 1.1, 1] }
+              : animationData.animation === 'sparkle'
+                ? { scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] }
+                : { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }
+          }
+          transition={{
+            duration: animationData.animation === 'breathing' ? 4 : 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
+          {animationData.emoji}
+        </motion.div>
+
+        <h1 className="text-4xl font-bold mb-4">{animationData.title}</h1>
+        <p className="text-ar-gray text-lg mb-8">
+          Excellent work completing {completionData.name}
+        </p>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Clock size={20} className={colors.text} />
+              <span className="font-bold">Duration</span>
+            </div>
+            <div className={`text-2xl font-bold ${colors.text}`}>
+              {completionData.duration}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Target size={20} className="text-ar-violet" />
+              <span className="font-bold">Type</span>
+            </div>
+            <div className="text-2xl font-bold text-ar-violet">
+              {completionData.type}
+            </div>
+          </div>
+          <div className="text-center md:col-span-1 col-span-2">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Sparkles size={20} className="text-green-400" />
+              <span className="font-bold">XP Gained</span>
+            </div>
+            <div className="text-2xl font-bold text-green-400">
+              +{category === 'gym' || category === 'calisthenics' ? '50' : '25'}
+            </div>
+          </div>
+        </div>
+
+        {/* Achievement Notifications */}
+        <div className="space-y-4 mb-8">
+          <motion.div
+            className={`${colors.bgLight} ${colors.border} border rounded-xl p-4`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Flame size={24} className={colors.text} />
+              <span className={`font-bold ${colors.text}`}>Streak Updated!</span>
+            </div>
+            <p className="text-ar-gray text-sm">
+              Keep going to maintain your fitness streak
+            </p>
+          </motion.div>
+
+          {/* Wellness Score Update for Stretching & Yoga */}
+          {category === 'stretching' && (
+            <motion.div
+              className="bg-green-500/20 border border-green-500/50 rounded-xl p-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Heart size={24} className="text-green-400" />
+                <span className="font-bold text-green-400">Wellness Score +10</span>
+              </div>
+              <p className="text-ar-gray text-sm">
+                Your mindfulness and flexibility improved
+              </p>
+            </motion.div>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className={`flex-1 ${colors.bg} ${colors.hover} text-white font-bold py-4 rounded-xl transition-all duration-300 ${colors.shadow} text-lg`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Trophy size={20} />
+              Dashboard
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/workout')}
+            className="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-4 rounded-xl transition-all duration-300 border border-white/20 hover:border-white/30"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Dumbbell size={20} />
+              More Workouts
+            </div>
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+// Custom Workout Builder Component
+function CustomWorkoutBuilder() {
+  const navigate = useNavigate()
+  const { saveCustomWorkout } = useUserStore()
+  const [workoutName, setWorkoutName] = useState('')
+  const [workoutGoal, setWorkoutGoal] = useState('')
+  const [selectedExercises, setSelectedExercises] = useState([])
+  const [currentCategory, setCurrentCategory] = useState('gym')
+  const [isSaving, setIsSaving] = useState(false)
+
+  const addExercise = (exercise) => {
+    setSelectedExercises([...selectedExercises, { ...exercise, id: Date.now() }])
+  }
+
+  const removeExercise = (id) => {
+    setSelectedExercises(selectedExercises.filter(ex => ex.id !== id))
+  }
+
+  const saveWorkout = async () => {
+    if (!workoutName || selectedExercises.length === 0) return
+
+    setIsSaving(true)
+    try {
+      await saveCustomWorkout({
+        name: workoutName,
+        goal: workoutGoal,
+        exercises: selectedExercises
+      })
+
+      navigate('/workout/custom/my-workouts')
+    } catch (error) {
+      console.error('Error saving workout:', error)
+      // Could add toast notification here
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8">
       <motion.div
         className="flex items-center gap-4"
         initial={{ opacity: 0, y: -20 }}
@@ -242,102 +375,314 @@ function PlanDetail() {
         transition={{ duration: 0.6 }}
       >
         <button
-          onClick={() => navigate(`/workout/${level}`)}
+          onClick={() => navigate('/workout/custom')}
           className="p-2 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300"
         >
           <ArrowLeft size={24} className="text-ar-blue" />
         </button>
         <div>
-          <h1 className="text-4xl font-bold">{plan.title}</h1>
-          <div className="flex gap-4 mt-2">
-            <div className="flex items-center gap-2 text-ar-blue">
-              <Clock size={16} />
-              <span>{plan.duration}</span>
-            </div>
-            <div className="flex items-center gap-2 text-ar-violet">
-              <Zap size={16} />
-              <span>{plan.calories}</span>
-            </div>
-          </div>
+          <h1 className="text-4xl font-bold">Custom Workout Builder</h1>
+          <p className="text-ar-gray">Create your personalized training routine</p>
         </div>
       </motion.div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Workout Setup */}
+        <motion.div
+          className="glass-card p-6 rounded-2xl"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <h3 className="text-xl font-bold mb-4">Workout Details</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Workout Name</label>
+              <input
+                type="text"
+                value={workoutName}
+                onChange={(e) => setWorkoutName(e.target.value)}
+                className="w-full p-3 bg-ar-dark-gray/50 border border-ar-blue/30 rounded-xl text-white placeholder-ar-gray focus:border-ar-blue focus:outline-none"
+                placeholder="My Custom Workout"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Goal</label>
+              <select
+                value={workoutGoal}
+                onChange={(e) => setWorkoutGoal(e.target.value)}
+                className="w-full p-3 bg-ar-dark-gray/50 border border-ar-blue/30 rounded-xl text-white focus:border-ar-blue focus:outline-none"
+              >
+                <option value="">Select Goal</option>
+                <option value="strength">Strength</option>
+                <option value="hypertrophy">Hypertrophy</option>
+                <option value="endurance">Endurance</option>
+                <option value="flexibility">Flexibility</option>
+                <option value="mixed">Mixed Training</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Selected Exercises */}
+          <div className="mt-6">
+            <h4 className="font-bold mb-3">Selected Exercises ({selectedExercises.length})</h4>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {selectedExercises.map((exercise, index) => (
+                <div key={exercise.id} className="flex items-center justify-between p-2 bg-ar-dark-gray/30 rounded-lg">
+                  <div>
+                    <span className="text-sm font-medium">{index + 1}. {exercise.name}</span>
+                    <div className="text-xs text-ar-gray">
+                      {exercise.sets ? `${exercise.sets} sets × ${exercise.reps}` : exercise.duration}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeExercise(exercise.id)}
+                    className="text-red-400 hover:text-red-300 p-1"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={saveWorkout}
+            disabled={!workoutName || selectedExercises.length === 0 || isSaving}
+            className="w-full mt-6 bg-ar-violet hover:bg-ar-violet/80 disabled:bg-ar-gray disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all duration-300"
+          >
+            {isSaving ? 'Saving...' : 'Save Workout'}
+          </button>
+        </motion.div>
+
+        {/* Exercise Library */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Category Tabs */}
+          <div className="flex gap-2 overflow-x-auto">
+            {Object.keys(exerciseLibrary).map((category) => (
+              <button
+                key={category}
+                onClick={() => setCurrentCategory(category)}
+                className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 whitespace-nowrap ${currentCategory === category
+                    ? 'bg-ar-blue text-white'
+                    : 'bg-white/10 text-ar-gray hover:bg-white/20'
+                  }`}
+              >
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {/* Exercise Grid */}
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            key={currentCategory}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {exerciseLibrary[currentCategory].map((exercise) => (
+              <div key={exercise.id} className="glass-card p-4 rounded-xl">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h4 className="font-bold">{exercise.name}</h4>
+                    <p className="text-sm text-ar-gray">
+                      {exercise.sets ? `${exercise.sets} sets × ${exercise.reps}` : exercise.duration}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => addExercise(exercise)}
+                    className="bg-ar-blue/20 hover:bg-ar-blue/30 text-ar-blue p-2 rounded-lg transition-all duration-300"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+                {exercise.pose_analyzer && (
+                  <div className="flex items-center gap-2 text-ar-violet text-xs">
+                    <Camera size={12} />
+                    <span>AI Form Analysis</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// My Custom Workouts Component
+function MyCustomWorkouts() {
+  const navigate = useNavigate()
+  const { customWorkouts, loadCustomWorkouts, deleteCustomWorkout } = useUserStore()
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const loadWorkouts = async () => {
+      setIsLoading(true)
+      try {
+        await loadCustomWorkouts()
+      } catch (error) {
+        console.error('Error loading workouts:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    loadWorkouts()
+  }, [loadCustomWorkouts])
+
+  const handleDeleteWorkout = async (id) => {
+    try {
+      await deleteCustomWorkout(id)
+    } catch (error) {
+      console.error('Error deleting workout:', error)
+      // Could add toast notification here
+    }
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8">
       <motion.div
-        className="glass-card p-6 rounded-2xl"
-        initial={{ opacity: 0, y: 20 }}
+        className="flex items-center gap-4"
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
+        transition={{ duration: 0.6 }}
       >
-        <h2 className="text-2xl font-bold mb-6">Exercises</h2>
-        <div className="space-y-4">
-          {plan.exercises.map((exercise, index) => (
+        <button
+          onClick={() => navigate('/workout/custom')}
+          className="p-2 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300"
+        >
+          <ArrowLeft size={24} className="text-ar-blue" />
+        </button>
+        <div>
+          <h1 className="text-4xl font-bold">My Workouts</h1>
+          <p className="text-ar-gray">Your custom created workouts</p>
+        </div>
+      </motion.div>
+
+      {isLoading ? (
+        <motion.div
+          className="glass-card p-8 rounded-2xl text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="text-4xl mb-4">⏳</div>
+          <h3 className="text-xl font-bold mb-4">Loading Workouts...</h3>
+        </motion.div>
+      ) : customWorkouts.length === 0 ? (
+        <motion.div
+          className="glass-card p-8 rounded-2xl text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="text-4xl mb-4">💪</div>
+          <h3 className="text-xl font-bold mb-4">No Custom Workouts Yet</h3>
+          <p className="text-ar-gray mb-6">Create your first custom workout to get started</p>
+          <button
+            onClick={() => navigate('/workout/custom/builder')}
+            className="bg-ar-violet hover:bg-ar-violet/80 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300"
+          >
+            Create Workout
+          </button>
+        </motion.div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {customWorkouts.map((workout, index) => (
             <motion.div
-              key={exercise.id}
-              className="p-4 bg-ar-dark-gray/30 rounded-xl border border-ar-blue/20"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
+              key={workout.id}
+              className="glass-card p-6 rounded-2xl"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-ar-white mb-2">
-                    {index + 1}. {exercise.name}
-                  </h3>
-                  <p className="text-ar-blue font-medium mb-1">
-                    {exercise.reps}
-                  </p>
-                  <p className="text-ar-gray text-sm">
-                    {exercise.description}
-                  </p>
-                </div>
-                <div className="w-16 h-16 bg-ar-blue/20 rounded-lg flex items-center justify-center">
-                  <Dumbbell className="text-ar-blue" size={24} />
-                </div>
+              <h3 className="text-xl font-bold mb-2">{workout.name}</h3>
+              <p className="text-ar-blue text-sm mb-4">{workout.goal}</p>
+              <p className="text-ar-gray text-sm mb-4">
+                {workout.exercises.length} exercises
+              </p>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate(`/workout/custom/${workout.id}/session`)}
+                  className="flex-1 bg-ar-blue hover:bg-ar-blue/80 text-white font-bold py-2 rounded-lg transition-all duration-300"
+                >
+                  Start
+                </button>
+                <button
+                  onClick={() => handleDeleteWorkout(workout.id)}
+                  className="bg-red-500/20 hover:bg-red-500/30 text-red-400 p-2 rounded-lg transition-all duration-300"
+                >
+                  🗑️
+                </button>
               </div>
             </motion.div>
           ))}
         </div>
-
-        <motion.button
-          onClick={() => navigate(`/workout/${level}/${planId}/session`)}
-          className="w-full bg-ar-blue hover:bg-ar-blue/80 text-white font-bold py-4 rounded-xl mt-8 transition-all duration-300 hover:shadow-glow-blue text-lg"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <Play size={20} />
-            Begin Workout
-          </div>
-        </motion.button>
-      </motion.div>
+      )}
     </div>
   )
 }
 
-// Workout Session Component
-function WorkoutSession() {
-  const { level, planId } = useParams()
+// Custom Workout Session Component
+function CustomWorkoutSession() {
+  const { workoutId } = useParams()
   const navigate = useNavigate()
+  const { customWorkouts, loadCustomWorkouts } = useUserStore()
   const [currentExercise, setCurrentExercise] = useState(0)
-  const plan = workoutPlans[level]?.find(p => p.id === planId)
+  const [workout, setWorkout] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  if (!plan) {
-    return <div className="text-center text-ar-gray">Plan not found</div>
+  useEffect(() => {
+    const loadWorkout = async () => {
+      setIsLoading(true)
+      try {
+        await loadCustomWorkouts()
+        const foundWorkout = customWorkouts.find(w => w.id === parseInt(workoutId))
+        setWorkout(foundWorkout)
+      } catch (error) {
+        console.error('Error loading workout:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    loadWorkout()
+  }, [workoutId, loadCustomWorkouts])
+
+  // Also check when customWorkouts updates
+  useEffect(() => {
+    if (customWorkouts.length > 0) {
+      const foundWorkout = customWorkouts.find(w => w.id === parseInt(workoutId))
+      setWorkout(foundWorkout)
+      setIsLoading(false)
+    }
+  }, [customWorkouts, workoutId])
+
+  if (isLoading) {
+    return <div className="text-center text-ar-gray">Loading workout...</div>
   }
 
-  const exercise = plan.exercises[currentExercise]
-  const isLastExercise = currentExercise === plan.exercises.length - 1
+  if (!workout) {
+    return <div className="text-center text-ar-gray">Workout not found</div>
+  }
+
+  const exercise = workout.exercises[currentExercise]
+  const isLastExercise = currentExercise === workout.exercises.length - 1
 
   const handleNext = () => {
     if (isLastExercise) {
-      navigate(`/workout/${level}/${planId}/complete`)
+      navigate(`/workout/custom/${workoutId}/complete`)
     } else {
       setCurrentExercise(currentExercise + 1)
     }
   }
 
   const handleAnalyzer = () => {
-    navigate(`/workout/${level}/${planId}/session/${exercise.id}/analyzer/${exercise.name}`)
+    navigate(`/workout/custom/${workoutId}/session/${exercise.id}/analyzer/${exercise.name}`)
   }
 
   return (
@@ -351,15 +696,15 @@ function WorkoutSession() {
       >
         <div className="flex justify-between items-center mb-1 md:mb-2">
           <span className="text-ar-gray">Progress</span>
-          <span className="text-ar-blue font-bold">
-            {currentExercise + 1} / {plan.exercises.length}
+          <span className="text-ar-violet font-bold">
+            {currentExercise + 1} / {workout.exercises.length}
           </span>
         </div>
         <div className="w-full bg-ar-dark-gray rounded-full h-3">
           <motion.div
-            className="bg-ar-blue h-3 rounded-full"
+            className="bg-ar-violet h-3 rounded-full"
             initial={{ width: 0 }}
-            animate={{ width: `${((currentExercise + 1) / plan.exercises.length) * 100}%` }}
+            animate={{ width: `${((currentExercise + 1) / workout.exercises.length) * 100}%` }}
             transition={{ duration: 0.5 }}
           />
         </div>
@@ -373,54 +718,47 @@ function WorkoutSession() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Exercise Video */}
-        <div className="w-64 h-96 md:w-72 md:h-[28rem] mx-auto mb-3 md:mb-4 bg-ar-blue/20 rounded-2xl overflow-hidden">
-          {exercise.name === 'Biceps' ? (
-            <video
-              src="/videos/biceps.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover rounded-2xl"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <motion.div
-                animate={{ 
-                  scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0] 
-                }}
-                transition={{ 
-                  duration: 2, 
-                  repeat: Infinity,
-                  ease: "easeInOut" 
-                }}
-              >
-                <Dumbbell className="text-ar-blue" size={64} />
-              </motion.div>
-            </div>
-          )}
+        {/* Exercise Animation */}
+        <div className="w-64 h-96 md:w-72 md:h-[28rem] mx-auto mb-3 md:mb-4 bg-ar-violet/20 rounded-2xl overflow-hidden">
+          <div className="w-full h-full flex items-center justify-center">
+            <motion.div
+              animate={{
+                scale: [1, 1.1, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <Sparkles className="text-ar-violet" size={64} />
+            </motion.div>
+          </div>
         </div>
 
         <h2 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">{exercise.name}</h2>
-        <p className="text-ar-blue text-lg md:text-xl font-bold mb-1">{exercise.reps}</p>
-        <p className="text-ar-gray mb-3 md:mb-4">{exercise.description}</p>
+        <p className="text-ar-violet text-lg md:text-xl font-bold mb-1">
+          {exercise.sets ? `${exercise.sets} sets × ${exercise.reps} reps` : exercise.duration}
+        </p>
+        <p className="text-ar-gray mb-3 md:mb-4">Custom Exercise</p>
 
         <div className="flex flex-col gap-2 md:gap-3 justify-center px-4 md:px-0">
-          <button
-            onClick={handleAnalyzer}
-            className="w-full bg-ar-violet hover:bg-ar-violet/80 text-white font-bold py-3 md:py-4 rounded-xl transition-all duration-300 hover:shadow-glow-violet"
-          >
-            <div className="flex items-center justify-center gap-2">
-              <Camera size={18} className="md:w-5 md:h-5" />
-              <span className="text-sm md:text-base">Form Analyzer</span>
-            </div>
-          </button>
-          
+          {exercise.pose_analyzer && (
+            <button
+              onClick={handleAnalyzer}
+              className="w-full bg-ar-blue hover:bg-ar-blue/80 text-white font-bold py-3 md:py-4 rounded-xl transition-all duration-300 hover:shadow-glow-blue"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Camera size={18} className="md:w-5 md:h-5" />
+                <span className="text-sm md:text-base">Form Analyzer</span>
+              </div>
+            </button>
+          )}
+
           <button
             onClick={handleNext}
-            className="w-full bg-ar-blue hover:bg-ar-blue/80 text-white font-bold py-3 md:py-4 rounded-xl transition-all duration-300 hover:shadow-glow-blue"
+            className="w-full bg-ar-violet hover:bg-ar-violet/80 text-white font-bold py-3 md:py-4 rounded-xl transition-all duration-300 hover:shadow-glow-violet"
           >
             <div className="flex items-center justify-center gap-2">
               <CheckCircle size={18} className="md:w-5 md:h-5" />
@@ -435,64 +773,57 @@ function WorkoutSession() {
   )
 }
 
-// Form Analyzer Component
-function FormAnalyzer() {
-  const { level, planId, exerciseId, exerciseName } = useParams()
+// Custom Workout Complete Component
+function CustomWorkoutComplete() {
+  const { workoutId } = useParams()
   const navigate = useNavigate()
-
-  const plan = workoutPlans[level]?.find(p => p.id === planId)
-  const exercise = plan?.exercises.find(e => e.id === parseInt(exerciseId))
-
-  const handleBack = () => {
-    navigate(`/workout/${level}/${planId}/session`)
-  }
-  
-  const handleComplete = () => {
-    navigate(`/workout/${level}/${planId}/session`)
-  }
-
-  if (!exercise) {
-    return <div className="text-center text-ar-gray-400">Exercise not found</div>
-  }
-
-  return (
-    <div className="fixed inset-0 bg-ar-black flex flex-col md:pl-[280px] h-full">
-      <div className="p-6 flex-1">
-        <PoseAnalyzer
-          exerciseName={exerciseName}
-          planId={planId}
-          level={level}
-          onComplete={handleComplete}
-          onBack={handleBack}
-        />
-      </div>
-    </div>
-  )
-}
-
-// Workout Complete Component
-function WorkoutComplete() {
-  const { level, planId } = useParams()
-  const navigate = useNavigate()
-  const { setWorkoutCompleted } = useUserStore()
-  const plan = workoutPlans[level]?.find(p => p.id === planId)
+  const { setWorkoutCompleted, customWorkouts, loadCustomWorkouts } = useUserStore()
+  const [workout, setWorkout] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Mark workout as completed
-    const markCompleted = async () => {
-      await setWorkoutCompleted({
-        planId,
-        level,
-        duration: plan?.duration,
-        calories: plan?.calories,
-        exercises: plan?.exercises.length
-      })
-    }
-    markCompleted()
-  }, [setWorkoutCompleted, planId, level, plan])
+    const loadWorkout = async () => {
+      setIsLoading(true)
+      try {
+        await loadCustomWorkouts()
+        const foundWorkout = customWorkouts.find(w => w.id === parseInt(workoutId))
+        setWorkout(foundWorkout)
 
-  if (!plan) {
-    return <div className="text-center text-ar-gray">Plan not found</div>
+        if (foundWorkout) {
+          await setWorkoutCompleted({
+            category: 'custom',
+            name: foundWorkout.name,
+            goal: foundWorkout.goal,
+            exercises: foundWorkout.exercises.length
+          })
+        }
+      } catch (error) {
+        console.error('Error loading workout:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    
+    loadWorkout()
+  }, [workoutId, setWorkoutCompleted, loadCustomWorkouts])
+
+  // Also check when customWorkouts updates
+  useEffect(() => {
+    if (customWorkouts.length > 0) {
+      const foundWorkout = customWorkouts.find(w => w.id === parseInt(workoutId))
+      if (foundWorkout && !workout) {
+        setWorkout(foundWorkout)
+        setIsLoading(false)
+      }
+    }
+  }, [customWorkouts, workoutId, workout])
+
+  if (isLoading) {
+    return <div className="text-center text-ar-gray">Loading workout...</div>
+  }
+
+  if (!workout) {
+    return <div className="text-center text-ar-gray">Workout not found</div>
   }
 
   return (
@@ -503,83 +834,65 @@ function WorkoutComplete() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
       >
-        {/* Success Animation */}
         <motion.div
           className="text-8xl mb-6"
-          animate={{ 
+          animate={{
             scale: [1, 1.2, 1],
-            rotate: [0, 10, -10, 0] 
+            rotate: [0, 10, -10, 0]
           }}
-          transition={{ 
-            duration: 2, 
+          transition={{
+            duration: 2,
             repeat: Infinity,
-            ease: "easeInOut" 
+            ease: "easeInOut"
           }}
         >
-          🎉
+          ✨
         </motion.div>
 
-        <h1 className="text-4xl font-bold mb-4">Workout Complete!</h1>
+        <h1 className="text-4xl font-bold mb-4">Custom Workout Complete!</h1>
         <p className="text-ar-gray text-lg mb-8">
-          Great job completing {plan.title}
+          Great job completing {workout.name}
         </p>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-2 gap-6 mb-8">
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Clock size={20} className="text-ar-blue" />
-              <span className="font-bold">Duration</span>
-            </div>
-            <div className="text-2xl font-bold text-ar-blue">
-              {plan.duration}
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Zap size={20} className="text-ar-violet" />
-              <span className="font-bold">Calories</span>
+              <Target size={20} className="text-ar-violet" />
+              <span className="font-bold">Goal</span>
             </div>
             <div className="text-2xl font-bold text-ar-violet">
-              {plan.calories}
+              {workout.goal}
             </div>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Target size={20} className="text-green-400" />
+              <Dumbbell size={20} className="text-ar-blue" />
               <span className="font-bold">Exercises</span>
             </div>
-            <div className="text-2xl font-bold text-green-400">
-              {plan.exercises.length}
+            <div className="text-2xl font-bold text-ar-blue">
+              {workout.exercises.length}
             </div>
           </div>
         </div>
 
-        {/* Achievement */}
-        <motion.div
-          className="bg-ar-violet/20 border border-ar-violet/50 rounded-xl p-4 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Flame size={24} className="text-ar-violet" />
-            <span className="font-bold text-ar-violet">Streak Updated!</span>
-          </div>
-          <p className="text-ar-gray text-sm">
-            Keep going to maintain your fitness streak
-          </p>
-        </motion.div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex-1 bg-ar-violet hover:bg-ar-violet/80 text-white font-bold py-4 rounded-xl transition-all duration-300 hover:shadow-glow-violet text-lg"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Trophy size={20} />
+              Dashboard
+            </div>
+          </button>
 
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="w-full bg-ar-blue hover:bg-ar-blue/80 text-white font-bold py-4 rounded-xl transition-all duration-300 hover:shadow-glow-blue text-lg"
-        >
-          <div className="flex items-center justify-center gap-2">
-            <Trophy size={20} />
-            Back to Dashboard
-          </div>
-        </button>
+          <button
+            onClick={() => navigate('/workout/custom/my-workouts')}
+            className="flex-1 bg-white/10 hover:bg-white/20 text-white font-bold py-4 rounded-xl transition-all duration-300 border border-white/20 hover:border-white/30"
+          >
+            My Workouts
+          </button>
+        </div>
       </motion.div>
     </div>
   )
@@ -589,12 +902,26 @@ function WorkoutComplete() {
 export default function Workout() {
   return (
     <Routes>
-      <Route path="/" element={<LevelSelection />} />
-      <Route path="/:level" element={<PlansList />} />
-      <Route path="/:level/:planId" element={<PlanDetail />} />
-      <Route path="/:level/:planId/session" element={<WorkoutSession />} />
-      <Route path="/:level/:planId/session/:exerciseId/analyzer/:exerciseName" element={<FormAnalyzer />} />
-      <Route path="/:level/:planId/complete" element={<WorkoutComplete />} />
+      <Route path="/" element={<WorkoutHub />} />
+      <Route path="/:category" element={<CategorySelection />} />
+      <Route path="/:category/:splitId" element={<SplitDetail />} />
+
+      {/* Gym/Calisthenics routes (day-based) */}
+      <Route path="/:category/:splitId/:dayId/session" element={<WorkoutSession />} />
+      <Route path="/:category/:splitId/:dayId/session/:exerciseId/analyzer/:exerciseName" element={<FormAnalyzer />} />
+      <Route path="/:category/:splitId/:dayId/complete" element={<WorkoutComplete />} />
+
+      {/* Stretching/Yoga routes (sequence-based) */}
+      <Route path="/:category/:splitId/session" element={<WorkoutSession />} />
+      <Route path="/:category/:splitId/session/:exerciseId/analyzer/:exerciseName" element={<FormAnalyzer />} />
+      <Route path="/:category/:splitId/complete" element={<WorkoutComplete />} />
+
+      {/* Custom workout routes */}
+      <Route path="/custom/builder" element={<CustomWorkoutBuilder />} />
+      <Route path="/custom/my-workouts" element={<MyCustomWorkouts />} />
+      <Route path="/custom/:workoutId/session" element={<CustomWorkoutSession />} />
+      <Route path="/custom/:workoutId/complete" element={<CustomWorkoutComplete />} />
+      <Route path="/custom/:workoutId/session/:exerciseId/analyzer/:exerciseName" element={<FormAnalyzer />} />
     </Routes>
   )
 }
