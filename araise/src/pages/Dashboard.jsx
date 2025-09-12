@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { motion } from "framer-motion"
-import { Flame, Target, Zap, Trophy, Heart, Brain } from "lucide-react"
+import { Flame, Target, Trophy, Heart, Brain } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import WaterBottle from "../components/WaterBottle"
-import FloatingActionButton from "../components/FloatingActionButton"
+
 
 // Motivational quotes
 const quotes = [
@@ -27,10 +27,15 @@ export default function Dashboard() {
     level,
     streakCount,
     isAuthenticated,
-    getProgressStats,
     getStreakStats,
     calendar,
-    checkStreak
+    checkStreak,
+    loadFocusTasks,
+    focusProgress,
+    mentalHealthProgress,
+    waterProgress,
+    workoutCompleted,
+    dietGoalMet
   } = useUserStore()
 
   // Immediate authentication check - don't render anything if not properly authenticated
@@ -50,8 +55,26 @@ export default function Dashboard() {
     return null // Return nothing, let the ProtectedRoute component handle the redirect
   }
 
-  const progressStats = getProgressStats()
+  // Real-time progress stats with live updates
+  const [progressStats, setProgressStats] = useState({
+    workout: 0,
+    water: 0,
+    diet: 0,
+    mentalHealth: 0,
+    focus: 0
+  })
   const streakStats = getStreakStats()
+
+  // Update progress stats in real-time (only when data actually changes)
+  useEffect(() => {
+    setProgressStats({
+      workout: workoutCompleted ? 100 : 0,
+      water: Math.min((waterProgress / 3000) * 100, 100), // 3000ml = 3L goal
+      diet: dietGoalMet ? 100 : 0,
+      mentalHealth: mentalHealthProgress,
+      focus: focusProgress
+    })
+  }, [workoutCompleted, waterProgress, dietGoalMet, mentalHealthProgress, focusProgress])
 
   // Rotate quotes every 5 seconds
   useEffect(() => {
@@ -69,14 +92,24 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [checkStreak])
 
-  // Radar chart data (Pentagon with 5 axes)
-  const radarData = [
+  // Load focus data on mount
+  useEffect(() => {
+    // Initial load
+    if (typeof loadFocusTasks === 'function') {
+      loadFocusTasks().catch(error => {
+        console.error('Error loading focus tasks:', error)
+      })
+    }
+  }, [loadFocusTasks])
+
+  // Radar chart data (Pentagon with 5 axes) - memoized to prevent flickering
+  const radarData = useMemo(() => [
     { subject: 'Workout', progress: progressStats.workout, fullMark: 100 },
     { subject: 'Diet', progress: progressStats.diet, fullMark: 100 },
     { subject: 'Water', progress: progressStats.water, fullMark: 100 },
     { subject: 'Mental Health', progress: progressStats.mentalHealth, fullMark: 100 },
     { subject: 'Focus', progress: progressStats.focus, fullMark: 100 },
-  ]
+  ], [progressStats.workout, progressStats.diet, progressStats.water, progressStats.mentalHealth, progressStats.focus])
 
   // Generate calendar heatmap (last 35 days - 5 weeks)
   const generateCalendar = () => {
@@ -191,6 +224,8 @@ export default function Dashboard() {
                   fillOpacity={0.3}
                   strokeWidth={3}
                   dot={{ fill: '#A55EEA', strokeWidth: 2, r: 6 }}
+                  animationDuration={800}
+                  animationEasing="ease-out"
                 />
               </RadarChart>
             </ResponsiveContainer>
@@ -206,8 +241,8 @@ export default function Dashboard() {
         >
           <h2 className="text-xl md:text-2xl font-hagrid font-light mb-4 md:mb-6 text-center tracking-tight">Streak Calendar</h2>
           <div className="grid grid-cols-7 gap-2">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-              <div key={day} className="text-center text-sm text-ar-gray-400 font-hagrid font-light">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+              <div key={`${day}-${index}`} className="text-center text-sm text-ar-gray-400 font-hagrid font-light">
                 {day}
               </div>
             ))}
@@ -357,36 +392,78 @@ export default function Dashboard() {
           onClick={() => navigate('/focus')}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          animate={{ 
+            borderColor: progressStats.focus === 100 ? '#3b82f6' : 'transparent'
+          }}
+          transition={{ duration: 0.5 }}
         >
           <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
-            <div className="p-3 bg-blue-500/20 rounded-xl">
+            <motion.div 
+              className="p-3 bg-blue-500/20 rounded-xl"
+              animate={{ 
+                backgroundColor: progressStats.focus === 100 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'
+              }}
+              transition={{ duration: 0.5 }}
+            >
               <Brain className="text-blue-400" size={24} />
-            </div>
+            </motion.div>
             <div>
               <h3 className="text-xl font-hagrid font-light tracking-tight">Focus</h3>
               <p className="text-ar-gray-400 font-hagrid font-light">Deep work</p>
             </div>
+            {progressStats.focus > 0 && (
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+                className="ml-auto w-2 h-2 bg-blue-400 rounded-full"
+                title="Active Progress"
+              />
+            )}
           </div>
           <div className="mb-3 md:mb-4">
             <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
               <span>Progress</span>
-              <span className="text-blue-400 font-medium">{Math.round(progressStats.focus)}%</span>
+              <motion.span 
+                className="text-blue-400 font-medium"
+                animate={{ 
+                  scale: progressStats.focus === 100 ? [1, 1.1, 1] : 1
+                }}
+                transition={{ duration: 0.3 }}
+              >
+                {Math.round(progressStats.focus)}%
+              </motion.span>
             </div>
-            <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-3">
-              <div 
-                className="bg-blue-400 h-2 md:h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progressStats.focus}%` }}
+            <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-3 overflow-hidden">
+              <motion.div 
+                className="bg-blue-400 h-2 md:h-3 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressStats.focus}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
               />
             </div>
           </div>
-          <button className="w-full bg-blue-500 hover:bg-blue-400 text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
+          <motion.button 
+            className="w-full bg-blue-500 hover:bg-blue-400 text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover"
+            animate={{ 
+              backgroundColor: progressStats.focus >= 100 ? '#22c55e' : '#3b82f6'
+            }}
+            transition={{ duration: 0.5 }}
+          >
             {progressStats.focus >= 100 ? 'Goal Met ✓' : 'Start Session'}
-          </button>
+          </motion.button>
         </motion.div>
       </motion.div>
 
-      {/* Floating Action Button */}
-      <FloatingActionButton />
+
+
+
     </div>
   )
 }

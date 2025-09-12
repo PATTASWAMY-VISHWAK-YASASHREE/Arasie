@@ -50,12 +50,12 @@ export default function WorkoutHub() {
         </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6">
         {workoutCategories.map((category, index) => {
           return (
             <motion.div
               key={category.id}
-              className="relative h-80 rounded-2xl cursor-pointer transition-all duration-300 group overflow-hidden border border-white/10 hover:border-white/30"
+              className="relative h-48 sm:h-64 md:h-80 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 group overflow-hidden border border-white/10 hover:border-white/30"
               onClick={() => navigate(`/workout/${category.id}`)}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -73,17 +73,17 @@ export default function WorkoutHub() {
               <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-all duration-300" />
 
               {/* Content */}
-              <div className="relative z-10 h-full flex flex-col justify-end p-8">
-                <div className="text-center">
-                  <h3 className="text-3xl font-bold text-white mb-3 group-hover:text-white/90 transition-colors duration-300">
+              <div className="relative z-10 h-full flex flex-col justify-center items-center text-center p-3 sm:p-4 md:p-8">
+                <div className="flex flex-col items-center justify-center h-full">
+                  <h3 className="text-lg sm:text-xl md:text-3xl font-bold text-white mb-2 sm:mb-3 group-hover:text-white/90 transition-colors duration-300 leading-tight">
                     {category.title}
                   </h3>
 
-                  <p className="text-white/80 mb-6 leading-relaxed group-hover:text-white/70 transition-colors duration-300">
+                  <p className="text-white/80 mb-3 sm:mb-4 md:mb-6 leading-relaxed group-hover:text-white/70 transition-colors duration-300 text-xs sm:text-sm md:text-base text-center">
                     {category.description}
                   </p>
 
-                  <button className="w-full font-bold py-4 rounded-xl transition-all duration-300 bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 hover:border-white/50 hover:shadow-lg transform group-hover:translate-y-0 translate-y-1">
+                  <button className="w-full font-bold py-2 sm:py-3 md:py-4 rounded-lg sm:rounded-xl transition-all duration-300 bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 hover:border-white/50 hover:shadow-lg transform group-hover:translate-y-0 translate-y-1 text-xs sm:text-sm md:text-base">
                     Explore Workouts
                   </button>
                 </div>

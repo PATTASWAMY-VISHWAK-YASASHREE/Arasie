@@ -52,7 +52,7 @@ export default function Navigation() {
     return (
       <>
         {/* Mobile Top Header */}
-        <nav className="fixed top-0 left-0 w-full glass-card px-4 py-3 z-50 shadow-card">
+        <nav className="fixed top-0 left-0 w-full backdrop-blur-xl bg-black/80 px-4 py-3 z-50 shadow-2xl border-b border-white/10">
           <div className="flex items-center justify-between">
             {/* Logo */}
             <div className="flex items-center gap-3">
@@ -150,9 +150,9 @@ export default function Navigation() {
           </div>
         </nav>
 
-        {/* Mobile Bottom Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 w-full bg-ar-darker border-t border-ar-gray-800 shadow-2xl z-[9999]">
-          <div className="flex justify-around items-center py-3 px-2 max-w-md mx-auto">
+        {/* Mobile Bottom Navigation - Spread Design */}
+        <nav className="fixed bottom-0 left-0 right-0 w-full backdrop-blur-xl bg-black/80 border-t border-white/10 shadow-2xl z-[9999]">
+          <div className="flex items-center justify-between px-4 py-2">
             {navItems.map(item => {
               const Icon = item.icon
               return (
@@ -162,13 +162,22 @@ export default function Navigation() {
                   className="flex-1 flex justify-center"
                 >
                   {({ isActive }) => (
-                    <div className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-300 ${
+                    <div className={`flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl transition-all duration-300 ${
                       isActive
-                        ? "bg-ar-blue text-ar-white shadow-lg scale-105"
-                        : "text-ar-gray-400 hover:text-ar-blue-light hover:bg-ar-gray-700/50"
+                        ? "bg-blue-500/30 text-white shadow-lg shadow-blue-500/20 scale-105 backdrop-blur-sm border border-blue-400/40"
+                        : "text-gray-400 hover:text-white hover:bg-white/10"
                     }`}>
-                      <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                      <span className="text-xs font-medium">{item.label}</span>
+                      <Icon size={16} strokeWidth={isActive ? 2.5 : 2} className="drop-shadow-sm" />
+                      <span className={`text-xs font-medium leading-tight text-center ${
+                        isActive ? "text-white" : "text-gray-400"
+                      }`}>
+                        {item.label === "Mental Health" ? (
+                          <div className="flex flex-col">
+                            <span>Mental</span>
+                            <span>Health</span>
+                          </div>
+                        ) : item.label}
+                      </span>
                     </div>
                   )}
                 </NavLink>
@@ -181,7 +190,7 @@ export default function Navigation() {
   }
 
   return (
-    <nav className="fixed left-0 top-0 h-full w-64 bg-ar-darker/95 backdrop-blur-xl border-r border-ar-gray-800 flex flex-col py-8 z-50 shadow-xl">
+    <nav className="fixed left-0 top-0 h-full w-64 bg-black/80 backdrop-blur-xl border-r border-white/10 flex flex-col py-8 z-50 shadow-2xl">
       {/* Logo/Brand */}
       <motion.div 
         className="mb-12 flex items-center gap-3 px-6"
@@ -212,11 +221,11 @@ export default function Navigation() {
                 {({ isActive }) => (
                   <div className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 relative group ${
                     isActive
-                      ? "bg-ar-blue text-ar-white shadow-card-hover border border-ar-blue/20"
-                      : "text-ar-gray-400 hover:text-ar-blue-light hover:bg-ar-gray-800/50 hover:shadow-card"
+                      ? "bg-blue-500/30 text-white shadow-lg shadow-blue-500/20 backdrop-blur-sm border border-blue-400/40"
+                      : "text-gray-400 hover:text-white hover:bg-white/10 hover:shadow-lg"
                   }`}>
                     {/* Icon */}
-                    <Icon size={22} strokeWidth={isActive ? 2.5 : 2} className="transition-all duration-300" />
+                    <Icon size={22} strokeWidth={isActive ? 2.5 : 2} className="transition-all duration-300 drop-shadow-sm" />
                     
                     {/* Label */}
                     <span className="font-medium text-base transition-all duration-300">
@@ -225,7 +234,7 @@ export default function Navigation() {
                     
                     {/* Active indicator */}
                     {isActive && (
-                      <div className="absolute right-3 w-2 h-2 bg-ar-white rounded-full" />
+                      <div className="absolute right-3 w-2 h-2 bg-white rounded-full shadow-sm" />
                     )}
                   </div>
                 )}
@@ -237,7 +246,7 @@ export default function Navigation() {
 
       {/* Footer/User Avatar section */}
       <motion.div 
-        className="px-6 py-4 border-t border-ar-gray-800"
+        className="px-6 py-4 border-t border-white/10"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.5 }}
@@ -261,13 +270,13 @@ export default function Navigation() {
             </div>
             
             <div className="flex-1">
-              <p className="text-sm font-hagrid font-light text-ar-white text-left">{name}</p>
-              <p className="text-xs text-ar-gray-500 font-hagrid font-light text-left">Level {level}</p>
+              <p className="text-sm font-hagrid font-light text-white text-left">{name}</p>
+              <p className="text-xs text-gray-400 font-hagrid font-light text-left">Level {level}</p>
             </div>
             
             <ChevronDown 
               size={16} 
-              className={`text-ar-gray-500 transition-transform duration-300 ${
+              className={`text-gray-400 transition-transform duration-300 ${
                 showProfileMenu ? 'rotate-180' : ''
               }`} 
             />

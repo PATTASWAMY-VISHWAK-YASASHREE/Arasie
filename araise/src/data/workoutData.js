@@ -19,7 +19,8 @@ export const workoutData = {
               pose_analyzer: true,
               description: "Bodyweight chest warm-up",
               primaryMuscle: "Chest",
-              secondaryMuscles: ["Triceps", "Shoulders", "Core"]
+              secondaryMuscles: ["Triceps", "Shoulders", "Core"],
+              video: "/videos/exercises/push-ups.mp4"
             },
               {
                 name: "Incline Dumbbell Press",
@@ -30,7 +31,7 @@ export const workoutData = {
                 description: "Upper chest hypertrophy focus",
                 primaryMuscle: "Upper Chest",
                 secondaryMuscles: ["Triceps", "Front Deltoids"],
-              
+                video: "/videos/exercises/incline-dumbbell-press.mp4"
             },
 
             {
@@ -41,7 +42,8 @@ export const workoutData = {
               pose_analyzer: true,
               description: "Upper chest hypertrophy focus",
               primaryMuscle: "Upper Chest",
-              secondaryMuscles: ["Triceps", "Front Deltoids"]
+              secondaryMuscles: ["Triceps", "Front Deltoids"],
+              video: "/videos/exercises/incline-dumbbell-press.mp4"
             },
             {
               id: 4,
@@ -51,7 +53,8 @@ export const workoutData = {
               pose_analyzer: true,
               description: "Mid-chest compound strength builder",
               primaryMuscle: "Chest",
-              secondaryMuscles: ["Triceps", "Shoulders"]
+              secondaryMuscles: ["Triceps", "Shoulders"],
+              video: "/videos/exercises/flat-barbell-bench-press.mp4"
             },
             {
               id: 5,
@@ -101,7 +104,8 @@ export const workoutData = {
               pose_analyzer: true,
               description: "Core activation and abdominal hypertrophy",
               primaryMuscle: "Abs",
-              secondaryMuscles: ["Obliques"]
+              secondaryMuscles: ["Obliques"],
+              video: "/videos/exercises/crunches.mp4"
             },
             {
               id: 10,
@@ -111,7 +115,8 @@ export const workoutData = {
               pose_analyzer: true,
               description: "Core stability and endurance",
               primaryMuscle: "Core",
-              secondaryMuscles: ["Shoulders", "Glutes", "Lower Back"]
+              secondaryMuscles: ["Shoulders", "Glutes", "Lower Back"],
+              video: "/videos/exercises/plank.mp4"
             }
           ]
         },
@@ -126,7 +131,8 @@ export const workoutData = {
               pose_analyzer: true,
               description: "Lat width development",
               primaryMuscle: "Lats",
-              secondaryMuscles: ["Biceps", "Rear Deltoids", "Traps"]
+              secondaryMuscles: ["Biceps", "Rear Deltoids", "Traps"],
+              video: "/videos/exercises/wide-grip-pull-ups.mp4"
             },
             {
               id: 2,

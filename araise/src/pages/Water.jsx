@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { Droplet, Plus, Minus, Clock, Target, Zap } from "lucide-react"
+import { Droplet, Plus, Clock, Target, Zap } from "lucide-react"
 import { useUserStore } from "../store/userStore"
+import WaterBottle from "../components/WaterBottle"
 
 export default function Water() {
   const [customAmount, setCustomAmount] = useState("")
@@ -21,10 +22,6 @@ export default function Water() {
 
   const handleQuickAdd = async (amount) => {
     await logWater(amount)
-    // Show celebration animation if goal is reached
-    if (waterProgress + amount >= waterGoal) {
-      // Could add confetti animation here
-    }
   }
 
   const handleCustomAdd = async () => {
@@ -58,89 +55,26 @@ export default function Water() {
         </p>
       </motion.div>
 
-      {/* Progress Section */}
+      {/* Progress Section - Enhanced Water Bottle */}
       <motion.div
-        className="glass-card p-4 md:p-8 rounded-2xl text-center"
+        className="flex justify-center"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, delay: 0.2 }}
       >
-        {/* Circular Progress */}
-        <div className="relative w-48 h-48 md:w-72 md:h-72 mx-auto mb-4 md:mb-8">
-          <svg className="w-48 h-48 md:w-72 md:h-72 transform -rotate-90" viewBox="0 0 100 100">
-            <circle
-              cx="50"
-              cy="50"
-              r="40"
-              stroke="#2A2A2A"
-              strokeWidth="8"
-              fill="transparent"
-            />
-            <motion.circle
-              cx="50"
-              cy="50"
-              r="40"
-              stroke="#22D2FF"
-              strokeWidth="8"
-              fill="transparent"
-              strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 40}`}
-              strokeDashoffset={`${2 * Math.PI * 40 * (1 - progressPercentage / 100)}`}
-              initial={{ strokeDashoffset: 2 * Math.PI * 40 }}
-              animate={{ strokeDashoffset: 2 * Math.PI * 40 * (1 - progressPercentage / 100) }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
-              className="drop-shadow-2xl"
-              filter="url(#glow)"
-            />
-            <defs>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                <feMerge> 
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-          </svg>
-          
-          {/* Center Content */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="relative mb-1">
-              <Droplet 
-                size={16} 
-                className={`${waterGoalMet ? 'text-ar-blue' : 'text-ar-gray-400'} md:w-5 md:h-5`}
-              />
-              {waterGoalMet && (
-                <motion.div
-                  className="absolute inset-0 text-ar-blue blur-sm"
-                  animate={{ 
-                    opacity: [0.5, 1, 0.5],
-                    scale: [1, 1.2, 1] 
-                  }}
-                  transition={{ 
-                    duration: 2, 
-                    repeat: Infinity,
-                    ease: "easeInOut" 
-                  }}
-                >
-                  <Droplet size={16} className="md:w-5 md:h-5" />
-                </motion.div>
-              )}
-            </div>
-            <div className="text-sm md:text-xl font-bold text-ar-white leading-tight">
-              {waterProgress}ml
-            </div>
-            <div className="text-ar-gray-400 text-xs md:text-sm leading-tight">
-              of {waterGoal}ml
-            </div>
-            <div className="text-ar-blue font-bold text-xs md:text-base">
-              {Math.round(progressPercentage)}%
-            </div>
-          </div>
+        <div className="w-full max-w-md">
+          <WaterBottle />
         </div>
+      </motion.div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-8">
+      {/* Stats Row */}
+      <motion.div
+        className="glass-card p-4 md:p-6 rounded-2xl"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+      >
+        <div className="grid grid-cols-2 gap-4 md:gap-6">
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 md:gap-2 mb-1 md:mb-2">
               <Target size={16} className="text-ar-blue md:w-5 md:h-5" />
@@ -160,25 +94,6 @@ export default function Water() {
             </div>
           </div>
         </div>
-
-        {/* Goal Status */}
-        {waterGoalMet && (
-          <motion.div
-            className="bg-ar-blue/20 border border-ar-blue/50 rounded-xl p-3 md:p-4 mb-4 md:mb-8"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", bounce: 0.5 }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="text-ar-blue font-bold text-sm md:text-lg">
-                🎉 Daily hydration goal reached!
-              </div>
-              <div className="text-ar-gray-400 text-xs md:text-sm">
-                Great job!
-              </div>
-            </div>
-          </motion.div>
-        )}
       </motion.div>
 
       {/* Quick Add Section */}

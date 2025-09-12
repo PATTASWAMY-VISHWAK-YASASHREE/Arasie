@@ -1,4 +1,4 @@
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 export class FirebaseUserService {
@@ -23,10 +23,16 @@ export class FirebaseUserService {
           workoutCompleted: data.workoutCompleted || false,
           waterGoalMet: data.waterGoalMet || false,
           dietGoalMet: data.dietGoalMet || false,
+          mentalHealthProgress: data.mentalHealthProgress || 0,
+          focusProgress: data.focusProgress || 0,
           meals: data.meals || [],
           waterLogs: data.waterLogs || [],
           workoutHistory: data.workoutHistory || [],
           customWorkouts: data.customWorkouts || [],
+          mentalHealthLogs: data.mentalHealthLogs || [],
+          focusLogs: data.focusLogs || [],
+          focusTasks: data.focusTasks || [],
+          journalEntries: data.journalEntries || [],
           lastReset: data.lastReset || null
         };
       }
@@ -49,10 +55,15 @@ export class FirebaseUserService {
       workoutCompleted: false,
       waterGoalMet: false,
       dietGoalMet: false,
+      mentalHealthProgress: 0,
+      focusProgress: 0,
       meals: [],
       waterLogs: [],
       workoutHistory: [],
       customWorkouts: [],
+      mentalHealthLogs: [],
+      focusLogs: [],
+      focusTasks: [], // Custom focus tasks
       lastReset: null
     };
   }
@@ -181,8 +192,12 @@ export class FirebaseUserService {
         dietGoalMet: false,
         waterProgress: 0,
         dietCalories: 0,
+        mentalHealthProgress: 0,
+        focusProgress: 0,
         meals: [],
         waterLogs: [],
+        mentalHealthLogs: [],
+        focusLogs: [],
         lastReset: today,
         lastUpdated: serverTimestamp()
       };
@@ -313,5 +328,330 @@ export class FirebaseUserService {
       console.error('Error migrating localStorage workouts:', error);
       throw error;
     }
+  }
+
+  // Focus Methods
+
+  // Log focus session
+  async logFocusSession(duration, task, completed, currentLogs) {
+    const newLog = {
+      id: Date.now(),
+      duration,
+      task,
+      completed,
+      time: new Date().toISOString()
+    };
+
+    const updates = {
+      focusLogs: [...currentLogs, newLog],
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { newLog };
+  }
+
+  // Update focus progress
+  async updateFocusProgress(percentage, currentProgress) {
+    const newProgress = Math.min(percentage, 100);
+
+    const updates = {
+      focusProgress: newProgress,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { newProgress };
+  }
+
+  // Save focus task
+  async saveFocusTask(taskData, currentTasks) {
+    const newTask = {
+      id: Date.now(),
+      ...taskData,
+      status: 'upcoming',
+      completed: 0,
+      date: new Date().toISOString().slice(0, 10),
+      created: new Date().toISOString()
+    };
+
+    const updatedTasks = [...currentTasks, newTask];
+
+    const updates = {
+      focusTasks: updatedTasks,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { newTask, updatedTasks };
+  }
+
+  // Update focus task progress
+  async updateFocusTaskProgress(taskId, minutesCompleted, currentTasks) {
+    const updatedTasks = currentTasks.map(task => {
+      if (task.id === taskId) {
+        const newCompleted = task.completed + minutesCompleted;
+        const newStatus = newCompleted >= task.planned ? 'completed' : 'in-progress';
+        return {
+          ...task,
+          completed: Math.min(newCompleted, task.planned),
+          status: newStatus,
+          lastUpdated: new Date().toISOString()
+        };
+      }
+      return task;
+    });
+
+    const updates = {
+      focusTasks: updatedTasks,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { updatedTasks };
+  }
+
+  // Delete focus task
+  async deleteFocusTask(taskId, currentTasks) {
+    const updatedTasks = currentTasks.filter(task => task.id !== taskId);
+
+    const updates = {
+      focusTasks: updatedTasks,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { updatedTasks };
+  }
+
+  // Add reflection to focus task
+  async addFocusTaskReflection(taskId, reflection, currentTasks) {
+    const updatedTasks = currentTasks.map(task => {
+      if (task.id === taskId) {
+        return {
+          ...task,
+          completionDescription: reflection.trim(),
+          lastUpdated: new Date().toISOString()
+        };
+      }
+      return task;
+    });
+
+    const updates = {
+      focusTasks: updatedTasks,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { updatedTasks };
+  }
+
+  // Get focus tasks
+  async getFocusTasks() {
+    try {
+      const userDoc = await getDoc(this.userRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        return data.focusTasks || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading focus tasks:', error);
+      return [];
+    }
+  }
+
+  // Migrate localStorage focus tasks to Firebase (one-time migration)
+  async migrateLocalStorageFocusTasks() {
+    try {
+      // Get focus tasks from localStorage
+      const localTasks = JSON.parse(localStorage.getItem('focusCustomTasks') || '[]');
+
+      if (localTasks.length === 0) {
+        console.log('No localStorage focus tasks to migrate');
+        return { migrated: 0 };
+      }
+
+      // Get current Firebase focus tasks
+      const currentTasks = await this.getFocusTasks();
+
+      // Check if migration already happened (avoid duplicates)
+      const existingIds = new Set(currentTasks.map(t => t.id));
+      const tasksToMigrate = localTasks.filter(t => !existingIds.has(t.id));
+
+      if (tasksToMigrate.length === 0) {
+        console.log('All localStorage focus tasks already migrated');
+        return { migrated: 0 };
+      }
+
+      // Add migration metadata to tasks
+      const migratedTasks = tasksToMigrate.map(task => ({
+        ...task,
+        migrated: true,
+        migratedAt: new Date().toISOString()
+      }));
+
+      // Merge with existing tasks
+      const allTasks = [...currentTasks, ...migratedTasks];
+
+      // Save to Firebase
+      const updates = {
+        focusTasks: allTasks,
+        lastUpdated: serverTimestamp()
+      };
+
+      await updateDoc(this.userRef, updates);
+
+      // Clear localStorage after successful migration
+      localStorage.removeItem('focusCustomTasks');
+
+      console.log(`Successfully migrated ${migratedTasks.length} focus tasks from localStorage to Firebase`);
+      return { migrated: migratedTasks.length, tasks: allTasks };
+    } catch (error) {
+      console.error('Error migrating localStorage focus tasks:', error);
+      throw error;
+    }
+  }
+
+  // Journal Entry Methods
+  async saveJournalEntry(entry) {
+    try {
+      const userDoc = await getDoc(this.userRef);
+      const currentData = userDoc.exists() ? userDoc.data() : {};
+      const currentEntries = currentData.journalEntries || [];
+      
+      const updatedEntries = [entry, ...currentEntries];
+      
+      await updateDoc(this.userRef, {
+        journalEntries: updatedEntries,
+        lastUpdated: serverTimestamp()
+      });
+      
+      return updatedEntries;
+    } catch (error) {
+      console.error('Error saving journal entry:', error);
+      throw error;
+    }
+  }
+
+  async updateJournalEntry(entryId, updatedContent) {
+    try {
+      const userDoc = await getDoc(this.userRef);
+      const currentData = userDoc.exists() ? userDoc.data() : {};
+      const currentEntries = currentData.journalEntries || [];
+      
+      const updatedEntries = currentEntries.map(entry => 
+        entry.id === entryId 
+          ? { ...entry, content: updatedContent, lastModified: new Date().toISOString() }
+          : entry
+      );
+      
+      await updateDoc(this.userRef, {
+        journalEntries: updatedEntries,
+        lastUpdated: serverTimestamp()
+      });
+      
+      return updatedEntries;
+    } catch (error) {
+      console.error('Error updating journal entry:', error);
+      throw error;
+    }
+  }
+
+  async deleteJournalEntry(entryId) {
+    try {
+      const userDoc = await getDoc(this.userRef);
+      const currentData = userDoc.exists() ? userDoc.data() : {};
+      const currentEntries = currentData.journalEntries || [];
+      
+      const updatedEntries = currentEntries.filter(entry => entry.id !== entryId);
+      
+      await updateDoc(this.userRef, {
+        journalEntries: updatedEntries,
+        lastUpdated: serverTimestamp()
+      });
+      
+      return updatedEntries;
+    } catch (error) {
+      console.error('Error deleting journal entry:', error);
+      throw error;
+    }
+  }
+
+  // Migrate localStorage journal entries to Firebase (one-time migration)
+  async migrateLocalStorageJournalEntries() {
+    try {
+      // Get journal entries from localStorage
+      const localEntries = JSON.parse(localStorage.getItem('journalEntries') || '[]');
+
+      if (localEntries.length === 0) {
+        console.log('No localStorage journal entries to migrate');
+        return { migrated: 0 };
+      }
+
+      // Get current entries from Firebase
+      const userDoc = await getDoc(this.userRef);
+      const currentData = userDoc.exists() ? userDoc.data() : {};
+      const currentEntries = currentData.journalEntries || [];
+
+      // Filter out entries that already exist in Firebase (by ID)
+      const existingIds = new Set(currentEntries.map(entry => entry.id));
+      const entriesToMigrate = localEntries.filter(entry => !existingIds.has(entry.id));
+
+      if (entriesToMigrate.length === 0) {
+        console.log('All localStorage journal entries already migrated');
+        return { migrated: 0 };
+      }
+
+      // Merge with existing entries
+      const allEntries = [...entriesToMigrate, ...currentEntries];
+
+      const updates = {
+        journalEntries: allEntries,
+        lastUpdated: serverTimestamp()
+      };
+
+      await updateDoc(this.userRef, updates);
+
+      // Clear localStorage after successful migration
+      localStorage.removeItem('journalEntries');
+
+      console.log(`Successfully migrated ${entriesToMigrate.length} journal entries from localStorage to Firebase`);
+      return { migrated: entriesToMigrate.length, entries: allEntries };
+    } catch (error) {
+      console.error('Error migrating localStorage journal entries:', error);
+      throw error;
+    }
+  }
+
+  // Real-time listener for user progress updates
+  subscribeToUserProgress(callback) {
+    return onSnapshot(this.userRef, (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        callback({
+          focusLogs: data.focusLogs || [],
+          focusTasks: data.focusTasks || [],
+          focusProgress: data.focusProgress || 0,
+          mentalHealthProgress: data.mentalHealthProgress || 0,
+          waterProgress: data.waterProgress || 0,
+          dietCalories: data.dietCalories || 0,
+          workoutCompleted: data.workoutCompleted || false,
+          waterGoalMet: data.waterGoalMet || false,
+          dietGoalMet: data.dietGoalMet || false,
+          meals: data.meals || [],
+          waterLogs: data.waterLogs || [],
+          mentalHealthLogs: data.mentalHealthLogs || [],
+          workoutHistory: data.workoutHistory || [],
+          customWorkouts: data.customWorkouts || [],
+          journalEntries: data.journalEntries || [],
+          level: data.level || 1,
+          streakCount: data.streakCount || 0,
+          calendar: data.calendar || []
+        });
+      }
+    }, (error) => {
+      console.error('Error listening to user progress updates:', error);
+    });
   }
 }
