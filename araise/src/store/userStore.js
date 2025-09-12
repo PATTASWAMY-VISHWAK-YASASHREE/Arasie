@@ -33,6 +33,8 @@ export const useUserStore = create(
       workoutHistory: [], // [{ id, date, planId, exercises, duration }]
       mentalHealthLogs: [], // [{ id, mood, journalEntry, time }]
       focusLogs: [], // [{ id, duration, task, completed, time }]
+      customWorkouts: [], // [{ id, name, goal, exercises, created, lastModified }]
+      migrationCompleted: 0, // Number of workouts migrated on last login
       
       // User actions
       updateName: (name) => set({ name }),
@@ -78,6 +80,25 @@ export const useUserStore = create(
           try {
             const progress = await firebaseService.loadUserProgress();
             set(progress);
+            
+            // Migrate localStorage workouts to Firebase
+            try {
+              const migrationResult = await firebaseService.migrateLocalStorageWorkouts();
+              if (migrationResult.migrated > 0) {
+                console.log(`✅ Successfully migrated ${migrationResult.migrated} workouts to Firebase`);
+                // Update the store with the migrated workouts
+                set({ customWorkouts: migrationResult.workouts });
+                
+                // Set migration notification flag (could be used for UI notification)
+                set({ migrationCompleted: migrationResult.migrated });
+              } else {
+                console.log('ℹ️ No workouts to migrate or migration already completed');
+              }
+            } catch (migrationError) {
+              console.error('❌ Error migrating workouts:', migrationError);
+              // Keep workouts in localStorage if migration fails
+            }
+            
             // Also reset daily progress if needed
             await firebaseService.resetDaily();
           } catch (error) {
@@ -107,7 +128,9 @@ export const useUserStore = create(
         level: 1,
         streakCount: 0,
         calendar: [],
-        workoutHistory: []
+        workoutHistory: [],
+        customWorkouts: [],
+        migrationCompleted: 0
       }),
       
       // Streak management
@@ -388,6 +411,120 @@ export const useUserStore = create(
           waterGoalMet,
           waterLogs: [...state.waterLogs, newLog]
         })
+      },
+
+      // Custom Workout Management
+      saveCustomWorkout: async (workoutData) => {
+        const state = get();
+        
+        if (!state.firebaseService) {
+          // Fallback to localStorage for non-authenticated users
+          const newWorkout = {
+            id: Date.now(),
+            ...workoutData,
+            created: new Date().toISOString(),
+            lastModified: new Date().toISOString()
+          };
+          
+          const savedWorkouts = JSON.parse(localStorage.getItem('customWorkouts') || '[]');
+          const updatedWorkouts = [...savedWorkouts, newWorkout];
+          localStorage.setItem('customWorkouts', JSON.stringify(updatedWorkouts));
+          
+          set({ customWorkouts: updatedWorkouts });
+          return newWorkout;
+        }
+
+        try {
+          const { newWorkout, updatedWorkouts } = await state.firebaseService.saveCustomWorkout(
+            workoutData,
+            state.customWorkouts
+          );
+          
+          set({ customWorkouts: updatedWorkouts });
+          return newWorkout;
+        } catch (error) {
+          console.error('Error saving custom workout:', error);
+          throw error;
+        }
+      },
+
+      updateCustomWorkout: async (workoutId, workoutData) => {
+        const state = get();
+        
+        if (!state.firebaseService) {
+          // Fallback to localStorage for non-authenticated users
+          const savedWorkouts = JSON.parse(localStorage.getItem('customWorkouts') || '[]');
+          const updatedWorkouts = savedWorkouts.map(workout => 
+            workout.id === workoutId 
+              ? { ...workout, ...workoutData, lastModified: new Date().toISOString() }
+              : workout
+          );
+          localStorage.setItem('customWorkouts', JSON.stringify(updatedWorkouts));
+          
+          set({ customWorkouts: updatedWorkouts });
+          return updatedWorkouts;
+        }
+
+        try {
+          const { updatedWorkouts } = await state.firebaseService.updateCustomWorkout(
+            workoutId,
+            workoutData,
+            state.customWorkouts
+          );
+          
+          set({ customWorkouts: updatedWorkouts });
+          return updatedWorkouts;
+        } catch (error) {
+          console.error('Error updating custom workout:', error);
+          throw error;
+        }
+      },
+
+      deleteCustomWorkout: async (workoutId) => {
+        const state = get();
+        
+        if (!state.firebaseService) {
+          // Fallback to localStorage for non-authenticated users
+          const savedWorkouts = JSON.parse(localStorage.getItem('customWorkouts') || '[]');
+          const updatedWorkouts = savedWorkouts.filter(workout => workout.id !== workoutId);
+          localStorage.setItem('customWorkouts', JSON.stringify(updatedWorkouts));
+          
+          set({ customWorkouts: updatedWorkouts });
+          return updatedWorkouts;
+        }
+
+        try {
+          const { updatedWorkouts } = await state.firebaseService.deleteCustomWorkout(
+            workoutId,
+            state.customWorkouts
+          );
+          
+          set({ customWorkouts: updatedWorkouts });
+          return updatedWorkouts;
+        } catch (error) {
+          console.error('Error deleting custom workout:', error);
+          throw error;
+        }
+      },
+
+      loadCustomWorkouts: async () => {
+        const state = get();
+        
+        if (!state.firebaseService) {
+          // Load from localStorage for non-authenticated users
+          const savedWorkouts = JSON.parse(localStorage.getItem('customWorkouts') || '[]');
+          set({ customWorkouts: savedWorkouts });
+          return savedWorkouts;
+        }
+
+        try {
+          const workouts = await state.firebaseService.getCustomWorkouts();
+          set({ customWorkouts: workouts });
+          return workouts;
+        } catch (error) {
+          console.error('Error loading custom workouts:', error);
+          return [];
+        }
       },
     }),
     {
