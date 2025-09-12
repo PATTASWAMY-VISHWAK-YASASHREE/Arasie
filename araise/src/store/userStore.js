@@ -24,11 +24,15 @@ export const useUserStore = create(
       workoutCompleted: false,
       waterGoalMet: false,
       dietGoalMet: false,
+      mentalHealthProgress: 0, // 0-100 percentage
+      focusProgress: 0, // 0-100 percentage
       
       // Logs and history
       meals: [], // [{ id, name, calories, time, macros }]
       waterLogs: [], // [{ id, amount, time }]
       workoutHistory: [], // [{ id, date, planId, exercises, duration }]
+      mentalHealthLogs: [], // [{ id, mood, journalEntry, time }]
+      focusLogs: [], // [{ id, duration, task, completed, time }]
       
       // User actions
       updateName: (name) => set({ name }),
@@ -45,8 +49,12 @@ export const useUserStore = create(
         workoutCompleted: false,
         waterGoalMet: false,
         dietGoalMet: false,
+        mentalHealthProgress: 0,
+        focusProgress: 0,
         meals: [],
         waterLogs: [],
+        mentalHealthLogs: [],
+        focusLogs: [],
         level: 1,
         streakCount: 0,
         calendar: [],
@@ -90,8 +98,12 @@ export const useUserStore = create(
         workoutCompleted: false,
         waterGoalMet: false,
         dietGoalMet: false,
+        mentalHealthProgress: 0,
+        focusProgress: 0,
         meals: [],
         waterLogs: [],
+        mentalHealthLogs: [],
+        focusLogs: [],
         level: 1,
         streakCount: 0,
         calendar: [],
@@ -136,8 +148,12 @@ export const useUserStore = create(
             dietGoalMet: false,
             waterProgress: 0,
             dietCalories: 0,
+            mentalHealthProgress: 0,
+            focusProgress: 0,
             meals: [],
             waterLogs: [],
+            mentalHealthLogs: [],
+            focusLogs: [],
           });
           
           localStorage.setItem('lastReset', today);
@@ -153,8 +169,12 @@ export const useUserStore = create(
               dietGoalMet: false,
               waterProgress: 0,
               dietCalories: 0,
+              mentalHealthProgress: 0,
+              focusProgress: 0,
               meals: [],
               waterLogs: [],
+              mentalHealthLogs: [],
+              focusLogs: [],
             });
           }
         } catch (error) {
@@ -309,8 +329,65 @@ export const useUserStore = create(
         return {
           workout: state.workoutCompleted ? 100 : 0,
           water: Math.min((state.waterProgress / state.waterGoal) * 100, 100),
-          diet: state.dietGoalMet ? 100 : Math.min((state.meals.length / 3) * 100, 100)
+          diet: state.dietGoalMet ? 100 : Math.min((state.meals.length / 3) * 100, 100),
+          mentalHealth: state.mentalHealthProgress,
+          focus: state.focusProgress
         }
+      },
+
+      // Mental Health tracking
+      updateMentalHealthProgress: (percentage) => {
+        set({ mentalHealthProgress: Math.min(percentage, 100) })
+      },
+
+      logMentalHealthEntry: (mood, journalEntry = '') => {
+        const state = get()
+        const newLog = {
+          id: Date.now(),
+          mood,
+          journalEntry,
+          time: new Date().toISOString()
+        }
+        set({
+          mentalHealthLogs: [...state.mentalHealthLogs, newLog]
+        })
+      },
+
+      // Focus tracking
+      updateFocusProgress: (percentage) => {
+        set({ focusProgress: Math.min(percentage, 100) })
+      },
+
+      logFocusSession: (duration, task, completed = true) => {
+        const state = get()
+        const newLog = {
+          id: Date.now(),
+          duration,
+          task,
+          completed,
+          time: new Date().toISOString()
+        }
+        set({
+          focusLogs: [...state.focusLogs, newLog]
+        })
+      },
+
+      // Update water progress (simplified method)
+      updateWaterProgress: (amount) => {
+        const state = get()
+        const newProgress = state.waterProgress + amount
+        const waterGoalMet = newProgress >= state.waterGoal
+        const newLog = {
+          id: Date.now(),
+          amount,
+          time: new Date().toISOString()
+        }
+        
+        set({
+          waterProgress: newProgress,
+          waterGoalMet,
+          waterLogs: [...state.waterLogs, newLog]
+        })
       },
     }),
     {

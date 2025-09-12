@@ -6,6 +6,8 @@ import Dashboard from "./pages/Dashboard"
 import Workout from "./pages/Workout"
 import Water from "./pages/Water"
 import Diet from "./pages/Diet"
+import MentalHealth from "./pages/MentalHealth"
+import Focus from "./pages/Focus"
 import Login from "./pages/Login"
 import Signup from "./pages/Signup"
 import Welcome from "./pages/Welcome"
@@ -97,6 +99,16 @@ function AppContent() {
               <Route path="/diet" element={
                 <ProtectedRoute>
                   <Diet />
+                </ProtectedRoute>
+              } />
+              <Route path="/mental-health" element={
+                <ProtectedRoute>
+                  <MentalHealth />
+                </ProtectedRoute>
+              } />
+              <Route path="/focus" element={
+                <ProtectedRoute>
+                  <Focus />
                 </ProtectedRoute>
               } />
             </Routes>

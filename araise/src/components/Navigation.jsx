@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom"
-import { Home, Dumbbell, Droplet, Utensils, Flame, User, Settings, LogOut, ChevronDown } from "lucide-react"
+import { Home, Dumbbell, Utensils, Flame, User, Settings, LogOut, ChevronDown, Heart, Brain } from "lucide-react"
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useUserStore } from "../store/userStore"
@@ -8,8 +8,9 @@ import { useAuth } from "../contexts/AuthContext"
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
   { to: "/workout", label: "Workout", icon: Dumbbell },
-  { to: "/water", label: "Water", icon: Droplet },
   { to: "/diet", label: "Diet", icon: Utensils },
+  { to: "/mental-health", label: "Mental Health", icon: Heart },
+  { to: "/focus", label: "Focus", icon: Brain },
 ]
 
 function useMediaQuery(query) {

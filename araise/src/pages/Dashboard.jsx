@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { Flame, Target, Zap, Trophy } from "lucide-react"
+import { Flame, Target, Zap, Trophy, Heart, Brain } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
+import WaterBottle from "../components/WaterBottle"
+import FloatingActionButton from "../components/FloatingActionButton"
 
 // Motivational quotes
 const quotes = [
@@ -67,11 +69,13 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [checkStreak])
 
-  // Radar chart data
+  // Radar chart data (Pentagon with 5 axes)
   const radarData = [
     { subject: 'Workout', progress: progressStats.workout, fullMark: 100 },
-    { subject: 'Water', progress: progressStats.water, fullMark: 100 },
     { subject: 'Diet', progress: progressStats.diet, fullMark: 100 },
+    { subject: 'Water', progress: progressStats.water, fullMark: 100 },
+    { subject: 'Mental Health', progress: progressStats.mentalHealth, fullMark: 100 },
+    { subject: 'Focus', progress: progressStats.focus, fullMark: 100 },
   ]
 
   // Generate calendar heatmap (last 35 days - 5 weeks)
@@ -154,8 +158,8 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      {/* Middle Section - Radar Chart & Calendar Heatmap */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-6">
+      {/* Middle Section - Radar Chart, Calendar & Water Bottle */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-6">
         {/* Progress Radar Chart */}
         <motion.div
           className="glass-card p-4 md:p-6 rounded-2xl"
@@ -164,14 +168,14 @@ export default function Dashboard() {
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           <h2 className="text-xl md:text-2xl font-hagrid font-light mb-3 md:mb-4 text-center tracking-tight">Today's Progress</h2>
-          <div className="h-96 md:h-[32rem] flex items-center justify-center">
+          <div className="h-80 md:h-96 flex items-center justify-center">
             <ResponsiveContainer width="98%" height="98%">
               <RadarChart data={radarData} margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
                 <PolarGrid gridType="polygon" stroke="#22D2FF" strokeWidth={0.5} />
                 <PolarAngleAxis 
                   dataKey="subject" 
-                  tick={{ fill: '#D4D4D4', fontSize: 16, fontWeight: 'light', fontFamily: 'Hagrid' }}
-                  tickOffset={25}
+                  tick={{ fill: '#D4D4D4', fontSize: 14, fontWeight: 'light', fontFamily: 'Hagrid' }}
+                  tickOffset={20}
                 />
                 <PolarRadiusAxis 
                   angle={90} 
@@ -230,11 +234,20 @@ export default function Dashboard() {
             <span className="text-ar-blue font-medium">{streakStats.thisWeek}/7</span> days completed this week
           </div>
         </motion.div>
+
+        {/* Water Bottle Widget */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <WaterBottle />
+        </motion.div>
       </div>
 
-      {/* Bottom Section - Action Cards */}
+      {/* Bottom Section - Micro Action Cards */}
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
@@ -272,47 +285,14 @@ export default function Dashboard() {
           </button>
         </motion.div>
 
-        {/* Water Card */}
-        <motion.div
-          className="glass-card p-6 rounded-2xl cursor-pointer group"
-          onClick={() => navigate('/water')}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-ar-blue/20 rounded-xl">
-              <Zap className="text-ar-blue" size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-hagrid font-light tracking-tight">Water</h3>
-              <p className="text-ar-gray-400 font-hagrid font-light">Stay hydrated</p>
-            </div>
-          </div>
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
-              <span>Progress</span>
-              <span className="text-ar-blue font-medium">{Math.round(progressStats.water)}%</span>
-            </div>
-            <div className="w-full bg-ar-gray-800 rounded-full h-3">
-              <div 
-                className="bg-ar-blue h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progressStats.water}%` }}
-              />
-            </div>
-          </div>
-          <button className="w-full bg-ar-blue hover:bg-ar-blue-light text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
-            {progressStats.water >= 100 ? 'Goal Reached ✓' : 'Log Water'}
-          </button>
-        </motion.div>
-
         {/* Diet Card */}
         <motion.div
-          className="glass-card p-6 rounded-2xl cursor-pointer group"
+          className="glass-card p-4 md:p-6 rounded-2xl cursor-pointer group"
           onClick={() => navigate('/diet')}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
             <div className="p-3 bg-ar-green/20 rounded-xl">
               <Trophy className="text-ar-green" size={24} />
             </div>
@@ -321,14 +301,14 @@ export default function Dashboard() {
               <p className="text-ar-gray-400 font-hagrid font-light">Fuel your body</p>
             </div>
           </div>
-          <div className="mb-4">
+          <div className="mb-3 md:mb-4">
             <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
               <span>Progress</span>
               <span className="text-ar-green font-medium">{Math.round(progressStats.diet)}%</span>
             </div>
-            <div className="w-full bg-ar-gray-800 rounded-full h-3">
+            <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-3">
               <div 
-                className="bg-ar-green h-3 rounded-full transition-all duration-500"
+                className="bg-ar-green h-2 md:h-3 rounded-full transition-all duration-500"
                 style={{ width: `${progressStats.diet}%` }}
               />
             </div>
@@ -337,7 +317,76 @@ export default function Dashboard() {
             {progressStats.diet >= 100 ? 'Goals Met ✓' : 'Log Meal'}
           </button>
         </motion.div>
+
+        {/* Mental Health Card */}
+        <motion.div
+          className="glass-card p-4 md:p-6 rounded-2xl cursor-pointer group"
+          onClick={() => navigate('/mental-health')}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
+            <div className="p-3 bg-purple-500/20 rounded-xl">
+              <Heart className="text-purple-400" size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-hagrid font-light tracking-tight">Mental Health</h3>
+              <p className="text-ar-gray-400 font-hagrid font-light">Mind wellness</p>
+            </div>
+          </div>
+          <div className="mb-3 md:mb-4">
+            <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
+              <span>Progress</span>
+              <span className="text-purple-400 font-medium">{Math.round(progressStats.mentalHealth)}%</span>
+            </div>
+            <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-3">
+              <div 
+                className="bg-purple-400 h-2 md:h-3 rounded-full transition-all duration-500"
+                style={{ width: `${progressStats.mentalHealth}%` }}
+              />
+            </div>
+          </div>
+          <button className="w-full bg-purple-500 hover:bg-purple-400 text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
+            {progressStats.mentalHealth >= 100 ? 'Complete ✓' : 'Check-in'}
+          </button>
+        </motion.div>
+
+        {/* Focus Card */}
+        <motion.div
+          className="glass-card p-4 md:p-6 rounded-2xl cursor-pointer group"
+          onClick={() => navigate('/focus')}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
+            <div className="p-3 bg-blue-500/20 rounded-xl">
+              <Brain className="text-blue-400" size={24} />
+            </div>
+            <div>
+              <h3 className="text-xl font-hagrid font-light tracking-tight">Focus</h3>
+              <p className="text-ar-gray-400 font-hagrid font-light">Deep work</p>
+            </div>
+          </div>
+          <div className="mb-3 md:mb-4">
+            <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
+              <span>Progress</span>
+              <span className="text-blue-400 font-medium">{Math.round(progressStats.focus)}%</span>
+            </div>
+            <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-3">
+              <div 
+                className="bg-blue-400 h-2 md:h-3 rounded-full transition-all duration-500"
+                style={{ width: `${progressStats.focus}%` }}
+              />
+            </div>
+          </div>
+          <button className="w-full bg-blue-500 hover:bg-blue-400 text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
+            {progressStats.focus >= 100 ? 'Goal Met ✓' : 'Start Session'}
+          </button>
+        </motion.div>
       </motion.div>
+
+      {/* Floating Action Button */}
+      <FloatingActionButton />
     </div>
   )
 }
