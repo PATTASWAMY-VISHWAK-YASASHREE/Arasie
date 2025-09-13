@@ -1,18 +1,65 @@
+import { useState } from "react"
 import { motion } from "framer-motion"
+import { Play } from "lucide-react"
 import { useUserStore } from "../../store/userStore"
+import MeditationSession from "./MeditationSession"
 
 const meditations = [
-  { id: 'calm', name: '2-Min Calm', duration: '2 min', color: 'bg-blue-500' },
-  { id: 'focus', name: '3-Min Focus', duration: '3 min', color: 'bg-purple-500' },
-  { id: 'sleep', name: '5-Min Sleep', duration: '5 min', color: 'bg-indigo-500' },
+  { 
+    id: 'bodyscan', 
+    name: 'Body Scan', 
+    description: 'Mindful body awareness for deep relaxation',
+    duration: '10 min',
+    image: './images/mental-health/mini meditation/bodyscan.jpeg',
+    audioSrc: '/sounds/mental-health/mediation/bodyscan.mp3'
+  },
+  { 
+    id: 'mantra', 
+    name: 'Mantra Meditation', 
+    description: 'Sacred sounds for inner peace and focus',
+    duration: '8 min',
+    image: './images/mental-health/mini meditation/mantra-meditation.jpg',
+    audioSrc: '/sounds/mental-health/mediation/mantra-meditation.mp3'
+  },
+  { 
+    id: 'mindfulness', 
+    name: 'Mindfulness', 
+    description: 'Present moment awareness practice',
+    duration: '12 min',
+    image: './images/mental-health/mini meditation/mindfulness.jpg',
+    audioSrc: '/sounds/mental-health/mediation/mindfulness.mp3'
+  },
+  { 
+    id: 'selflove', 
+    name: 'Self Love', 
+    description: 'Compassionate meditation for self-acceptance',
+    duration: '15 min',
+    image: './images/mental-health/mini meditation/selflove.jpg',
+    audioSrc: '/sounds/mental-health/mediation/selflove.mp3'
+  },
 ]
 
 export default function MiniMeditation({ onBack }) {
-  const { updateMentalHealthProgress } = useUserStore()
+  const [selectedMeditation, setSelectedMeditation] = useState(null)
+  const { updateMentalHealthProgress, logMeditationSession } = useUserStore()
 
   const handleStartMeditation = (meditation) => {
-    updateMentalHealthProgress(75)
-    alert(`Starting ${meditation.name} meditation... 🧘‍♀️`)
+    setSelectedMeditation(meditation)
+    // Give initial progress for starting meditation
+    updateMentalHealthProgress(10)
+  }
+
+  const handleBackToList = () => {
+    setSelectedMeditation(null)
+  }
+
+  if (selectedMeditation) {
+    return (
+      <MeditationSession 
+        meditation={selectedMeditation} 
+        onBack={handleBackToList}
+      />
+    )
   }
 
   return (
@@ -31,22 +78,46 @@ export default function MiniMeditation({ onBack }) {
         <h1 className="text-2xl font-hagrid font-light text-ar-white">🧘 Mini Meditation</h1>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {meditations.map((meditation) => (
           <motion.div
             key={meditation.id}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-6 rounded-2xl text-center"
+            className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/30 group hover:scale-105 transition-all duration-300"
           >
-            <h3 className="text-lg font-hagrid font-light text-ar-white mb-2">{meditation.name}</h3>
-            <p className="text-ar-gray-400 text-sm mb-4">{meditation.duration}</p>
-            <button
-              onClick={() => handleStartMeditation(meditation)}
-              className={`w-full ${meditation.color} hover:opacity-90 text-white py-3 rounded-xl transition-all`}
-            >
-              Start Session
-            </button>
+            {/* Background Image */}
+            <img 
+              src={meditation.image}
+              alt={meditation.name}
+              className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity duration-300"
+              onError={(e) => {
+                console.log(`Failed to load image: ${meditation.image}`)
+                e.target.style.display = 'none'
+              }}
+            />
+
+            
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            
+            {/* Content */}
+            <div className="relative p-3 sm:p-6 aspect-[2/3] flex flex-col justify-between">
+              <div className="flex-1 flex flex-col justify-center">
+                <h3 className="text-lg sm:text-2xl md:text-3xl font-hagrid font-bold text-white mb-1 sm:mb-3 leading-tight">{meditation.name}</h3>
+                <p className="text-gray-300 text-xs sm:text-sm leading-relaxed line-clamp-3 mb-2">{meditation.description}</p>
+                <p className="text-purple-300 text-xs sm:text-sm font-medium">{meditation.duration}</p>
+              </div>
+              
+              <button
+                onClick={() => handleStartMeditation(meditation)}
+                className="w-full py-2 sm:py-3 md:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm md:text-base font-medium transition-all duration-300 border-2 bg-transparent border-purple-500 text-purple-400 hover:bg-purple-500/10 backdrop-blur-sm mt-2 sm:mt-0"
+              >
+                <Play size={16} className="inline mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Start Session</span>
+                <span className="sm:hidden">Start</span>
+              </button>
+            </div>
           </motion.div>
         ))}
       </div>

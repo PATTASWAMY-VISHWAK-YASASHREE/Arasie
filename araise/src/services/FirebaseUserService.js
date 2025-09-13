@@ -353,29 +353,99 @@ export class FirebaseUserService {
 
   // Update focus progress
   async updateFocusProgress(percentage, currentProgress) {
-    const newProgress = Math.min(percentage, 100);
+    try {
+      const newProgress = Math.min(currentProgress + percentage, 100);
 
-    const updates = {
-      focusProgress: newProgress,
-      lastUpdated: serverTimestamp()
-    };
+      const updates = {
+        focusProgress: newProgress,
+        lastUpdated: serverTimestamp()
+      };
 
-    await updateDoc(this.userRef, updates);
-    return { newProgress };
+      await updateDoc(this.userRef, updates);
+      return { newProgress };
+    } catch (error) {
+      console.error('Error updating focus progress:', error);
+      throw error;
+    }
   }
 
   // Save focus task
   async saveFocusTask(taskData, currentTasks) {
-    const newTask = {
+    const today = new Date().toISOString().slice(0, 10);
+    const tasksToCreate = [];
+
+    // Create the main task for today
+    const mainTask = {
       id: Date.now(),
       ...taskData,
       status: 'upcoming',
       completed: 0,
-      date: new Date().toISOString().slice(0, 10),
-      created: new Date().toISOString()
+      date: today,
+      created: new Date().toISOString(),
+      isRepeating: taskData.repeat !== 'none',
+      originalTaskId: null // This is the original task
     };
 
-    const updatedTasks = [...currentTasks, newTask];
+    tasksToCreate.push(mainTask);
+
+    // Handle repeat functionality
+    if (taskData.repeat === 'daily') {
+      // Create tasks for the next 7 days
+      for (let i = 1; i <= 7; i++) {
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + i);
+        const futureDateStr = futureDate.toISOString().slice(0, 10);
+
+        // Check if task already exists for this date
+        const existingTask = currentTasks.find(task =>
+          task.name === taskData.name &&
+          task.date === futureDateStr &&
+          task.originalTaskId === mainTask.id
+        );
+
+        if (!existingTask) {
+          tasksToCreate.push({
+            id: Date.now() + i, // Ensure unique IDs
+            ...taskData,
+            status: 'upcoming',
+            completed: 0,
+            date: futureDateStr,
+            created: new Date().toISOString(),
+            isRepeating: true,
+            originalTaskId: mainTask.id
+          });
+        }
+      }
+    } else if (taskData.repeat === 'weekly') {
+      // Create tasks for the next 4 weeks (same day of week)
+      for (let i = 1; i <= 4; i++) {
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + (i * 7));
+        const futureDateStr = futureDate.toISOString().slice(0, 10);
+
+        // Check if task already exists for this date
+        const existingTask = currentTasks.find(task =>
+          task.name === taskData.name &&
+          task.date === futureDateStr &&
+          task.originalTaskId === mainTask.id
+        );
+
+        if (!existingTask) {
+          tasksToCreate.push({
+            id: Date.now() + (i * 1000), // Ensure unique IDs
+            ...taskData,
+            status: 'upcoming',
+            completed: 0,
+            date: futureDateStr,
+            created: new Date().toISOString(),
+            isRepeating: true,
+            originalTaskId: mainTask.id
+          });
+        }
+      }
+    }
+
+    const updatedTasks = [...currentTasks, ...tasksToCreate];
 
     const updates = {
       focusTasks: updatedTasks,
@@ -383,7 +453,7 @@ export class FirebaseUserService {
     };
 
     await updateDoc(this.userRef, updates);
-    return { newTask, updatedTasks };
+    return { newTask: mainTask, updatedTasks };
   }
 
   // Update focus task progress
@@ -452,13 +522,140 @@ export class FirebaseUserService {
       const userDoc = await getDoc(this.userRef);
       if (userDoc.exists()) {
         const data = userDoc.data();
-        return data.focusTasks || [];
+        const tasks = data.focusTasks || [];
+
+        // Check and create missing repeated tasks
+        const updatedTasks = await this.checkAndCreateRepeatedTasks(tasks);
+
+        // If new tasks were created, save them
+        if (updatedTasks.length > tasks.length) {
+          await updateDoc(this.userRef, {
+            focusTasks: updatedTasks,
+            lastUpdated: serverTimestamp()
+          });
+        }
+
+        return updatedTasks;
       }
       return [];
     } catch (error) {
       console.error('Error loading focus tasks:', error);
       return [];
     }
+  }
+
+  // Check and create missing repeated tasks
+  async checkAndCreateRepeatedTasks(currentTasks) {
+    const today = new Date().toISOString().slice(0, 10);
+    const tasksToAdd = [];
+
+    // Find all original repeating tasks
+    const originalRepeatingTasks = currentTasks.filter(task =>
+      task.isRepeating && task.originalTaskId === null
+    );
+
+    for (const originalTask of originalRepeatingTasks) {
+      if (originalTask.repeat === 'daily') {
+        // Check if we need to create today's task
+        const todayTaskExists = currentTasks.some(task =>
+          task.originalTaskId === originalTask.id && task.date === today
+        );
+
+        if (!todayTaskExists && originalTask.date !== today) {
+          tasksToAdd.push({
+            id: Date.now() + Math.random() * 1000,
+            ...originalTask,
+            id: Date.now() + Math.random() * 1000, // New unique ID
+            status: 'upcoming',
+            completed: 0,
+            date: today,
+            created: new Date().toISOString(),
+            isRepeating: true,
+            originalTaskId: originalTask.id
+          });
+        }
+
+        // Create future daily tasks (next 7 days)
+        for (let i = 1; i <= 7; i++) {
+          const futureDate = new Date();
+          futureDate.setDate(futureDate.getDate() + i);
+          const futureDateStr = futureDate.toISOString().slice(0, 10);
+
+          const futureTaskExists = currentTasks.some(task =>
+            task.originalTaskId === originalTask.id && task.date === futureDateStr
+          );
+
+          if (!futureTaskExists) {
+            tasksToAdd.push({
+              id: Date.now() + Math.random() * 1000 + i,
+              ...originalTask,
+              id: Date.now() + Math.random() * 1000 + i, // New unique ID
+              status: 'upcoming',
+              completed: 0,
+              date: futureDateStr,
+              created: new Date().toISOString(),
+              isRepeating: true,
+              originalTaskId: originalTask.id
+            });
+          }
+        }
+      } else if (originalTask.repeat === 'weekly') {
+        // Get the day of week from original task
+        const originalDate = new Date(originalTask.date);
+        const originalDayOfWeek = originalDate.getDay();
+        const todayDate = new Date();
+        const todayDayOfWeek = todayDate.getDay();
+
+        // Check if today matches the original day of week
+        if (originalDayOfWeek === todayDayOfWeek) {
+          const todayTaskExists = currentTasks.some(task =>
+            task.originalTaskId === originalTask.id && task.date === today
+          );
+
+          if (!todayTaskExists && originalTask.date !== today) {
+            tasksToAdd.push({
+              id: Date.now() + Math.random() * 1000,
+              ...originalTask,
+              id: Date.now() + Math.random() * 1000, // New unique ID
+              status: 'upcoming',
+              completed: 0,
+              date: today,
+              created: new Date().toISOString(),
+              isRepeating: true,
+              originalTaskId: originalTask.id
+            });
+          }
+        }
+
+        // Create future weekly tasks (next 4 weeks, same day of week)
+        for (let i = 1; i <= 4; i++) {
+          const futureDate = new Date();
+          const daysUntilTargetDay = (originalDayOfWeek - todayDayOfWeek + 7) % 7;
+          futureDate.setDate(futureDate.getDate() + daysUntilTargetDay + (i * 7));
+          const futureDateStr = futureDate.toISOString().slice(0, 10);
+
+          const futureTaskExists = currentTasks.some(task =>
+            task.originalTaskId === originalTask.id && task.date === futureDateStr
+          );
+
+          if (!futureTaskExists) {
+            tasksToAdd.push({
+              id: Date.now() + Math.random() * 1000 + (i * 1000),
+              ...originalTask,
+              id: Date.now() + Math.random() * 1000 + (i * 1000), // New unique ID
+              status: 'upcoming',
+              completed: 0,
+              date: futureDateStr,
+              created: new Date().toISOString(),
+              isRepeating: true,
+              originalTaskId: originalTask.id
+            });
+          }
+        }
+      }
+    }
+
+    return [...currentTasks, ...tasksToAdd];
   }
 
   // Migrate localStorage focus tasks to Firebase (one-time migration)
@@ -519,14 +716,14 @@ export class FirebaseUserService {
       const userDoc = await getDoc(this.userRef);
       const currentData = userDoc.exists() ? userDoc.data() : {};
       const currentEntries = currentData.journalEntries || [];
-      
+
       const updatedEntries = [entry, ...currentEntries];
-      
+
       await updateDoc(this.userRef, {
         journalEntries: updatedEntries,
         lastUpdated: serverTimestamp()
       });
-      
+
       return updatedEntries;
     } catch (error) {
       console.error('Error saving journal entry:', error);
@@ -539,18 +736,18 @@ export class FirebaseUserService {
       const userDoc = await getDoc(this.userRef);
       const currentData = userDoc.exists() ? userDoc.data() : {};
       const currentEntries = currentData.journalEntries || [];
-      
-      const updatedEntries = currentEntries.map(entry => 
-        entry.id === entryId 
+
+      const updatedEntries = currentEntries.map(entry =>
+        entry.id === entryId
           ? { ...entry, content: updatedContent, lastModified: new Date().toISOString() }
           : entry
       );
-      
+
       await updateDoc(this.userRef, {
         journalEntries: updatedEntries,
         lastUpdated: serverTimestamp()
       });
-      
+
       return updatedEntries;
     } catch (error) {
       console.error('Error updating journal entry:', error);
@@ -563,14 +760,14 @@ export class FirebaseUserService {
       const userDoc = await getDoc(this.userRef);
       const currentData = userDoc.exists() ? userDoc.data() : {};
       const currentEntries = currentData.journalEntries || [];
-      
+
       const updatedEntries = currentEntries.filter(entry => entry.id !== entryId);
-      
+
       await updateDoc(this.userRef, {
         journalEntries: updatedEntries,
         lastUpdated: serverTimestamp()
       });
-      
+
       return updatedEntries;
     } catch (error) {
       console.error('Error deleting journal entry:', error);
@@ -654,4 +851,36 @@ export class FirebaseUserService {
       console.error('Error listening to user progress updates:', error);
     });
   }
+
+  // Mental Health Activity Logging
+  async updateMentalHealthProgress(newProgress) {
+    try {
+      await updateDoc(this.userRef, {
+        mentalHealthProgress: newProgress,
+        lastUpdated: serverTimestamp()
+      });
+      return { newProgress };
+    } catch (error) {
+      console.error('Error updating mental health progress:', error);
+      throw error;
+    }
+  }
+
+  async logMentalHealthActivity(activityLog, currentLogs) {
+    try {
+      const updatedLogs = [...currentLogs, activityLog];
+
+      await updateDoc(this.userRef, {
+        mentalHealthLogs: updatedLogs,
+        lastUpdated: serverTimestamp()
+      });
+
+      return { updatedLogs };
+    } catch (error) {
+      console.error('Error logging mental health activity:', error);
+      throw error;
+    }
+  }
+
+
 }

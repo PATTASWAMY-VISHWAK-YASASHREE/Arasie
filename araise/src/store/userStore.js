@@ -395,7 +395,8 @@ export const useUserStore = create(
         const thisWeek = state.calendar.filter(c => {
           const date = new Date(c.date)
           const today = new Date()
-          const weekStart = new Date(today.setDate(today.getDate() - today.getDay()))
+          const weekStart = new Date(today.getTime()) // Create a copy to avoid mutation
+          weekStart.setDate(weekStart.getDate() - weekStart.getDay())
           return date >= weekStart && c.completed
         }).length
 
@@ -419,8 +420,118 @@ export const useUserStore = create(
       },
 
       // Mental Health tracking
-      updateMentalHealthProgress: (percentage) => {
-        set({ mentalHealthProgress: Math.min(percentage, 100) })
+      updateMentalHealthProgress: async (percentage) => {
+        const state = get();
+        const newProgress = Math.min(state.mentalHealthProgress + percentage, 100);
+        
+        if (!state.firebaseService) {
+          set({ mentalHealthProgress: newProgress });
+          return;
+        }
+
+        try {
+          await state.firebaseService.updateMentalHealthProgress(newProgress);
+          set({ mentalHealthProgress: newProgress });
+        } catch (error) {
+          console.error('Error updating mental health progress:', error);
+          // Fallback to local update
+          set({ mentalHealthProgress: newProgress });
+        }
+      },
+
+      // Add specific mental health activity tracking
+      logBreathingSession: async (exerciseName, duration) => {
+        const state = get();
+        const newLog = {
+          id: Date.now(),
+          type: 'breathing',
+          activity: exerciseName,
+          duration: duration,
+          time: new Date().toISOString()
+        };
+
+        if (!state.firebaseService) {
+          set({
+            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
+          });
+          return;
+        }
+
+        try {
+          const { updatedLogs } = await state.firebaseService.logMentalHealthActivity(
+            newLog,
+            state.mentalHealthLogs
+          );
+          set({ mentalHealthLogs: updatedLogs });
+        } catch (error) {
+          console.error('Error logging breathing session:', error);
+          // Fallback to local storage
+          set({
+            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
+          });
+        }
+      },
+
+      logMeditationSession: async (meditationName, duration) => {
+        const state = get();
+        const newLog = {
+          id: Date.now(),
+          type: 'meditation',
+          activity: meditationName,
+          duration: duration,
+          time: new Date().toISOString()
+        };
+
+        if (!state.firebaseService) {
+          set({
+            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
+          });
+          return;
+        }
+
+        try {
+          const { updatedLogs } = await state.firebaseService.logMentalHealthActivity(
+            newLog,
+            state.mentalHealthLogs
+          );
+          set({ mentalHealthLogs: updatedLogs });
+        } catch (error) {
+          console.error('Error logging meditation session:', error);
+          set({
+            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
+          });
+        }
+      },
+
+      logSoundHealingSession: async (soundName, duration) => {
+        const state = get();
+        const newLog = {
+          id: Date.now(),
+          type: 'sound_healing',
+          activity: soundName,
+          duration: duration,
+          time: new Date().toISOString()
+        };
+
+        if (!state.firebaseService) {
+          set({
+            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
+          });
+          return;
+        }
+
+        try {
+          const { updatedLogs } = await state.firebaseService.logMentalHealthActivity(
+            newLog,
+            state.mentalHealthLogs
+          );
+          set({ mentalHealthLogs: updatedLogs });
+        } catch (error) {
+          console.error('Error logging sound healing session:', error);
+          set({
+            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
+          });
+        }
       },
 
       logMentalHealthEntry: (mood, journalEntry = '') => {
@@ -645,8 +756,17 @@ export const useUserStore = create(
         if (!state.firebaseService) {
           // Load from localStorage for non-authenticated users
           const savedTasks = JSON.parse(localStorage.getItem('focusCustomTasks') || '[]');
-          set({ focusTasks: savedTasks });
-          return savedTasks;
+          
+          // Check and create missing repeated tasks
+          const updatedTasks = state.checkAndCreateRepeatedTasksLocal(savedTasks);
+          
+          // If new tasks were created, save them
+          if (updatedTasks.length > savedTasks.length) {
+            localStorage.setItem('focusCustomTasks', JSON.stringify(updatedTasks));
+          }
+          
+          set({ focusTasks: updatedTasks });
+          return updatedTasks;
         }
 
         try {
@@ -659,27 +779,155 @@ export const useUserStore = create(
         }
       },
 
+      // Helper function for localStorage repeated tasks
+      checkAndCreateRepeatedTasksLocal: (currentTasks) => {
+        const today = new Date().toISOString().slice(0, 10);
+        const tasksToAdd = [];
+
+        // Find all original repeating tasks
+        const originalRepeatingTasks = currentTasks.filter(task => 
+          task.isRepeating && task.originalTaskId === null
+        );
+
+        for (const originalTask of originalRepeatingTasks) {
+          if (originalTask.repeat === 'daily') {
+            // Check if we need to create today's task
+            const todayTaskExists = currentTasks.some(task => 
+              task.originalTaskId === originalTask.id && task.date === today
+            );
+
+            if (!todayTaskExists && originalTask.date !== today) {
+              const newId = Date.now() + Math.random() * 1000;
+              tasksToAdd.push({
+                ...originalTask,
+                id: newId,
+                status: 'upcoming',
+                completed: 0,
+                date: today,
+                created: new Date().toISOString(),
+                isRepeating: true,
+                originalTaskId: originalTask.id
+              });
+            }
+          } else if (originalTask.repeat === 'weekly') {
+            // Get the day of week from original task
+            const originalDate = new Date(originalTask.date);
+            const originalDayOfWeek = originalDate.getDay();
+            const todayDate = new Date();
+            const todayDayOfWeek = todayDate.getDay();
+
+            // Check if today matches the original day of week
+            if (originalDayOfWeek === todayDayOfWeek) {
+              const todayTaskExists = currentTasks.some(task => 
+                task.originalTaskId === originalTask.id && task.date === today
+              );
+
+              if (!todayTaskExists && originalTask.date !== today) {
+                const newId = Date.now() + Math.random() * 1000;
+                tasksToAdd.push({
+                  ...originalTask,
+                  id: newId,
+                  status: 'upcoming',
+                  completed: 0,
+                  date: today,
+                  created: new Date().toISOString(),
+                  isRepeating: true,
+                  originalTaskId: originalTask.id
+                });
+              }
+            }
+          }
+        }
+
+        return [...currentTasks, ...tasksToAdd];
+      },
+
       // Focus Task Management
       saveFocusTask: async (taskData) => {
         const state = get();
 
         if (!state.firebaseService) {
           // Fallback to localStorage for non-authenticated users
-          const newTask = {
+          const today = new Date().toISOString().slice(0, 10);
+          const savedTasks = JSON.parse(localStorage.getItem('focusCustomTasks') || '[]');
+          const tasksToCreate = [];
+
+          // Create the main task for today
+          const mainTask = {
             id: Date.now(),
             ...taskData,
             status: 'upcoming',
             completed: 0,
-            date: new Date().toISOString().slice(0, 10),
-            created: new Date().toISOString()
+            date: today,
+            created: new Date().toISOString(),
+            isRepeating: taskData.repeat !== 'none',
+            originalTaskId: null
           };
 
-          const savedTasks = JSON.parse(localStorage.getItem('focusCustomTasks') || '[]');
-          const updatedTasks = [...savedTasks, newTask];
+          tasksToCreate.push(mainTask);
+
+          // Handle repeat functionality
+          if (taskData.repeat === 'daily') {
+            // Create tasks for the next 7 days
+            for (let i = 1; i <= 7; i++) {
+              const futureDate = new Date();
+              futureDate.setDate(futureDate.getDate() + i);
+              const futureDateStr = futureDate.toISOString().slice(0, 10);
+
+              // Check if task already exists for this date
+              const existingTask = savedTasks.find(task => 
+                task.name === taskData.name && 
+                task.date === futureDateStr &&
+                task.originalTaskId === mainTask.id
+              );
+
+              if (!existingTask) {
+                tasksToCreate.push({
+                  id: Date.now() + i,
+                  ...taskData,
+                  status: 'upcoming',
+                  completed: 0,
+                  date: futureDateStr,
+                  created: new Date().toISOString(),
+                  isRepeating: true,
+                  originalTaskId: mainTask.id
+                });
+              }
+            }
+          } else if (taskData.repeat === 'weekly') {
+            // Create tasks for the next 4 weeks
+            for (let i = 1; i <= 4; i++) {
+              const futureDate = new Date();
+              futureDate.setDate(futureDate.getDate() + (i * 7));
+              const futureDateStr = futureDate.toISOString().slice(0, 10);
+
+              // Check if task already exists for this date
+              const existingTask = savedTasks.find(task => 
+                task.name === taskData.name && 
+                task.date === futureDateStr &&
+                task.originalTaskId === mainTask.id
+              );
+
+              if (!existingTask) {
+                tasksToCreate.push({
+                  id: Date.now() + (i * 1000),
+                  ...taskData,
+                  status: 'upcoming',
+                  completed: 0,
+                  date: futureDateStr,
+                  created: new Date().toISOString(),
+                  isRepeating: true,
+                  originalTaskId: mainTask.id
+                });
+              }
+            }
+          }
+
+          const updatedTasks = [...savedTasks, ...tasksToCreate];
           localStorage.setItem('focusCustomTasks', JSON.stringify(updatedTasks));
 
           set({ focusTasks: updatedTasks });
-          return newTask;
+          return mainTask;
         }
 
         try {

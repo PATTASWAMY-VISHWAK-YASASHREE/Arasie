@@ -35,7 +35,8 @@ export default function Dashboard() {
     mentalHealthProgress,
     waterProgress,
     workoutCompleted,
-    dietGoalMet
+    dietGoalMet,
+    meals
   } = useUserStore()
 
   // Immediate authentication check - don't render anything if not properly authenticated
@@ -70,11 +71,11 @@ export default function Dashboard() {
     setProgressStats({
       workout: workoutCompleted ? 100 : 0,
       water: Math.min((waterProgress / 3000) * 100, 100), // 3000ml = 3L goal
-      diet: dietGoalMet ? 100 : 0,
+      diet: dietGoalMet ? 100 : Math.min((meals.length / 3) * 100, 100), // Show gradual progress based on meals logged
       mentalHealth: mentalHealthProgress,
       focus: focusProgress
     })
-  }, [workoutCompleted, waterProgress, dietGoalMet, mentalHealthProgress, focusProgress])
+  }, [workoutCompleted, waterProgress, dietGoalMet, mentalHealthProgress, focusProgress, meals.length])
 
   // Rotate quotes every 5 seconds
   useEffect(() => {

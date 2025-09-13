@@ -28,6 +28,9 @@ export default function Focus() {
     setDashboardRefresh(prev => prev + 1)
   }
 
+  // Real-time progress update handler (throttled to avoid too many Firebase calls)
+  const [lastProgressUpdate, setLastProgressUpdate] = useState(0)
+
   // Handler functions for the new design
   const handleStartSession = (type, task = null) => {
     let sessionData
@@ -90,8 +93,8 @@ export default function Focus() {
   }
 
   const handleSessionComplete = async (sessionResult) => {
-    // Log the session (both completed and partial sessions)
-    if (typeof logFocusSession === 'function') {
+    // Only log to focusLogs if this is NOT a custom task (to avoid double counting)
+    if (!currentSession?.taskId && typeof logFocusSession === 'function') {
       await logFocusSession(sessionResult.duration, sessionResult.task, sessionResult.completed)
     }
     
@@ -107,10 +110,27 @@ export default function Focus() {
     // Update focus progress (include both completed and partial sessions)
     if (typeof updateFocusProgress === 'function' && sessionResult.duration > 0) {
       const today = new Date().toISOString().slice(0, 10)
-      const todaysSessions = focusLogs.filter(log => 
+      
+      // Get today's focus log sessions (pomodoro sessions only)
+      const todaysFocusLogSessions = focusLogs.filter(log => 
         log.time && log.time.slice(0, 10) === today
       )
-      const totalMinutes = todaysSessions.reduce((total, session) => total + session.duration, 0) + sessionResult.duration
+      const focusLogMinutes = todaysFocusLogSessions.reduce((total, session) => total + session.duration, 0)
+      
+      // Get today's completed tasks (custom tasks only)
+      const todaysCompletedTasks = focusTasks.filter(task => 
+        task.date === today && task.status === 'completed'
+      )
+      const taskMinutes = todaysCompletedTasks.reduce((total, task) => total + (task.completed || task.planned || 0), 0)
+      
+      // Add current session minutes (don't double count)
+      let totalMinutes = focusLogMinutes + taskMinutes
+      if (!currentSession?.taskId) {
+        // This is a pomodoro session, add to focus log minutes
+        totalMinutes += sessionResult.duration
+      }
+      // Custom task minutes are already included via updateFocusTaskProgress
+      
       await updateFocusProgress(Math.min((totalMinutes / 60) * 100, 100)) // 60 min = 1h goal
     }
     
@@ -148,9 +168,6 @@ export default function Focus() {
     }
   }
 
-  // Real-time progress update handler (throttled to avoid too many Firebase calls)
-  const [lastProgressUpdate, setLastProgressUpdate] = useState(0)
-  
   const handleProgressUpdate = async (taskId, minutesSpent) => {
     try {
       // Only update every minute to avoid too many Firebase calls
@@ -163,10 +180,21 @@ export default function Focus() {
           // Also update overall focus progress
           if (typeof updateFocusProgress === 'function') {
             const today = new Date().toISOString().slice(0, 10)
-            const todaysSessions = focusLogs.filter(log => 
+            
+            // Get today's focus log sessions (pomodoro sessions only)
+            const todaysFocusLogSessions = focusLogs.filter(log => 
               log.time && log.time.slice(0, 10) === today
             )
-            const totalMinutes = todaysSessions.reduce((total, session) => total + session.duration, 0) + progressToAdd
+            const focusLogMinutes = todaysFocusLogSessions.reduce((total, session) => total + session.duration, 0)
+            
+            // Get today's completed tasks (custom tasks only) 
+            const todaysCompletedTasks = focusTasks.filter(task => 
+              task.date === today && task.status === 'completed'
+            )
+            const taskMinutes = todaysCompletedTasks.reduce((total, task) => total + (task.completed || task.planned || 0), 0)
+            
+            // Add current progress (this is a custom task session)
+            const totalMinutes = focusLogMinutes + taskMinutes + progressToAdd
             await updateFocusProgress(Math.min((totalMinutes / 60) * 100, 100))
           }
           

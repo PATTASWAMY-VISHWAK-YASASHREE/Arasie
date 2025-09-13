@@ -8,10 +8,10 @@ export default function Journaling({ onBack }) {
   const [editingEntry, setEditingEntry] = useState(null)
   const [editContent, setEditContent] = useState('')
   const [expandedEntries, setExpandedEntries] = useState(new Set())
-  const [selectedMood, setSelectedMood] = useState(null)
-  const [showMoodSelector, setShowMoodSelector] = useState(false)
+  const [selectedMood, setSelectedMood] = useState('neutral')
   const [moodSelectedToday, setMoodSelectedToday] = useState(false)
-  const [journalWrittenToday, setJournalWrittenToday] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
   const { 
     journalEntries, 
     updateMentalHealthProgress, 
@@ -22,112 +22,89 @@ export default function Journaling({ onBack }) {
     loadJournalEntries
   } = useUserStore()
 
-  // Auto-create today's entry if it doesn't exist
-  const createTodaysEntry = () => {
-    const today = new Date()
-    const todayEntry = {
-      id: Date.now(),
-      content: "Today's reflection...", // Placeholder content
-      date: today.toISOString(),
-      mood: 'neutral',
-      isAutoCreated: true // Flag to identify auto-created entries
-    }
-    return todayEntry
-  }
-
   // Load journal entries from database on component mount
   useEffect(() => {
     const loadEntries = async () => {
       try {
+        setIsLoading(true)
+        setError(null)
         await loadJournalEntries()
-        
-        // Check if today's entry exists after loading
-        const today = new Date()
-        const todaysEntry = journalEntries.find(entry => 
-          new Date(entry.date).toDateString() === today.toDateString()
-        )
-        
-        if (todaysEntry) {
-          // Check if mood was selected today
-          if (todaysEntry.mood && todaysEntry.mood !== 'neutral') {
-            setMoodSelectedToday(true)
-            setSelectedMood(todaysEntry.mood)
-          }
-          
-          // Check if journal was written today (not just auto-created)
-          if (todaysEntry.content && 
-              todaysEntry.content !== "Today's reflection..." && 
-              !todaysEntry.isAutoCreated) {
-            setJournalWrittenToday(true)
-          }
-        } else {
-          // Auto-create today's entry if it doesn't exist
-          const todaysEntry = createTodaysEntry()
-          await saveJournalEntry(todaysEntry)
-        }
       } catch (error) {
         console.error('Error loading journal entries:', error)
+        setError('Failed to load journal entries. Please try again.')
+      } finally {
+        setIsLoading(false)
       }
     }
     
     loadEntries()
-  }, [journalEntries.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
+
+  // Check if mood was selected today whenever journalEntries changes
+  useEffect(() => {
+    if (journalEntries.length > 0) {
+      const today = new Date()
+      const todaysEntry = journalEntries.find(entry => 
+        new Date(entry.date).toDateString() === today.toDateString()
+      )
+      
+      if (todaysEntry && todaysEntry.mood && todaysEntry.mood !== 'neutral') {
+        setMoodSelectedToday(true)
+        setSelectedMood(todaysEntry.mood)
+      }
+    }
+  }, [journalEntries])
 
   const handleJournalSave = async () => {
-    if (journalNote.trim()) {
-      try {
-        const newEntry = {
-          id: Date.now(),
-          content: journalNote.trim(),
-          date: new Date().toISOString(),
-          mood: selectedMood || 'neutral',
-          isAutoCreated: false
-        }
-        
-        await saveJournalEntry(newEntry)
-        logMentalHealthEntry(selectedMood || 'neutral', journalNote.trim())
-        
-        // Give progress based on what's been completed today
-        if (!journalWrittenToday) {
-          // First journal entry of the day gets 100% (or 75% if mood already selected)
-          const progressToGive = moodSelectedToday ? 75 : 100
-          updateMentalHealthProgress(progressToGive)
-          setJournalWrittenToday(true)
-        } else {
-          // Additional entries get 25%
-          updateMentalHealthProgress(25)
-        }
-        
-        setJournalNote('')
-        setIsWriting(false)
-      } catch (error) {
-        console.error('Error saving journal entry:', error)
+    if (!journalNote.trim()) return
+    
+    try {
+      setError(null)
+      const newEntry = {
+        id: Date.now(),
+        content: journalNote.trim(),
+        date: new Date().toISOString(),
+        mood: selectedMood,
       }
+      
+      await saveJournalEntry(newEntry)
+      logMentalHealthEntry(selectedMood, journalNote.trim())
+      
+      // Give 25% progress for journal entry
+      updateMentalHealthProgress(25)
+      
+      setJournalNote('')
+      setIsWriting(false)
+    } catch (error) {
+      console.error('Error saving journal entry:', error)
+      setError('Failed to save journal entry. Please try again.')
     }
   }
 
+  const getTodaysEntry = () => {
+    const today = new Date()
+    return journalEntries.find(entry => 
+      new Date(entry.date).toDateString() === today.toDateString()
+    )
+  }
+
   const handleAppendToToday = async () => {
-    if (journalNote.trim() && journalEntries.length > 0 && formatDate(journalEntries[0].date) === 'Today') {
+    if (!journalNote.trim()) return
+    
+    const todaysEntry = getTodaysEntry()
+    
+    if (todaysEntry) {
       try {
-        // Append to today's existing entry
-        const todaysEntry = journalEntries[0]
+        setError(null)
         const updatedContent = todaysEntry.content + '\n\n' + journalNote.trim()
-        
         await updateJournalEntry(todaysEntry.id, updatedContent)
-        logMentalHealthEntry(selectedMood || 'neutral', journalNote.trim())
-        
-        // Only give progress if this is the first real content added today
-        if (todaysEntry.isAutoCreated || todaysEntry.content === "Today's reflection...") {
-          const progressToGive = moodSelectedToday ? 75 : 100
-          updateMentalHealthProgress(progressToGive)
-          setJournalWrittenToday(true)
-        } else {
-          updateMentalHealthProgress(25) // 25% for adding more thoughts
-        }
+        logMentalHealthEntry(selectedMood, journalNote.trim())
+        updateMentalHealthProgress(10) // 10% for adding more thoughts
         setJournalNote('')
         setIsWriting(false)
       } catch (error) {
         console.error('Error appending to journal entry:', error)
+        setError('Failed to update journal entry. Please try again.')
       }
     } else {
       // Create new entry if no today's entry exists
@@ -159,7 +136,7 @@ export default function Journaling({ onBack }) {
     }
   }
 
-  const getEntryIcon = (index) => {
+  const getEntryIcon = () => {
     return (
       <div className="w-7 h-7 bg-purple-500/20 rounded-lg flex items-center justify-center">
         <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,14 +152,16 @@ export default function Journaling({ onBack }) {
   }
 
   const handleSaveEdit = async (entryId) => {
-    if (editContent.trim()) {
-      try {
-        await updateJournalEntry(entryId, editContent.trim())
-        setEditingEntry(null)
-        setEditContent('')
-      } catch (error) {
-        console.error('Error updating journal entry:', error)
-      }
+    if (!editContent.trim()) return
+    
+    try {
+      setError(null)
+      await updateJournalEntry(entryId, editContent.trim())
+      setEditingEntry(null)
+      setEditContent('')
+    } catch (error) {
+      console.error('Error updating journal entry:', error)
+      setError('Failed to update journal entry. Please try again.')
     }
   }
 
@@ -192,59 +171,33 @@ export default function Journaling({ onBack }) {
   }
 
   const handleDeleteEntry = async (entryId) => {
-    if (window.confirm('Are you sure you want to delete this journal entry?')) {
-      try {
-        await deleteJournalEntry(entryId)
-      } catch (error) {
-        console.error('Error deleting journal entry:', error)
-      }
+    if (!window.confirm('Are you sure you want to delete this journal entry?')) return
+    
+    try {
+      setError(null)
+      await deleteJournalEntry(entryId)
+    } catch (error) {
+      console.error('Error deleting journal entry:', error)
+      setError('Failed to delete journal entry. Please try again.')
     }
   }
 
-  const handleSaveAsNewEntry = async () => {
-    // Save today's entry content as a new separate entry
-    if (journalEntries.length > 0 && formatDate(journalEntries[0].date) === 'Today') {
-      const todaysEntry = journalEntries[0]
-      if (todaysEntry.content && todaysEntry.content !== "Today's reflection...") {
-        try {
-          const newEntry = {
-            id: Date.now(),
-            content: todaysEntry.content,
-            date: new Date().toISOString(),
-            mood: selectedMood || 'neutral'
-          }
-          
-          await saveJournalEntry(newEntry)
-          logMentalHealthEntry(selectedMood || 'neutral', todaysEntry.content)
-          updateMentalHealthProgress(25) // 25% for saving additional entry
-        } catch (error) {
-          console.error('Error saving new journal entry:', error)
-        }
-      }
-    }
-  }
+
 
   const handleMoodSelect = async (mood) => {
     if (moodSelectedToday) return // Don't allow multiple mood selections per day
     
-    setSelectedMood(mood)
-    setMoodSelectedToday(true)
-    setShowMoodSelector(false)
-    
-    // Give 25% progress for mood reaction (only once per day)
-    logMentalHealthEntry(mood, '')
-    updateMentalHealthProgress(25)
-    
-    // Update today's entry with the selected mood if it exists
-    if (journalEntries.length > 0 && formatDate(journalEntries[0].date) === 'Today') {
-      try {
-        const todaysEntry = journalEntries[0]
-        // Update the entry with the new mood
-        const updatedContent = todaysEntry.content
-        await updateJournalEntry(todaysEntry.id, updatedContent)
-      } catch (error) {
-        console.error('Error updating mood:', error)
-      }
+    try {
+      setError(null)
+      setSelectedMood(mood)
+      setMoodSelectedToday(true)
+      
+      // Give 15% progress for mood selection (only once per day)
+      logMentalHealthEntry(mood, '')
+      updateMentalHealthProgress(15)
+    } catch (error) {
+      console.error('Error selecting mood:', error)
+      setError('Failed to save mood. Please try again.')
     }
   }
 
@@ -257,14 +210,15 @@ export default function Journaling({ onBack }) {
   ]
 
   const MoodSelector = () => (
-    <div className="mb-4">
-      <h4 className="text-sm font-medium text-ar-white mb-3">How are you feeling today?</h4>
-      <div className="flex gap-3 justify-center">
+    <div className="mb-6">
+      <h4 className="text-sm font-medium text-ar-white mb-3 text-center">How are you feeling today?</h4>
+      <div className="flex gap-2 sm:gap-3 justify-center flex-wrap">
         {moods.map((mood) => (
           <button
             key={mood.name}
             onClick={() => handleMoodSelect(mood.name)}
-            className={`text-2xl p-3 rounded-xl transition-all hover:scale-110 ${
+            disabled={moodSelectedToday}
+            className={`text-xl sm:text-2xl p-2 sm:p-3 rounded-xl transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed ${
               selectedMood === mood.name 
                 ? 'bg-purple-600/20 ring-2 ring-purple-500' 
                 : 'hover:bg-ar-gray-700/50'
@@ -276,8 +230,8 @@ export default function Journaling({ onBack }) {
         ))}
       </div>
       {selectedMood && (
-        <p className="text-center text-sm text-ar-gray-400 mt-2">
-          Feeling {selectedMood} today
+        <p className="text-center text-sm text-ar-gray-400 mt-3">
+          Feeling {selectedMood} today {moodSelectedToday && '✓'}
         </p>
       )}
     </div>
@@ -295,54 +249,55 @@ export default function Journaling({ onBack }) {
     })
   }
 
-  const TruncatedText = ({ content, entryId, maxLength = 200 }) => {
+  const TruncatedText = ({ content, entryId, maxLength = 100 }) => {
     const isExpanded = expandedEntries.has(entryId)
     const shouldTruncate = content.length > maxLength
     
     if (!shouldTruncate) {
       return (
-        <p className="text-ar-gray-300 text-sm leading-relaxed break-words overflow-wrap-anywhere max-w-full">
-          {content}
-        </p>
+        <div className="w-full overflow-x-hidden">
+          <p className="text-ar-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-all">
+            {content}
+          </p>
+        </div>
       )
     }
     
-    const truncatedText = content.slice(0, maxLength) + '...'
+    // Find a good break point near the maxLength (prefer word boundaries)
+    let truncateAt = maxLength
+    if (!isExpanded) {
+      const spaceIndex = content.lastIndexOf(' ', maxLength)
+      if (spaceIndex > maxLength * 0.8) { // Only use word boundary if it's not too far back
+        truncateAt = spaceIndex
+      }
+    }
+    
+    const truncatedText = content.slice(0, truncateAt).trim() + '...'
     
     return (
-      <div className="w-full max-w-full">
-        <motion.div
-          initial={false}
-          animate={{ 
-            height: isExpanded ? 'auto' : 'auto'
-          }}
-          transition={{ 
-            duration: 0.3,
-            ease: "easeInOut"
-          }}
-          className="overflow-hidden max-w-full"
-        >
-          <p className="text-ar-gray-300 text-sm leading-relaxed mb-2 break-words overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
+      <div className="w-full overflow-x-hidden">
+        <div className="overflow-x-hidden">
+          <p className="text-ar-gray-300 text-sm leading-relaxed whitespace-pre-wrap break-all">
             {isExpanded ? content : truncatedText}
           </p>
-        </motion.div>
+        </div>
         <button
           onClick={() => toggleExpanded(entryId)}
-          className="text-purple-400 hover:text-purple-300 text-xs transition-colors inline-flex items-center gap-1 mt-1"
+          className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors inline-flex items-center gap-1 mt-2 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 rounded-lg"
         >
           {isExpanded ? (
             <>
-              Read less
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
               </svg>
+              Read less
             </>
           ) : (
             <>
-              Read more
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
+              Read more
             </>
           )}
         </button>
@@ -350,307 +305,244 @@ export default function Journaling({ onBack }) {
     )
   }
 
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto pt-6 pb-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="max-w-2xl mx-auto pt-6 pb-8">
+    <div className="max-w-2xl mx-auto pt-4 sm:pt-6 pb-8 px-4 sm:px-6 overflow-x-hidden">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-between mb-6"
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={onBack}
-            className="text-ar-gray-400 hover:text-white transition-colors"
+            className="text-ar-gray-400 hover:text-white transition-colors text-sm sm:text-base"
           >
             ← Back
           </button>
-          <h1 className="text-2xl font-hagrid font-light text-ar-white flex items-center gap-3">
-            <div className="w-6 h-6 bg-purple-600 rounded-lg flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <h1 className="text-xl sm:text-2xl font-hagrid font-light text-ar-white flex items-center gap-2 sm:gap-3">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-600 rounded-lg flex items-center justify-center">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
             </div>
             My Journal
           </h1>
         </div>
-        <button className="text-ar-gray-400 hover:text-white transition-colors p-2">
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-          </svg>
-        </button>
+      </motion.div>
+
+      {/* Error Message */}
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm"
+        >
+          {error}
+        </motion.div>
+      )}
+
+      {/* Mood Selector - Show if not selected today */}
+      {!moodSelectedToday && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card rounded-2xl p-4 sm:p-6 mb-6"
+        >
+          <MoodSelector />
+        </motion.div>
+      )}
+
+      {/* New Entry Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card rounded-2xl overflow-hidden mb-6"
+      >
+        <div className="p-4 sm:p-6">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-orange-500/20 rounded-lg flex items-center justify-center mt-1 flex-shrink-0">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base sm:text-lg font-medium text-ar-white mb-3 sm:mb-4">Write Today's Entry</h3>
+              
+              {!isWriting ? (
+                <button
+                  onClick={() => setIsWriting(true)}
+                  className="text-ar-gray-400 text-sm hover:text-purple-400 transition-colors bg-ar-gray-800/50 px-4 py-3 rounded-lg w-full text-left"
+                >
+                  How are you feeling today? What's on your mind?
+                </button>
+              ) : (
+                <div className="space-y-4">
+                  <textarea
+                    value={journalNote}
+                    onChange={(e) => setJournalNote(e.target.value)}
+                    placeholder="How are you feeling today? What's on your mind?"
+                    className="w-full h-32 sm:h-40 bg-ar-gray-800/50 border border-ar-gray-700 rounded-lg p-4 text-ar-white placeholder-ar-gray-400 focus:border-purple-500 focus:outline-none resize-none text-sm break-words overflow-wrap-anywhere"
+                    autoFocus
+                  />
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={getTodaysEntry() ? handleAppendToToday : handleJournalSave}
+                      disabled={!journalNote.trim()}
+                      className="bg-purple-600 hover:bg-purple-500 disabled:bg-ar-gray-700 disabled:text-ar-gray-400 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+                    >
+                      {getTodaysEntry() ? 'Add to Today\'s Entry' : 'Save Entry'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsWriting(false)
+                        setJournalNote('')
+                      }}
+                      className="text-ar-gray-400 hover:text-white transition-colors text-sm px-4 py-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </motion.div>
 
       {/* Journal Entries List */}
       <div className="space-y-4">
-        {/* Today's Entry / New Entry */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card rounded-2xl overflow-hidden"
-        >
-          <div className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center mt-1">
-                <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-medium text-ar-white mb-2">Today</h3>
-                
-                {/* Mood Selector - Only show once per day */}
-                {!moodSelectedToday && !isWriting && (
-                  <MoodSelector />
-                )}
-                
-                {!isWriting && journalEntries.length > 0 && 
-                 formatDate(journalEntries[0].date) === 'Today' ? (
-                  // Show today's entry if it exists
-                  <div>
-                    {editingEntry === journalEntries[0].id ? (
-                      <div>
-                        <textarea
-                          value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                          className="w-full h-32 bg-ar-gray-800/50 border border-ar-gray-700 rounded-lg p-4 text-ar-white placeholder-ar-gray-400 focus:border-purple-500 focus:outline-none resize-none text-sm mb-4"
-                          autoFocus
-                        />
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => handleSaveEdit(journalEntries[0].id)}
-                            disabled={!editContent.trim()}
-                            className="bg-purple-600 hover:bg-purple-500 disabled:bg-ar-gray-700 disabled:text-ar-gray-400 text-white px-4 py-2 rounded-lg transition-colors text-sm"
-                          >
-                            Save Changes
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="text-ar-gray-400 hover:text-white transition-colors text-sm"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="mb-4">
-                          <TruncatedText 
-                            content={journalEntries[0].content} 
-                            entryId={journalEntries[0].id}
-                            maxLength={150}
-                          />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4">
-                          <button
-                            onClick={() => setIsWriting(true)}
-                            className="text-ar-gray-400 text-sm hover:text-purple-400 active:text-purple-400 transition-colors"
-                          >
-                            Add more thoughts...
-                          </button>
-                          <div className="flex gap-3">
-                            <button
-                              onClick={handleSaveAsNewEntry}
-                              className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg transition-colors text-sm flex items-center gap-1"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
-                              </svg>
-                              Save
-                            </button>
-                            <button
-                              onClick={() => handleEditEntry(journalEntries[0])}
-                              className="text-ar-gray-400 text-sm hover:text-blue-400 active:text-blue-400 transition-colors flex items-center gap-1"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteEntry(journalEntries[0].id)}
-                              className="text-ar-gray-400 text-sm hover:text-red-400 active:text-red-400 transition-colors flex items-center gap-1"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  // Show writing interface
-                  <div>
-                    {!isWriting ? (
-                      <div>
-                        <p className="text-ar-gray-400 text-sm mb-4">
-                          Today you felt anxious, but practiced breathing and gratitude.
-                        </p>
-                        <button
-                          onClick={() => setIsWriting(true)}
-                          className="text-ar-gray-400 text-sm hover:text-purple-400 transition-colors bg-ar-gray-800/50 px-4 py-3 rounded-lg w-full text-left"
-                        >
-                          Add your notes...
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <textarea
-                          value={journalNote}
-                          onChange={(e) => setJournalNote(e.target.value)}
-                          placeholder="How are you feeling today? What's on your mind?"
-                          className="w-full h-32 bg-ar-gray-800/50 border border-ar-gray-700 rounded-lg p-4 text-ar-white placeholder-ar-gray-400 focus:border-purple-500 focus:outline-none resize-none text-sm"
-                          autoFocus
-                        />
-                        <div className="flex gap-3 mt-4">
-                          <button
-                            onClick={
-                              journalEntries.length > 0 && formatDate(journalEntries[0].date) === 'Today' 
-                                ? handleAppendToToday 
-                                : handleJournalSave
-                            }
-                            disabled={!journalNote.trim()}
-                            className="bg-purple-600 hover:bg-purple-500 disabled:bg-ar-gray-700 disabled:text-ar-gray-400 text-white px-4 py-2 rounded-lg transition-colors text-sm"
-                          >
-                            {journalEntries.length > 0 && formatDate(journalEntries[0].date) === 'Today' 
-                              ? 'Add to Today' 
-                              : 'Save Entry'
-                            }
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsWriting(false)
-                              setJournalNote('')
-                            }}
-                            className="text-ar-gray-400 hover:text-white transition-colors text-sm"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </motion.div>
 
         {/* Past Entries */}
         <AnimatePresence>
-          {journalEntries.map((entry, index) => {
-            const isToday = formatDate(entry.date) === 'Today'
-            if (isToday && index === 0) return null // Skip today's entry as it's shown above
-            
-            return (
-              <motion.div
-                key={entry.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ delay: index * 0.1 }}
-                className="glass-card rounded-2xl p-6 group md:hover:bg-ar-gray-800/30 transition-colors"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="mt-1">
-                    {getEntryIcon(index)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-medium text-ar-white flex-1 flex items-center gap-2">
+          {journalEntries.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mb-4"
+            >
+              <h2 className="text-lg font-medium text-ar-white mb-4 px-2">Past Entries</h2>
+            </motion.div>
+          )}
+          
+          {journalEntries.map((entry, index) => (
+            <motion.div
+              key={entry.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ delay: index * 0.05 }}
+              className="glass-card rounded-2xl p-4 sm:p-6 group hover:bg-ar-gray-800/30 transition-colors overflow-x-hidden"
+            >
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="mt-1 flex-shrink-0">
+                  {getEntryIcon()}
+                </div>
+                <div className="flex-1 min-w-0 overflow-x-hidden">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-medium text-ar-white">
                         {formatDate(entry.date)}
-                        {entry.mood && entry.mood !== 'neutral' && (
-                          <span className="text-lg">
-                            {moods.find(m => m.name === entry.mood)?.emoji || '😐'}
-                          </span>
-                        )}
-                        {entry.lastModified && (
-                          <span className="text-xs text-ar-gray-500 ml-2">(edited)</span>
-                        )}
                       </h3>
-                      {/* Always visible on mobile, hover on desktop */}
-                      <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      {entry.mood && entry.mood !== 'neutral' && (
+                        <span className="text-lg">
+                          {moods.find(m => m.name === entry.mood)?.emoji || '😐'}
+                        </span>
+                      )}
+                      {entry.lastModified && (
+                        <span className="text-xs text-ar-gray-500">(edited)</span>
+                      )}
+                    </div>
+                    
+                    {/* Action buttons - always visible on mobile, hover on desktop */}
+                    <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
+                      <button
+                        onClick={() => handleEditEntry(entry)}
+                        className="text-ar-gray-400 hover:text-blue-400 transition-colors p-1.5 sm:p-2 rounded-lg hover:bg-blue-500/10"
+                        title="Edit entry"
+                      >
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEntry(entry.id)}
+                        className="text-ar-gray-400 hover:text-red-400 transition-colors p-1.5 sm:p-2 rounded-lg hover:bg-red-500/10"
+                        title="Delete entry"
+                      >
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {editingEntry === entry.id ? (
+                    <div className="space-y-4">
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="w-full h-32 sm:h-40 bg-ar-gray-800/50 border border-ar-gray-700 rounded-lg p-4 text-ar-white placeholder-ar-gray-400 focus:border-purple-500 focus:outline-none resize-none text-sm break-words overflow-wrap-anywhere"
+                        autoFocus
+                      />
+                      <div className="flex flex-col sm:flex-row gap-3">
                         <button
-                          onClick={() => handleEditEntry(entry)}
-                          className="text-ar-gray-400 hover:text-blue-400 active:text-blue-400 transition-colors p-2 rounded-lg hover:bg-blue-500/10 active:bg-blue-500/20"
-                          title="Edit entry"
+                          onClick={() => handleSaveEdit(entry.id)}
+                          disabled={!editContent.trim()}
+                          className="bg-purple-600 hover:bg-purple-500 disabled:bg-ar-gray-700 disabled:text-ar-gray-400 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
+                          Save Changes
                         </button>
                         <button
-                          onClick={() => handleDeleteEntry(entry.id)}
-                          className="text-ar-gray-400 hover:text-red-400 active:text-red-400 transition-colors p-2 rounded-lg hover:bg-red-500/10 active:bg-red-500/20"
-                          title="Delete entry"
+                          onClick={handleCancelEdit}
+                          className="text-ar-gray-400 hover:text-white transition-colors text-sm px-4 py-2"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
+                          Cancel
                         </button>
                       </div>
                     </div>
-                    
-                    {editingEntry === entry.id ? (
-                      <div>
-                        <textarea
-                          value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                          className="w-full h-32 bg-ar-gray-800/50 border border-ar-gray-700 rounded-lg p-4 text-ar-white placeholder-ar-gray-400 focus:border-purple-500 focus:outline-none resize-none text-sm mb-4"
-                          autoFocus
-                        />
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => handleSaveEdit(entry.id)}
-                            disabled={!editContent.trim()}
-                            className="bg-purple-600 hover:bg-purple-500 disabled:bg-ar-gray-700 disabled:text-ar-gray-400 text-white px-4 py-2 rounded-lg transition-colors text-sm"
-                          >
-                            Save Changes
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="text-ar-gray-400 hover:text-white transition-colors text-sm"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <TruncatedText 
-                        content={entry.content} 
-                        entryId={entry.id}
-                        maxLength={200}
-                      />
-                    )}
-                  </div>
+                  ) : (
+                    <TruncatedText 
+                      content={entry.content} 
+                      entryId={entry.id}
+                      maxLength={200}
+                    />
+                  )}
                 </div>
-              </motion.div>
-            )
-          })}
+              </div>
+            </motion.div>
+          ))}
         </AnimatePresence>
 
         {/* Empty State */}
-        {journalEntries.length === 0 && !isWriting && (
+        {journalEntries.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center py-12"
+            className="text-center py-8 sm:py-12"
           >
-            <div className="w-16 h-16 bg-purple-500/20 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-              <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-500/20 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-ar-white mb-2">Start Your Journal</h3>
-            <p className="text-ar-gray-400 text-sm mb-6">
+            <h3 className="text-base sm:text-lg font-medium text-ar-white mb-2">Start Your Journal</h3>
+            <p className="text-ar-gray-400 text-sm mb-6 px-4">
               Begin documenting your thoughts, feelings, and daily reflections.
             </p>
             <button
               onClick={() => setIsWriting(true)}
-              className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl transition-colors"
+              className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-xl transition-colors text-sm font-medium"
             >
               Write First Entry
             </button>

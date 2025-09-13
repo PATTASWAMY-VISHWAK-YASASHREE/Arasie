@@ -1,23 +1,104 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Play, Pause } from "lucide-react"
 import { useUserStore } from "../../store/userStore"
 
 const sounds = [
-  { id: 'rain', name: 'Rain', emoji: '🌧️' },
-  { id: 'ocean', name: 'Ocean Waves', emoji: '🌊' },
-  { id: 'forest', name: 'Forest', emoji: '🌲' },
-  { id: 'white-noise', name: 'White Noise', emoji: '⚪' },
+  { 
+    id: 'rain', 
+    name: 'Rain', 
+    description: 'Calming rainfall sounds for deep relaxation',
+    image: '/images/mental-health/SoundHealing/rain.jpg',
+    audioSrc: '/sounds/mental-health/sound healing/Rain.mp3'
+  },
+  { 
+    id: 'ocean', 
+    name: 'Ocean Waves', 
+    description: 'Soothing ocean waves for peaceful meditation',
+    image: '/images/mental-health/SoundHealing/ocean.jpg',
+    audioSrc: '/sounds/mental-health/sound healing/Ocean.mp3'
+  },
+  { 
+    id: 'forest', 
+    name: 'Forest', 
+    description: 'Natural forest ambience for stress relief',
+    image: '/images/mental-health/SoundHealing/Forest.jpg',
+    audioSrc: '/sounds/mental-health/sound healing/forest.mp3'
+  },
+  { 
+    id: '40hz', 
+    name: '40hz', 
+    description: 'Gamma wave frequency for enhanced focus',
+    image: '/images/mental-health/SoundHealing/40hz.jpg',
+    audioSrc: '/sounds/mental-health/sound healing/40hz.mp3'
+  },
 ]
 
 export default function SoundHealing({ onBack }) {
   const [playingSound, setPlayingSound] = useState(null)
-  const { updateMentalHealthProgress } = useUserStore()
+  const [sessionStartTime, setSessionStartTime] = useState(null)
+  const { updateMentalHealthProgress, logSoundHealingSession } = useUserStore()
+  const audioRefs = useRef({})
+
+  // Initialize audio objects
+  useEffect(() => {
+    sounds.forEach(sound => {
+      if (!audioRefs.current[sound.id]) {
+        const audio = new Audio(sound.audioSrc)
+        audio.loop = true
+        audio.volume = 0.7
+        audioRefs.current[sound.id] = audio
+      }
+    })
+
+    // Cleanup function
+    return () => {
+      Object.values(audioRefs.current).forEach(audio => {
+        audio.pause()
+        audio.currentTime = 0
+      })
+    }
+  }, [])
 
   const handlePlaySound = (soundId) => {
-    setPlayingSound(playingSound === soundId ? null : soundId)
-    if (playingSound !== soundId) {
-      updateMentalHealthProgress(30)
+    const currentAudio = audioRefs.current[soundId]
+    const sound = sounds.find(s => s.id === soundId)
+    
+    if (playingSound === soundId) {
+      // Stop current sound and log session
+      currentAudio.pause()
+      currentAudio.currentTime = 0
+      
+      if (sessionStartTime && sound) {
+        const sessionDuration = (Date.now() - sessionStartTime) / 1000 // Convert to seconds
+        if (sessionDuration >= 30) { // Only log if session was at least 30 seconds
+          logSoundHealingSession(sound.name, sessionDuration)
+          updateMentalHealthProgress(20) // 20% for sound healing session
+        }
+      }
+      
+      setPlayingSound(null)
+      setSessionStartTime(null)
+    } else {
+      // Stop any currently playing sound and log its session
+      if (playingSound && audioRefs.current[playingSound] && sessionStartTime) {
+        const previousSound = sounds.find(s => s.id === playingSound)
+        const sessionDuration = (Date.now() - sessionStartTime) / 1000
+        if (sessionDuration >= 30 && previousSound) {
+          logSoundHealingSession(previousSound.name, sessionDuration)
+          updateMentalHealthProgress(20)
+        }
+        
+        audioRefs.current[playingSound].pause()
+        audioRefs.current[playingSound].currentTime = 0
+      }
+      
+      // Play new sound
+      currentAudio.play().catch(error => {
+        console.error('Error playing audio:', error)
+      })
+      setPlayingSound(soundId)
+      setSessionStartTime(Date.now())
     }
   }
 
@@ -37,34 +118,49 @@ export default function SoundHealing({ onBack }) {
         <h1 className="text-2xl font-hagrid font-light text-ar-white">🎧 Sound Healing</h1>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {sounds.map((sound) => (
           <motion.div
             key={sound.id}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-6 rounded-2xl"
+            className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm border border-gray-700/30 group hover:scale-105 transition-all duration-300"
           >
-            <div className="text-center">
-              <div className="text-4xl mb-3">{sound.emoji}</div>
-              <h3 className="text-lg font-hagrid font-light text-ar-white mb-4">{sound.name}</h3>
+            {/* Background Image */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center opacity-40 group-hover:opacity-60 transition-opacity duration-300"
+              style={{ backgroundImage: `url(${sound.image})` }}
+            />
+            
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+            
+            {/* Content */}
+            <div className="relative p-3 sm:p-6 aspect-square flex flex-col justify-between">
+              <div className="flex-1 flex flex-col justify-center">
+                <h3 className="text-lg sm:text-2xl md:text-3xl font-hagrid font-bold text-white mb-1 sm:mb-3 leading-tight">{sound.name}</h3>
+                <p className="text-gray-300 text-xs sm:text-sm leading-relaxed line-clamp-3">{sound.description}</p>
+              </div>
+              
               <button
                 onClick={() => handlePlaySound(sound.id)}
-                className={`w-full py-3 rounded-xl transition-colors ${
+                className={`w-full py-2 sm:py-3 md:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm md:text-base font-medium transition-all duration-300 border-2 ${
                   playingSound === sound.id
-                    ? 'bg-red-600 hover:bg-red-500 text-white'
-                    : 'bg-green-600 hover:bg-green-500 text-white'
-                }`}
+                    ? 'bg-transparent border-red-500 text-red-400 hover:bg-red-500/10'
+                    : 'bg-transparent border-green-500 text-green-400 hover:bg-green-500/10'
+                } backdrop-blur-sm mt-2 sm:mt-0`}
               >
                 {playingSound === sound.id ? (
                   <>
-                    <Pause size={16} className="inline mr-2" />
-                    Stop
+                    <Pause size={16} className="inline mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Stop</span>
+                    <span className="sm:hidden">Stop</span>
                   </>
                 ) : (
                   <>
-                    <Play size={16} className="inline mr-2" />
-                    Play
+                    <Play size={16} className="inline mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Play</span>
+                    <span className="sm:hidden">Play</span>
                   </>
                 )}
               </button>
