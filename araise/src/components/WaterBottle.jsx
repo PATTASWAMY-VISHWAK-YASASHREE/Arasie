@@ -63,13 +63,14 @@ export default function WaterBottle() {
               {/* Water Fill - Follows bottle shape */}
               <div className="absolute bottom-0 left-0 right-0 overflow-hidden h-full rounded-t-3xl rounded-b-2xl">
                 <motion.div
-                  className="relative rounded-t-3xl rounded-b-2xl"
+                  className="absolute bottom-0 left-0 right-0 rounded-b-2xl"
                   style={{
                     background: `linear-gradient(to top, 
                       #0066CC 0%, 
                       #1E90FF 30%, 
                       #22D2FF 70%, 
-                      #87CEEB 100%)`
+                      #87CEEB 100%)`,
+                    borderRadius: fillPercentage > 85 ? '2rem 2rem 1rem 1rem' : '0 0 1rem 1rem'
                   }}
                   animate={{
                     height: `${fillPercentage}%`,
