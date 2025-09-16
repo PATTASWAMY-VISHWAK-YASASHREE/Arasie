@@ -68,8 +68,8 @@ export default function WorkoutSession() {
 
   const handleAnalyzer = () => {
     const analyzerPath = dayId
-      ? `/workout/${category}/${splitId}/${dayId}/session/${exercise.id}/analyzer/${exercise.name}`
-      : `/workout/${category}/${splitId}/session/${exercise.id}/analyzer/${exercise.name}`
+      ? `/workout/${category}/${splitId}/${dayId}/session/${exercise.id}/analyzer/${exercise.uniqueName}`
+      : `/workout/${category}/${splitId}/session/${exercise.id}/analyzer/${exercise.uniqueName}`
     navigate(analyzerPath)
   }
 
@@ -146,19 +146,20 @@ export default function WorkoutSession() {
         {/* Exercise Animation */}
         <div className={`w-64 h-96 md:w-72 md:h-[28rem] mx-auto mb-3 md:mb-4 ${colors.bgLight} rounded-2xl overflow-hidden`}>
           <div className="w-full h-full flex items-center justify-center">
-            <motion.div
-              animate={{ 
-                scale: exercise.isPose ? [1, 1.05, 1] : [1, 1.1, 1],
-                rotate: exercise.isPose ? [0, 2, -2, 0] : [0, 5, -5, 0] 
-              }}
-              transition={{ 
-                duration: exercise.isPose ? 3 : 2, 
-                repeat: Infinity,
-                ease: "easeInOut" 
-              }}
-            >
-              <ExerciseIcon className={colors.text} size={64} />
-            </motion.div>
+            {exercise.video ? (
+              <video
+                src={exercise.video}
+                autoPlay
+                loop
+                playsInline
+                className="w-full h-full object-cover rounded-xl bg-black"
+                style={{ maxHeight: '100%', maxWidth: '100%' }}
+              />
+            ) : (
+              <div className="flex items-center justify-center w-full h-full text-ar-gray">
+                Video not available
+              </div>
+            )}
           </div>
         </div>
 
