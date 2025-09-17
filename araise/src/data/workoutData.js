@@ -14,61 +14,67 @@ export const workoutData = {
             {
               id: 1,
               name: "Push-ups",
+              uniqueName: "pushups",
               sets: 3,
               reps: "15",
               pose_analyzer: true,
               description: "Bodyweight chest warm-up",
               primaryMuscle: "Chest",
               secondaryMuscles: ["Triceps", "Shoulders", "Core"],
-              video: "/videos/exercises/push-ups.mp4"
+              video: "/videos/chest/pushups.mp4"
             },
-              {
-                name: "Incline Dumbbell Press",
-                id: 2,
-                sets: 3,
-                reps: "15",
-                pose_analyzer: true,
-                description: "Upper chest hypertrophy focus",
-                primaryMuscle: "Upper Chest",
-                secondaryMuscles: ["Triceps", "Front Deltoids"],
-                video: "/videos/exercises/incline-dumbbell-press.mp4"
-            },
-
             {
-              id: 3,
               name: "Incline Dumbbell Press",
+              id: 2,
+              uniqueName: "benchpress",
               sets: 3,
               reps: "15",
               pose_analyzer: true,
               description: "Upper chest hypertrophy focus",
               primaryMuscle: "Upper Chest",
               secondaryMuscles: ["Triceps", "Front Deltoids"],
-              video: "/videos/exercises/incline-dumbbell-press.mp4"
+              video: "/videos/chest/dumbbell_press.mp4"
+            },
+            {
+              id: 3,
+              name: "Incline Barbell Bench Press",
+              uniqueName: "benchpress",
+              sets: 3,
+              reps: "15",
+              pose_analyzer: true,
+              description: "Upper chest hypertrophy focus",
+              primaryMuscle: "Upper Chest",
+              secondaryMuscles: ["Triceps", "Front Deltoids"],
+              video: "/videos/chest/inclined_chest_press.mp4"
             },
             {
               id: 4,
               name: "Flat Barbell Bench Press",
+              uniqueName: "benchpress",
               sets: 3,
               reps: "10-12",
               pose_analyzer: true,
               description: "Mid-chest compound strength builder",
               primaryMuscle: "Chest",
               secondaryMuscles: ["Triceps", "Shoulders"],
-              video: "/videos/exercises/flat-barbell-bench-press.mp4"
+              video: "/videos/chest/flat_bench_press.mp4"
             },
             {
               id: 5,
               name: "Rope Pulldowns (Chest)",
+              uniqueName: "ropepulldown",
               sets: 2,
               reps: "12-15",
               pose_analyzer: true,
               description: "Lower chest isolation",
               primaryMuscle: "Lower Chest",
-              secondaryMuscles: ["Triceps"]
+              secondaryMuscles: ["Triceps"],
+              video:"/videos/chest/chest_flys.mp4"
             },
             {
               id: 6,
               name: "Tricep Extension Push-ups",
+              uniqueName: "benttricep",
               sets: 1,
               reps: "20",
               pose_analyzer: true,
@@ -79,44 +85,50 @@ export const workoutData = {
             {
               id: 7,
               name: "Bent Tricep Pull",
+              uniqueName: "benttricep",
               sets: 2,
               reps: "10",
               pose_analyzer: true,
               description: "Free-weight tricep isolation",
               primaryMuscle: "Triceps",
-              secondaryMuscles: []
+              secondaryMuscles: [],
+              video:"/videos/tricep/long_head.mp4"
             },
             {
               id: 8,
               name: "Tricep Rope Pulldown",
+              uniqueName: "benttricep",
               sets: 2,
               reps: "15",
               pose_analyzer: true,
               description: "Cable-based tricep isolation",
               primaryMuscle: "Triceps",
-              secondaryMuscles: ["Forearms"]
+              secondaryMuscles: ["Forearms"],
+              video:"/videos/tricep/tricpe_shape.mp4"
             },
             {
               id: 9,
               name: "Crunches",
+              uniqueName: "crunches",
               sets: 3,
               reps: "20",
               pose_analyzer: true,
               description: "Core activation and abdominal hypertrophy",
               primaryMuscle: "Abs",
               secondaryMuscles: ["Obliques"],
-              video: "/videos/exercises/crunches.mp4"
+              video: "/videos/abs/abs_ropecrunches.mp4"
             },
             {
               id: 10,
               name: "Plank",
+              uniqueName: "plank",
               sets: 3,
               reps: "60s hold",
               pose_analyzer: true,
               description: "Core stability and endurance",
               primaryMuscle: "Core",
               secondaryMuscles: ["Shoulders", "Glutes", "Lower Back"],
-              video: "/videos/exercises/plank.mp4"
+              video: "/videos/abs/plank.mp4"
             }
           ]
         },
@@ -126,57 +138,68 @@ export const workoutData = {
             {
               id: 1,
               name: "Wide Grip Pull-ups",
+              uniqueName:"pullup",
               sets: 3,
               reps: "10",
               pose_analyzer: true,
               description: "Lat width development",
               primaryMuscle: "Lats",
               secondaryMuscles: ["Biceps", "Rear Deltoids", "Traps"],
-              video: "/videos/exercises/wide-grip-pull-ups.mp4"
+              video: "/videos/back/wide_grip_pull_ups.mp4"
             },
             {
               id: 2,
               name: "Neutral Grip Pull-ups",
+              uniqueName:"pullup",
               sets: 3,
               reps: "10",
               pose_analyzer: true,
               description: "Balanced back & arm engagement",
               primaryMuscle: "Lats",
-              secondaryMuscles: ["Biceps", "Forearms"]
+              secondaryMuscles: ["Biceps", "Forearms"],
+              video:"/videos/back/Neutral_grip_pull_ups.mp4"
             },
             {
               id: 3,
               name: "Chest Supported Rows",
+              uniqueName:"chestsupportedrow",
               sets: 3,
               reps: "10",
               pose_analyzer: true,
               description: "Mid-back and rhomboid activation",
               primaryMuscle: "Middle Back",
-              secondaryMuscles: ["Lats", "Biceps", "Rear Deltoids"]
+              secondaryMuscles: ["Lats", "Biceps", "Rear Deltoids"],
+              video:"/videos/back/chest_rows.mp4"
             },
             {
               id: 4,
               name: "Wide Grip Pulldown",
+              uniqueName:"widegrippulldown",
               sets: 2,
               reps: "15",
               pose_analyzer: true,
               description: "Lat isolation with wide grip",
               primaryMuscle: "Lats",
-              secondaryMuscles: ["Traps", "Biceps"]
+              secondaryMuscles: ["Traps", "Biceps"],
+              video:"/videos/back/nuetralgrip_pulldwon.mp4"
             },
             {
               id: 5,
               name: "Neutral Grip Pulldown",
+              uniqueName:"widegrippulldown",
               sets: 1,
               reps: "15",
               pose_analyzer: true,
               description: "Neutral grip for lats & biceps",
               primaryMuscle: "Lats",
-              secondaryMuscles: ["Biceps", "Rear Deltoids"]
+              secondaryMuscles: ["Biceps", "Rear Deltoids"],
+              video:"/videos/back/nuetralgrip_pulldwon.mp4"
+              
             },
             {
               id: 6,
               name: "Half-Knee Arm Lat Pulldown",
+              uniqueName:"widegrippulldown",
               sets: 2,
               reps: "12",
               pose_analyzer: true,
@@ -187,52 +210,62 @@ export const workoutData = {
             {
               id: 7,
               name: "Cable Lat Pulldown",
+              uniqueName:"widegrippulldown",
               sets: 1,
               reps: "15",
               pose_analyzer: true,
               description: "Cable isolation for lats",
               primaryMuscle: "Lats",
-              secondaryMuscles: ["Traps", "Rear Deltoids"]
+              secondaryMuscles: ["Traps", "Rear Deltoids"],
+              video:"/videos/back/Lat_pulldown.mp4"
             },
             {
               id: 8,
               name: "Reverse Crunches",
+              uniqueName: "crunches",
               sets: 2,
               reps: "15",
               pose_analyzer: true,
               description: "Lower abs engagement",
               primaryMuscle: "Lower Abs",
-              secondaryMuscles: ["Hip Flexors"]
+              secondaryMuscles: ["Hip Flexors"],
+              video:"/videos/abs/abs_ropecrunches.mp4"
             },
             {
               id: 9,
               name: "EZ Bar Preacher Curls",
+              uniqueName:"biceps",
               sets: 2,
               reps: "15",
               pose_analyzer: true,
               description: "Strict bicep curl variation",
               primaryMuscle: "Biceps",
-              secondaryMuscles: ["Forearms"]
+              secondaryMuscles: ["Forearms"],
+              video:"/videos/biceps/EZ_Bar_Preacher_Curls.mp4"
             },
             {
               id: 10,
               name: "Incline Dumbbell Curls",
+              uniqueName:"biceps",
               sets: 3,
               reps: "15",
               pose_analyzer: true,
               description: "Bicep peak isolation",
               primaryMuscle: "Biceps",
-              secondaryMuscles: ["Forearms"]
+              secondaryMuscles: ["Forearms"],
+              video:"/videos/biceps/inclined_barbell_cruls.mp4"
             },
             {
               id: 11,
               name: "Hammer Curls",
+              uniqueName:"biceps",
               sets: 3,
               reps: "15",
               pose_analyzer: true,
               description: "Biceps & brachialis thickness",
               primaryMuscle: "Biceps",
-              secondaryMuscles: ["Forearms"]
+              secondaryMuscles: ["Forearms"],
+              video:"/videos/biceps/hammercurls.mp4"
             }
           ]
         },
@@ -243,48 +276,56 @@ export const workoutData = {
               id: 1,
               name: "Squats",
               sets: 3,
+              uniqueName: "squats",
               reps: "12-15",
               pose_analyzer: true,
               description: "Compound lower body builder",
               primaryMuscle: "Quadriceps",
-              secondaryMuscles: ["Glutes", "Hamstrings", "Core"]
+              secondaryMuscles: ["Glutes", "Hamstrings", "Core"],
+              video:"/videos/legs/Squats.mp4"
             },
             {
               id: 2,
               name: "Leg Press (Close Stance)",
+              uniqueName:"legpress",
               sets: 1,
               reps: "12-15",
               pose_analyzer: true,
               description: "Quad dominant press variation",
               primaryMuscle: "Quadriceps",
-              secondaryMuscles: ["Glutes", "Hamstrings"]
+              secondaryMuscles: ["Glutes", "Hamstrings"],
+              video:"/videos/legs/Leg_press.mp4"
             },
             {
               id: 3,
               name: "Leg Press (Wide Stance)",
+              uniqueName:"legpress",
               sets: 1,
               reps: "12-15",
               pose_analyzer: true,
               description: "Glute and hamstring emphasis",
               primaryMuscle: "Glutes",
-              secondaryMuscles: ["Hamstrings", "Quadriceps"]
+              secondaryMuscles: ["Hamstrings", "Quadriceps"],
+              video:"/videos/legs/Leg_press.mp4"
             },
             {
               id: 4,
               name: "Leg Press (Feet High)",
+              uniqueName:"legpress",
               sets: 1,
               reps: "12-15",
               pose_analyzer: true,
               description: "Hamstring and glute focus",
               primaryMuscle: "Hamstrings",
-              secondaryMuscles: ["Glutes", "Quadriceps"]
+              secondaryMuscles: ["Glutes", "Quadriceps"],
+              video:"/videos/legs/Leg_press.mp4"
             },
             {
               id: 5,
               name: "Calf Raises",
               sets: 2,
               reps: "15-20",
-              pose_analyzer: true,
+              pose_analyzer: false,
               description: "Calf hypertrophy",
               primaryMuscle: "Calves",
               secondaryMuscles: []
@@ -292,6 +333,7 @@ export const workoutData = {
             {
               id: 6,
               name: "Chest Supported Shoulder Press",
+              uniqueName:"chestsupportedshoulderpress",
               sets: 2,
               reps: "12",
               pose_analyzer: true,
@@ -302,6 +344,7 @@ export const workoutData = {
             {
               id: 7,
               name: "Cable Lateral Raises",
+              uniqueName:"chestsupportedshoulderpress",
               sets: 2,
               reps: "15",
               pose_analyzer: true,
@@ -312,6 +355,7 @@ export const workoutData = {
             {
               id: 8,
               name: "Overhead Shoulder Press",
+              uniqueName:"overheadshoulderpress",
               sets: 2,
               reps: "12",
               pose_analyzer: true,
@@ -322,6 +366,7 @@ export const workoutData = {
             {
               id: 9,
               name: "Cable Rope Press",
+              uniqueName:"biceps",
               sets: 2,
               reps: "15",
               pose_analyzer: true,
@@ -332,6 +377,7 @@ export const workoutData = {
             {
               id: 10,
               name: "Front Raises",
+              uniqueName:"chestsupportedshoulderpress",
               sets: 2,
               reps: "12",
               pose_analyzer: true,

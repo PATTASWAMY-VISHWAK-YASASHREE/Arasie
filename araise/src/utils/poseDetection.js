@@ -42,6 +42,81 @@ export const EXERCISE_COORDINATES = {
     description: "Plank requires shoulder, hip, and knee coordinates",
     landmarks: ['right_shoulder', 'right_hip', 'right_knee'],
     indices: [POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_HIP, POSE_LANDMARKS.RIGHT_KNEE]
+  },
+  'benchpress': {
+    description: "Bench press requires shoulder, elbow, and wrist coordinates",
+    landmarks: ['right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'incline-dumbbell-press': {
+    description: "Incline dumbbell press requires shoulder, elbow, and wrist coordinates",
+    landmarks: ['right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'incline-barbell-bench-press': {
+    description: "Incline barbell bench press requires shoulder, elbow, and wrist coordinates",
+    landmarks: ['right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'flat-barbell-bench-press': {
+    description: "Flat barbell bench press requires shoulder, elbow, and wrist coordinates",
+    landmarks: ['right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'close-grip-bench-press': {
+    description: "Close-grip bench press requires shoulder, elbow, and wrist coordinates",
+    landmarks: ['right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'ropepulldown': {
+    description: "Rope pulldowns require shoulder, elbow, and wrist coordinates",
+    landmarks: ['right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'rope-pulldowns': {
+    description: "Rope pulldowns require shoulder, elbow, and wrist coordinates",
+    landmarks: ['right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'benttricep': {
+    description: "Bent tricep pull requires shoulder, elbow, and wrist coordinates",
+    landmarks: ['right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'crunches': {
+    description: "Crunches require knee, hip, and shoulder coordinates",
+    landmarks: ['right_knee', 'right_hip', 'right_shoulder'],
+    indices: [POSE_LANDMARKS.RIGHT_KNEE, POSE_LANDMARKS.RIGHT_HIP, POSE_LANDMARKS.RIGHT_SHOULDER]
+  },
+  'pullup': {
+    description: "Pull-up requires shoulder, elbow, and wrist coordinates for both sides",
+    landmarks: ['left_shoulder', 'left_elbow', 'left_wrist', 'right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.LEFT_SHOULDER, POSE_LANDMARKS.LEFT_ELBOW, POSE_LANDMARKS.LEFT_WRIST, POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'chestsupportedrow': {
+    description: "Chest supported row requires shoulder, elbow, and wrist coordinates for both sides",
+    landmarks: ['left_shoulder', 'left_elbow', 'left_wrist', 'right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.LEFT_SHOULDER, POSE_LANDMARKS.LEFT_ELBOW, POSE_LANDMARKS.LEFT_WRIST, POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'widegrippulldown': {
+    description: "Wide grip pulldown requires shoulder, elbow, and wrist coordinates for both sides",
+    landmarks: ['left_shoulder', 'left_elbow', 'left_wrist', 'right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.LEFT_SHOULDER, POSE_LANDMARKS.LEFT_ELBOW, POSE_LANDMARKS.LEFT_WRIST, POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'legpress': {
+    description: "Leg press requires hip, knee, and ankle coordinates for both sides",
+    landmarks: ['left_hip', 'left_knee', 'left_ankle', 'right_hip', 'right_knee', 'right_ankle'],
+    indices: [POSE_LANDMARKS.LEFT_HIP, POSE_LANDMARKS.LEFT_KNEE, POSE_LANDMARKS.LEFT_ANKLE, POSE_LANDMARKS.RIGHT_HIP, POSE_LANDMARKS.RIGHT_KNEE, POSE_LANDMARKS.RIGHT_ANKLE]
+  },
+  'chestsupportedshoulderpress': {
+    description: "Chest supported shoulder press requires shoulder, elbow, and wrist coordinates for both sides",
+    landmarks: ['left_shoulder', 'left_elbow', 'left_wrist', 'right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.LEFT_SHOULDER, POSE_LANDMARKS.LEFT_ELBOW, POSE_LANDMARKS.LEFT_WRIST, POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
+  },
+  'overheadshoulderpress': {
+    description: "Overhead shoulder press requires shoulder, elbow, and wrist coordinates for both sides",
+    landmarks: ['left_shoulder', 'left_elbow', 'left_wrist', 'right_shoulder', 'right_elbow', 'right_wrist'],
+    indices: [POSE_LANDMARKS.LEFT_SHOULDER, POSE_LANDMARKS.LEFT_ELBOW, POSE_LANDMARKS.LEFT_WRIST, POSE_LANDMARKS.RIGHT_SHOULDER, POSE_LANDMARKS.RIGHT_ELBOW, POSE_LANDMARKS.RIGHT_WRIST]
   }
 };
 
