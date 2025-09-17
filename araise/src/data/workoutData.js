@@ -366,7 +366,7 @@ export const workoutData = {
             {
               id: 9,
               name: "Cable Rope Press",
-              uniqueName:"biceps"
+              uniqueName:"biceps",
               sets: 2,
               reps: "15",
               pose_analyzer: true,
