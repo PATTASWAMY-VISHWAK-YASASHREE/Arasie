@@ -1,12 +1,16 @@
 import { useState, useEffect, useRef } from "react"
 import { motion } from "framer-motion"
 import { MessageCircle, Send, Mic } from "lucide-react"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
 const quickReplies = [
   "Breathing",
   "Affirmation", 
   "Journal Prompt"
 ]
+
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
 
 export default function Chat({ onBack }) {
   const [chatMessages, setChatMessages] = useState([
@@ -19,6 +23,7 @@ export default function Chat({ onBack }) {
   ])
   const [currentMessage, setCurrentMessage] = useState('')
   const [isVoiceMode, setIsVoiceMode] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   
   const chatEndRef = useRef(null)
 
@@ -38,29 +43,64 @@ export default function Chat({ onBack }) {
     }
 
     setChatMessages(prev => [...prev, userMessage])
+    const messageToSend = currentMessage
     setCurrentMessage('')
+    setIsLoading(true)
 
-    // Simulate AI response (in real app, this would be an API call)
-    setTimeout(() => {
-      const aiResponse = {
+    try {
+      const aiResponse = await getAIResponse(messageToSend)
+      const responseMessage = {
         id: Date.now() + 1,
         type: 'ai',
-        content: getAIResponse(currentMessage),
+        content: aiResponse,
         timestamp: new Date()
       }
-      setChatMessages(prev => [...prev, aiResponse])
-    }, 1000)
+      setChatMessages(prev => [...prev, responseMessage])
+    } catch (error) {
+      console.error('Error getting AI response:', error)
+      const errorMessage = {
+        id: Date.now() + 1,
+        type: 'ai',
+        content: "I'm sorry, I'm having trouble responding right now. Please try again in a moment. Remember, if you're experiencing a mental health crisis, please reach out to a healthcare professional or crisis helpline.",
+        timestamp: new Date()
+      }
+      setChatMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const getAIResponse = (message) => {
-    const responses = [
-      "I understand how you're feeling. Remember that it's okay to have difficult moments. What small step can you take right now to care for yourself?",
-      "Thank you for sharing that with me. Your feelings are valid. Have you tried any breathing exercises or mindfulness techniques today?",
-      "It sounds like you're going through a challenging time. Sometimes taking a few deep breaths can help us feel more centered. Would you like to try a breathing exercise together?",
-      "I'm here to listen and support you. Remember that seeking help is a sign of strength, not weakness. What brings you comfort during difficult times?",
-      "Your mental health journey is unique to you. Small, consistent steps often lead to meaningful change. How can we work together to support your wellbeing today?"
-    ]
-    return responses[Math.floor(Math.random() * responses.length)]
+  const getAIResponse = async (message) => {
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+      
+      const mentalHealthPrompt = `You are a compassionate and supportive mental health companion AI for the Araise wellness app. Your role is to provide emotional support, guidance, and resources while maintaining professional boundaries.
+
+GUIDELINES:
+- Be empathetic, non-judgmental, and supportive
+- Provide practical coping strategies and wellness tips
+- Encourage self-care and healthy habits
+- If someone expresses serious mental health concerns, gently suggest professional help
+- Keep responses concise but meaningful (2-3 sentences max)
+- Use warm, encouraging language
+- Never provide medical advice or diagnose conditions
+- Focus on wellness, mindfulness, exercise, and positive mental health practices
+- Include relevant emojis to make responses feel more personal
+
+CRISIS SITUATIONS:
+If someone mentions self-harm, suicide, or severe mental health crisis, respond with immediate care and provide crisis resources.
+
+Current user message: "${message}"
+
+Respond as a caring mental health companion, focusing on the user's emotional wellbeing and providing helpful, supportive guidance.`
+
+      const result = await model.generateContent(mentalHealthPrompt)
+      const response = await result.response
+      return response.text()
+    } catch (error) {
+      console.error('Gemini API error:', error)
+      throw error
+    }
   }
 
   return (
@@ -126,6 +166,27 @@ export default function Chat({ onBack }) {
               </div>
             </motion.div>
           ))}
+          
+          {/* Loading indicator */}
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 flex justify-start"
+            >
+              <div className="bg-ar-gray-800 text-ar-gray-100 border border-ar-gray-700 px-4 py-3 rounded-2xl">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
+                  <span className="text-xs text-ar-gray-400">Thinking...</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          
           <div ref={chatEndRef} />
         </div>
 
