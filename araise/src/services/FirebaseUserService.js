@@ -173,6 +173,17 @@ export class FirebaseUserService {
     return { newStreak, newCalendar, newLevel };
   }
 
+  // Reset streak to 0
+  async resetStreak() {
+    const updates = {
+      streakCount: 0,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { streakCount: 0 };
+  }
+
   // Reset daily progress
   async resetDaily() {
     const today = new Date().toISOString().slice(0, 10);

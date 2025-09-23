@@ -42,9 +42,15 @@ export const useUserStore = create(
       // Real-time subscription
       unsubscribeFromUpdates: null,
 
+      // UI state
+      isChatOpen: false,
+
       // User actions
       updateName: (name) => set({ name }),
       updateLevel: (level) => set({ level }),
+
+      // UI actions
+      setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
 
       // Initialize authentication state
       initializeAuth: () => set({
@@ -147,6 +153,9 @@ export const useUserStore = create(
 
             // Also reset daily progress if needed
             await firebaseService.resetDaily();
+            
+            // Check for missed days and reset streak if necessary
+            await get().checkAndResetStreakForMissedDays();
           } catch (error) {
             console.error('Error loading user progress:', error);
           }
@@ -194,14 +203,32 @@ export const useUserStore = create(
       // Streak management
       addStreak: async (date) => {
         const state = get();
-        if (!state.firebaseService) return;
+        if (!state.firebaseService) {
+          // Fallback for non-authenticated users
+          const newStreak = state.streakCount + 1;
+          const newCalendar = [...state.calendar, { date, completed: true }];
+          const newLevel = newStreak % 30 === 0 ? state.level + 1 : state.level;
+          
+          set({
+            streakCount: newStreak,
+            calendar: newCalendar,
+            level: newLevel
+          });
+          return;
+        }
 
         try {
+          // First check if we should reset streak before adding
+          await get().checkAndResetStreakForMissedDays();
+          
+          // Get updated state after potential reset
+          const updatedState = get();
+          
           const { newStreak, newCalendar, newLevel } = await state.firebaseService.addStreak(
             date,
-            state.streakCount,
-            state.calendar,
-            state.level
+            updatedState.streakCount,
+            updatedState.calendar,
+            updatedState.level
           );
 
           set({
@@ -209,6 +236,8 @@ export const useUserStore = create(
             calendar: newCalendar,
             level: newLevel
           });
+          
+          console.log(`Streak added! New streak: ${newStreak} days`);
         } catch (error) {
           console.error('Error adding streak:', error);
         }
@@ -217,6 +246,10 @@ export const useUserStore = create(
       // Daily reset (call this at midnight or app start for new day)
       resetDaily: async () => {
         const state = get();
+        
+        // Check for missed days and reset streak if necessary
+        await get().checkAndResetStreakForMissedDays();
+        
         if (!state.firebaseService) {
           // Fallback to localStorage for non-authenticated users
           const today = new Date().toISOString().slice(0, 10);
@@ -378,12 +411,75 @@ export const useUserStore = create(
       // Streak logic - check if all daily goals are met
       checkStreak: async () => {
         const state = get();
+        
+        // First, check for missed days and reset streak if necessary
+        await get().checkAndResetStreakForMissedDays();
+        
         if (state.workoutCompleted && state.waterGoalMet && state.dietGoalMet) {
           const today = new Date().toISOString().slice(0, 10);
           // Only add streak if not already added today
           if (!state.calendar.find(c => c.date === today && c.completed)) {
             await get().addStreak(today);
           }
+        }
+      },
+
+      // Check for missed days and reset streak if necessary
+      checkAndResetStreakForMissedDays: async () => {
+        const state = get();
+        const today = new Date();
+        const todayStr = today.toISOString().slice(0, 10);
+        
+        // If no streak, nothing to check
+        if (state.streakCount === 0) {
+          return;
+        }
+
+        // If no calendar entries, reset streak
+        if (state.calendar.length === 0) {
+          console.log('Streak reset: No calendar entries found');
+          await get().resetStreak();
+          return;
+        }
+
+        // Find the most recent completed day
+        const completedDays = state.calendar
+          .filter(c => c.completed)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        // If no completed days but we have a streak, reset it
+        if (completedDays.length === 0) {
+          console.log('Streak reset: No completed days found');
+          await get().resetStreak();
+          return;
+        }
+
+        const lastCompletedDate = new Date(completedDays[0].date);
+        const daysDifference = Math.floor((today - lastCompletedDate) / (1000 * 60 * 60 * 24));
+
+        // If more than 1 day has passed since last completion, reset streak
+        // Allow for same day (0 days) and yesterday (1 day), but reset if 2+ days
+        if (daysDifference > 1) {
+          console.log(`Streak reset: ${daysDifference} days since last completion (${completedDays[0].date})`);
+          await get().resetStreak();
+        }
+      },
+
+      // Reset streak to 0
+      resetStreak: async () => {
+        const state = get();
+        if (!state.firebaseService) {
+          set({ streakCount: 0 });
+          return;
+        }
+
+        try {
+          await state.firebaseService.resetStreak();
+          set({ streakCount: 0 });
+        } catch (error) {
+          console.error('Error resetting streak:', error);
+          // Fallback to local reset
+          set({ streakCount: 0 });
         }
       },
 
@@ -405,6 +501,32 @@ export const useUserStore = create(
           totalCompletedDays,
           thisWeek
         }
+      },
+
+      // Get streak debug information
+      getStreakDebugInfo: () => {
+        const state = get();
+        const today = new Date();
+        const todayStr = today.toISOString().slice(0, 10);
+        
+        const completedDays = state.calendar
+          .filter(c => c.completed)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const lastCompletedDate = completedDays.length > 0 ? completedDays[0].date : null;
+        const daysSinceLastCompletion = lastCompletedDate 
+          ? Math.floor((today - new Date(lastCompletedDate)) / (1000 * 60 * 60 * 24))
+          : null;
+
+        return {
+          currentStreak: state.streakCount,
+          todayCompleted: state.calendar.some(c => c.date === todayStr && c.completed),
+          lastCompletedDate,
+          daysSinceLastCompletion,
+          totalCalendarEntries: state.calendar.length,
+          completedDaysCount: completedDays.length,
+          recentCompletedDays: completedDays.slice(0, 5).map(d => d.date)
+        };
       },
 
       // Get progress percentages for dashboard

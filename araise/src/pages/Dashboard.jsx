@@ -93,7 +93,7 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [checkStreak])
 
-  // Load focus data on mount
+  // Load focus data on mount and check streak
   useEffect(() => {
     // Initial load
     if (typeof loadFocusTasks === 'function') {
@@ -101,7 +101,12 @@ export default function Dashboard() {
         console.error('Error loading focus tasks:', error)
       })
     }
-  }, [loadFocusTasks])
+    
+    // Initial streak check when component mounts
+    checkStreak().catch(error => {
+      console.error('Error checking streak on mount:', error)
+    })
+  }, [loadFocusTasks, checkStreak])
 
   // Radar chart data (Pentagon with 5 axes) - memoized to prevent flickering
   const radarData = useMemo(() => [

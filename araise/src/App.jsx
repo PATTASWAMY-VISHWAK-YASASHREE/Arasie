@@ -17,16 +17,17 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext"
 function AppContent() {
   const resetDaily = useUserStore(state => state.resetDaily)
   const isAuthenticated = useUserStore(state => state.isAuthenticated)
+  const isChatOpen = useUserStore(state => state.isChatOpen)
   const setUser = useUserStore(state => state.setUser)
   const logout = useUserStore(state => state.logout)
   const initializeAuth = useUserStore(state => state.initializeAuth)
   const { currentUser, loading } = useAuth()
-  
+
   // Initialize auth state on app start
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
-  
+
   // Sync Firebase auth state with Zustand store
   useEffect(() => {
     const syncUser = async () => {
@@ -36,12 +37,12 @@ function AppContent() {
         logout()
       }
     }
-    
+
     if (!loading) {
       syncUser()
     }
   }, [currentUser, loading, setUser, logout])
-  
+
   // Reset daily progress on app start (only when authenticated)
   useEffect(() => {
     if (isAuthenticated) {
@@ -64,12 +65,12 @@ function AppContent() {
   return (
     <BrowserRouter>
       <div className="flex min-h-screen bg-ar-black">
-        {/* Show navigation only when authenticated */}
-        {isAuthenticated && <Navigation />}
-        
+        {/* Show navigation only when authenticated and chat is not open */}
+        {isAuthenticated && !isChatOpen && <Navigation />}
+
         {/* Main content area with conditional spacing */}
-        <main className={`flex-1 ${isAuthenticated ? 'md:ml-64 pb-24 md:pb-0 pt-20 md:pt-0 p-4 md:p-6 lg:p-8' : ''}`}>
-          <div className={`${isAuthenticated ? 'max-w-7xl mx-auto' : 'w-full'}`}>
+        <main className={`flex-1 ${isAuthenticated && !isChatOpen ? 'md:ml-64 pb-24 md:pb-0 pt-20 md:pt-0 p-4 md:p-6 lg:p-8' : ''}`}>
+          <div className={`${isAuthenticated && !isChatOpen ? 'max-w-7xl mx-auto' : 'w-full'}`}>
             <Routes>
               {/* Public routes */}
               <Route path="/" element={

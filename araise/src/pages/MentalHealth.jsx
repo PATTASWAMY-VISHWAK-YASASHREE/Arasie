@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Wind, Music, BookOpen, Sun } from "lucide-react"
 import { useUserStore } from "../store/userStore"
@@ -58,7 +58,16 @@ export default function MentalHealth() {
   const [selectedMood, setSelectedMood] = useState(null)
   const [moodMessage, setMoodMessage] = useState('')
 
-  const { name, updateMentalHealthProgress } = useUserStore()
+  const { name, updateMentalHealthProgress, setChatOpen } = useUserStore()
+
+  // Handle chat state when activeSection changes
+  useEffect(() => {
+    if (activeSection === 'chat') {
+      setChatOpen(true)
+    } else {
+      setChatOpen(false)
+    }
+  }, [activeSection, setChatOpen])
 
   const handleBackToMain = () => {
     setActiveSection('main')
