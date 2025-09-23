@@ -281,158 +281,250 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* Bottom Section - Micro Action Cards */}
+      {/* Bottom Section - Enhanced Action Cards */}
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
-        initial={{ opacity: 0, y: 20 }}
+        className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6"
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.4 }}
+        transition={{ duration: 0.8, delay: 0.5 }}
       >
-        {/* Workout Card */}
+        {/* Workout Card - Enhanced */}
         <motion.div
-          className="glass-card p-4 md:p-6 rounded-2xl cursor-pointer group"
+          className="glass-card p-6 rounded-3xl cursor-pointer group relative overflow-hidden"
           onClick={() => navigate('/workout')}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.03, y: -5 }}
+          whileTap={{ scale: 0.97 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
         >
-          <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
-            <div className="p-3 bg-red-500/20 rounded-xl">
-              <Target className="text-red-400" size={24} />
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-500/20 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <motion.div 
+                className="p-4 bg-gradient-to-br from-red-500/20 to-red-600/10 rounded-2xl border border-red-500/20"
+                whileHover={{ rotate: 5 }}
+              >
+                <Target className="text-red-400" size={28} />
+              </motion.div>
+              <div>
+                <h3 className="text-xl font-poppins font-semibold text-ar-white">Workout</h3>
+                <p className="text-ar-gray-400 font-inter text-sm">Train your body</p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-hagrid font-light tracking-tight">Workout</h3>
-              <p className="text-ar-gray-400 font-hagrid font-light">Train your body</p>
-            </div>
-          </div>
-          <div className="mb-3 md:mb-4">
-            <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
-              <span>Progress</span>
-              <span className="text-red-400 font-medium">{Math.round(progressStats.workout)}%</span>
-            </div>
-            <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-3">
-              <div 
-                className="bg-red-400 h-2 md:h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progressStats.workout}%` }}
-              />
-            </div>
-          </div>
-          <button className="w-full bg-red-500 hover:bg-red-400 text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
-            {progressStats.workout === 100 ? 'Completed ✓' : 'Start Training'}
-          </button>
-        </motion.div>
-
-        {/* Diet Card */}
-        <motion.div
-          className="glass-card p-4 md:p-6 rounded-2xl cursor-pointer group"
-          onClick={() => navigate('/diet')}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
-            <div className="p-3 bg-ar-green/20 rounded-xl">
-              <Trophy className="text-ar-green" size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-hagrid font-light tracking-tight">Diet</h3>
-              <p className="text-ar-gray-400 font-hagrid font-light">Fuel your body</p>
-            </div>
-          </div>
-          <div className="mb-3 md:mb-4">
-            <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
-              <span>Progress</span>
-              <span className="text-ar-green font-medium">{Math.round(progressStats.diet)}%</span>
-            </div>
-            <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-3">
-              <div 
-                className="bg-ar-green h-2 md:h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progressStats.diet}%` }}
-              />
-            </div>
-          </div>
-          <button className="w-full bg-ar-green hover:bg-ar-green-light text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
-            {progressStats.diet >= 100 ? 'Goals Met ✓' : 'Log Meal'}
-          </button>
-        </motion.div>
-
-        {/* Mental Health Card */}
-        <motion.div
-          className="glass-card p-4 md:p-6 rounded-2xl cursor-pointer group"
-          onClick={() => navigate('/mental-health')}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
-            <div className="p-3 bg-purple-500/20 rounded-xl">
-              <Heart className="text-purple-400" size={24} />
-            </div>
-            <div>
-              <h3 className="text-xl font-hagrid font-light tracking-tight">Mental Health</h3>
-              <p className="text-ar-gray-400 font-hagrid font-light">Mind wellness</p>
-            </div>
-          </div>
-          <div className="mb-3 md:mb-4">
-            <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
-              <span>Progress</span>
-              <span className="text-purple-400 font-medium">{Math.round(progressStats.mentalHealth)}%</span>
-            </div>
-            <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-3">
-              <div 
-                className="bg-purple-400 h-2 md:h-3 rounded-full transition-all duration-500"
-                style={{ width: `${progressStats.mentalHealth}%` }}
-              />
-            </div>
-          </div>
-          <button className="w-full bg-purple-500 hover:bg-purple-400 text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover">
-            {progressStats.mentalHealth >= 100 ? 'Complete ✓' : 'Check-in'}
-          </button>
-        </motion.div>
-
-        {/* Focus Card */}
-        <motion.div
-          className="glass-card p-4 md:p-6 rounded-2xl cursor-pointer group"
-          onClick={() => navigate('/focus')}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          animate={{ 
-            borderColor: progressStats.focus === 100 ? '#3b82f6' : 'transparent'
-          }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex items-center gap-3 md:gap-4 mb-3 md:mb-4">
-            <motion.div 
-              className="p-3 bg-blue-500/20 rounded-xl"
-              animate={{ 
-                backgroundColor: progressStats.focus === 100 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'
-              }}
-              transition={{ duration: 0.5 }}
-            >
-              <Brain className="text-blue-400" size={24} />
-            </motion.div>
-            <div>
-              <h3 className="text-xl font-hagrid font-light tracking-tight">Focus</h3>
-              <p className="text-ar-gray-400 font-hagrid font-light">Deep work</p>
-            </div>
-            {progressStats.focus > 0 && (
+            {progressStats.workout === 100 && (
               <motion.div
-                animate={{ 
-                  scale: [1, 1.2, 1],
-                  opacity: [0.5, 1, 0.5]
-                }}
-                transition={{ 
-                  duration: 2, 
-                  repeat: Infinity, 
-                  ease: "easeInOut" 
-                }}
-                className="ml-auto w-2 h-2 bg-blue-400 rounded-full"
-                title="Active Progress"
-              />
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+              >
+                <span className="text-white text-xs">✓</span>
+              </motion.div>
             )}
           </div>
-          <div className="mb-3 md:mb-4">
-            <div className="flex justify-between text-sm mb-2 font-hagrid font-light">
-              <span>Progress</span>
+          
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-ar-gray-400 font-inter text-sm">Progress</span>
+              <span className="text-red-400 font-poppins font-semibold">{Math.round(progressStats.workout)}%</span>
+            </div>
+            <div className="w-full bg-ar-gray-800 rounded-full h-3 overflow-hidden">
+              <motion.div 
+                className="bg-gradient-to-r from-red-500 to-red-400 h-3 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressStats.workout}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+              />
+            </div>
+          </div>
+          
+          <motion.button 
+            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white font-poppins font-medium py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {progressStats.workout === 100 ? 'Completed ✓' : 'Start Training'}
+          </motion.button>
+        </motion.div>
+
+        {/* Diet Card - Enhanced */}
+        <motion.div
+          className="glass-card p-6 rounded-3xl cursor-pointer group relative overflow-hidden"
+          onClick={() => navigate('/diet')}
+          whileHover={{ scale: 1.03, y: -5 }}
+          whileTap={{ scale: 0.97 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+        >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-ar-green/20 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <motion.div 
+                className="p-4 bg-gradient-to-br from-ar-green/20 to-ar-green/10 rounded-2xl border border-ar-green/20"
+                whileHover={{ rotate: 5 }}
+              >
+                <Trophy className="text-ar-green" size={28} />
+              </motion.div>
+              <div>
+                <h3 className="text-xl font-poppins font-semibold text-ar-white">Diet</h3>
+                <p className="text-ar-gray-400 font-inter text-sm">Fuel your body</p>
+              </div>
+            </div>
+            {progressStats.diet >= 100 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+              >
+                <span className="text-white text-xs">✓</span>
+              </motion.div>
+            )}
+          </div>
+          
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-ar-gray-400 font-inter text-sm">Progress</span>
+              <span className="text-ar-green font-poppins font-semibold">{Math.round(progressStats.diet)}%</span>
+            </div>
+            <div className="w-full bg-ar-gray-800 rounded-full h-3 overflow-hidden">
+              <motion.div 
+                className="bg-gradient-to-r from-ar-green to-ar-green-light h-3 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressStats.diet}%` }}
+                transition={{ duration: 1, ease: "easeOut", delay: 0.1 }}
+              />
+            </div>
+          </div>
+          
+          <motion.button 
+            className="w-full bg-gradient-to-r from-ar-green to-ar-green-light hover:from-ar-green-light hover:to-ar-green text-white font-poppins font-medium py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {progressStats.diet >= 100 ? 'Goals Met ✓' : 'Log Meal'}
+          </motion.button>
+        </motion.div>
+
+        {/* Mental Health Card - Enhanced */}
+        <motion.div
+          className="glass-card p-6 rounded-3xl cursor-pointer group relative overflow-hidden"
+          onClick={() => navigate('/mental-health')}
+          whileHover={{ scale: 1.03, y: -5 }}
+          whileTap={{ scale: 0.97 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+        >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <motion.div 
+                className="p-4 bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-2xl border border-purple-500/20"
+                whileHover={{ rotate: 5 }}
+              >
+                <Heart className="text-purple-400" size={28} />
+              </motion.div>
+              <div>
+                <h3 className="text-xl font-poppins font-semibold text-ar-white">Mental Health</h3>
+                <p className="text-ar-gray-400 font-inter text-sm">Mind wellness</p>
+              </div>
+            </div>
+            {progressStats.mentalHealth >= 100 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+              >
+                <span className="text-white text-xs">✓</span>
+              </motion.div>
+            )}
+          </div>
+          
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-ar-gray-400 font-inter text-sm">Progress</span>
+              <span className="text-purple-400 font-poppins font-semibold">{Math.round(progressStats.mentalHealth)}%</span>
+            </div>
+            <div className="w-full bg-ar-gray-800 rounded-full h-3 overflow-hidden">
+              <motion.div 
+                className="bg-gradient-to-r from-purple-500 to-purple-400 h-3 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progressStats.mentalHealth}%` }}
+                transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+              />
+            </div>
+          </div>
+          
+          <motion.button 
+            className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white font-poppins font-medium py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {progressStats.mentalHealth >= 100 ? 'Complete ✓' : 'Check-in'}
+          </motion.button>
+        </motion.div>
+
+        {/* Focus Card - Enhanced */}
+        <motion.div
+          className="glass-card p-6 rounded-3xl cursor-pointer group relative overflow-hidden"
+          onClick={() => navigate('/focus')}
+          whileHover={{ scale: 1.03, y: -5 }}
+          whileTap={{ scale: 0.97 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.9 }}
+        >
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-ar-blue/20 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <motion.div 
+                className="p-4 bg-gradient-to-br from-ar-blue/20 to-ar-blue/10 rounded-2xl border border-ar-blue/20"
+                whileHover={{ rotate: 5 }}
+                animate={{ 
+                  backgroundColor: progressStats.focus === 100 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'
+                }}
+              >
+                <Brain className="text-ar-blue" size={28} />
+              </motion.div>
+              <div>
+                <h3 className="text-xl font-poppins font-semibold text-ar-white">Focus</h3>
+                <p className="text-ar-gray-400 font-inter text-sm">Deep work</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {progressStats.focus > 0 && (
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    opacity: [0.5, 1, 0.5]
+                  }}
+                  transition={{ 
+                    duration: 2, 
+                    repeat: Infinity, 
+                    ease: "easeInOut" 
+                  }}
+                  className="w-3 h-3 bg-ar-blue rounded-full"
+                  title="Active Progress"
+                />
+              )}
+              {progressStats.focus >= 100 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center"
+                >
+                  <span className="text-white text-xs">✓</span>
+                </motion.div>
+              )}
+            </div>
+          </div>
+          
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-ar-gray-400 font-inter text-sm">Progress</span>
               <motion.span 
-                className="text-blue-400 font-medium"
+                className="text-ar-blue font-poppins font-semibold"
                 animate={{ 
                   scale: progressStats.focus === 100 ? [1, 1.1, 1] : 1
                 }}
@@ -441,19 +533,24 @@ export default function Dashboard() {
                 {Math.round(progressStats.focus)}%
               </motion.span>
             </div>
-            <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-3 overflow-hidden">
+            <div className="w-full bg-ar-gray-800 rounded-full h-3 overflow-hidden">
               <motion.div 
-                className="bg-blue-400 h-2 md:h-3 rounded-full"
+                className="bg-gradient-to-r from-ar-blue to-ar-blue-light h-3 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressStats.focus}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
+                transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
               />
             </div>
           </div>
+          
           <motion.button 
-            className="w-full bg-blue-500 hover:bg-blue-400 text-white font-hagrid font-light py-3 rounded-xl transition-all duration-300 shadow-button hover:shadow-button-hover"
+            className="w-full bg-gradient-to-r from-ar-blue to-ar-blue-light hover:from-ar-blue-light hover:to-ar-blue text-white font-poppins font-medium py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             animate={{ 
-              backgroundColor: progressStats.focus >= 100 ? '#22c55e' : '#3b82f6'
+              background: progressStats.focus >= 100 
+                ? 'linear-gradient(to right, #22c55e, #16a34a)' 
+                : 'linear-gradient(to right, #3b82f6, #60a5fa)'
             }}
             transition={{ duration: 0.5 }}
           >
