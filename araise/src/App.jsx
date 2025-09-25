@@ -8,9 +8,12 @@ import Water from "./pages/Water"
 import Diet from "./pages/Diet"
 import MentalHealth from "./pages/MentalHealth"
 import Focus from "./pages/Focus"
+import Settings from "./pages/Settings"
+import Profile from "./pages/Profile"
 import Login from "./pages/Login"
 import Signup from "./pages/Signup"
 import Welcome from "./pages/Welcome"
+import Feedback from "./pages/Feedback"
 import { useUserStore } from "./store/userStore"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
 
@@ -110,6 +113,21 @@ function AppContent() {
               <Route path="/focus" element={
                 <ProtectedRoute>
                   <Focus />
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } />
+              <Route path="/feedback" element={
+                <ProtectedRoute>
+                  <Feedback />
                 </ProtectedRoute>
               } />
             </Routes>

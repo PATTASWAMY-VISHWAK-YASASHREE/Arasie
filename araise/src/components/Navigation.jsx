@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom"
+import { NavLink, useNavigate } from "react-router-dom"
 import { Home, Dumbbell, Utensils, Flame, User, Settings, LogOut, ChevronDown, Heart, Brain } from "lucide-react"
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -34,6 +34,7 @@ function useMediaQuery(query) {
 }
 
 export default function Navigation() {
+  const navigate = useNavigate()
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const { name, level } = useUserStore()
@@ -126,7 +127,13 @@ export default function Navigation() {
 
                     {/* Menu Items */}
                     <div className="p-2 space-y-1">
-                      <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all duration-300 group">
+                      <button 
+                        onClick={() => {
+                          navigate('/settings')
+                          setShowProfileMenu(false)
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all duration-300 group"
+                      >
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center border border-blue-500/20 group-hover:border-blue-400/30 transition-all duration-300">
                           <Settings size={16} className="text-blue-400" />
                         </div>
@@ -299,7 +306,13 @@ export default function Navigation() {
               >
                 {/* Menu Items */}
                 <div className="p-2 space-y-1">
-                  <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all duration-300 group">
+                  <button 
+                    onClick={() => {
+                      navigate('/settings')
+                      setShowProfileMenu(false)
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-zinc-300 hover:text-white hover:bg-white/5 transition-all duration-300 group"
+                  >
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20 flex items-center justify-center border border-blue-500/20 group-hover:border-blue-400/30 transition-all duration-300">
                       <Settings size={16} className="text-blue-400" />
                     </div>
