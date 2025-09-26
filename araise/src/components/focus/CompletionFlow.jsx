@@ -6,7 +6,9 @@ export default function CompletionFlow({
   sessionData, 
   onReturnToDashboard, 
   onAddReflection,
-  totalFocusedToday 
+  totalFocusedToday,
+  xpGained = 0,
+  leveledUp = false,
 }) {
   const [showConfetti, setShowConfetti] = useState(true)
   const [reflection, setReflection] = useState('')
@@ -94,14 +96,17 @@ export default function CompletionFlow({
           </p>
         </motion.div>
 
-        {/* Today's Total */}
+        {/* XP and Today's Total */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl mb-6"
+          className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl mb-6 space-y-1"
         >
-          <div className="text-sm text-ar-gray-400 mb-1">Today's Total</div>
+          {xpGained > 0 && (
+            <div className="text-sm text-purple-300">+{xpGained} XP {leveledUp && <span className="ml-1 px-2 py-0.5 text-xs rounded bg-purple-600/20 text-purple-200">Level Up!</span>}</div>
+          )}
+          <div className="text-sm text-ar-gray-400">Today's Total</div>
           <div className="text-2xl font-light text-ar-white">
             {formatTime(totalFocusedToday)}
           </div>

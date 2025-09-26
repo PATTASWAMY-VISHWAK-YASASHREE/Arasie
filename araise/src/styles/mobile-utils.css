@@ -112,6 +112,13 @@ input, select, textarea {
   padding-right: env(safe-area-inset-right);
 }
 
+/* NEW: Offset fixed elements above bottom nav on mobile */
+@media (max-width: 768px) {
+  .mobile-bottom-offset {
+    bottom: calc(env(safe-area-inset-bottom) + 72px);
+  }
+}
+
 /* Mobile-optimized focus states */
 @media (max-width: 768px) {
   .mobile-focus:focus {

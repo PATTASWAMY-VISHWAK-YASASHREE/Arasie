@@ -1,18 +1,41 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AnimatePresence } from "framer-motion"
 import { useUserStore } from "../store/userStore"
+import { useNavigate } from "react-router-dom"
 
 // Import focus components directly
-import FocusDashboard from "../components/focus/FocusDashboard.jsx"
 import TaskCreation from "../components/focus/TaskCreation.jsx"
 import LiveSession from "../components/focus/LiveSession.jsx"
 import CompletionFlow from "../components/focus/CompletionFlow.jsx"
+import FocusGoalCard from "../components/focus/FocusGoalCard.jsx"
+import AddTaskModal from "../components/focus/AddTaskModal.jsx"
+import TimeBlockedList from "../components/focus/TimeBlockedList.jsx"
+import MinimalStatsRow from "../components/focus/MinimalStatsRow.jsx"
+import notificationService from "../services/NotificationService"
+import { useTaskStore } from "../store/taskStore"
+import { useXpStore } from "../store/xpStore"
 
 export default function Focus() {
   const [activeView, setActiveView] = useState('dashboard') // 'dashboard', 'create', 'session', 'complete'
   const [currentSession, setCurrentSession] = useState(null)
   const [dashboardRefresh, setDashboardRefresh] = useState(0) // Trigger dashboard refresh
+  const [isAddOpen, setIsAddOpen] = useState(false)
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [completionMeta, setCompletionMeta] = useState({ xpGained: 0, leveledUp: false })
+  const [stickyTimer, setStickyTimer] = useState({ 
+    visible: false, 
+    remaining: 0, 
+    isPaused: false, 
+    mode: 'Pomodoro', 
+    taskName: '',
+    cycles: 1,
+    currentCycle: 1,
+    breakDuration: 5,
+    completedBreaks: 0
+  })
+  const [nextSuggestion, setNextSuggestion] = useState(null)
   
+  const navigate = useNavigate()
   const { 
     logFocusSession, 
     updateFocusProgress, 
@@ -22,6 +45,8 @@ export default function Focus() {
     addFocusTaskReflection,
     focusTasks = []
   } = useUserStore()
+  const { tasks } = useTaskStore()
+  const { xp, level, streakDays, awardXp, touchStreak } = useXpStore()
 
   // Function to trigger dashboard refresh
   const refreshDashboard = () => {
@@ -44,9 +69,11 @@ export default function Focus() {
       }
     } else if (type === 'custom' && task) {
       sessionData = {
-        name: task.name,
-        duration: task.planned - task.completed,
-        breakType: task.breakType || 'pomodoro',
+        name: task.title,
+        duration: task.focusDuration || 25,
+        breakDuration: task.breakDuration || 5,
+        cycles: task.cycles || 1,
+        breakType: 'pomodoro',
         taskId: task.id
       }
     }
@@ -55,7 +82,65 @@ export default function Focus() {
     setLastProgressUpdate(0)
     setCurrentSession(sessionData)
     setActiveView('session')
+    // Show sticky bar while in session
+    const sessionMode = type === 'custom' ? `Custom (${sessionData.duration}min)` : 'Pomodoro'
+    setStickyTimer({ 
+      visible: true, 
+      remaining: sessionData.duration * 60, 
+      isPaused: false, 
+      mode: sessionMode, 
+      taskName: sessionData.name,
+      cycles: sessionData.cycles || 1,
+      breakDuration: sessionData.breakDuration || 5
+    })
   }
+
+  // Suggest starting the next scheduled task when its start time is near
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now()
+      const today = new Date().toISOString().slice(0, 10)
+      const upcoming = (tasks || [])
+        .filter(t => t.date === today && t.startAt && t.endAt)
+        .filter(t => t.startAt >= now && (t.startAt - now) <= 5 * 60 * 1000)
+        .sort((a,b) => a.startAt - b.startAt)[0]
+      if (upcoming && !stickyTimer.visible) {
+        setNextSuggestion(upcoming)
+        // Fire browser notification if permitted
+        if (notificationService.isSupported()) {
+          notificationService.requestPermission().then(() => {
+            notificationService.showNotification('Upcoming Focus Task', {
+              body: `${upcoming.title} starts at ${new Date(upcoming.startAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`,
+              tag: 'focus-upcoming',
+            })
+          })
+        }
+      }
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [tasks, stickyTimer.visible])
+
+  // Track cycle progress during focus sessions
+  useEffect(() => {
+    if (!stickyTimer.visible || !currentSession) return
+
+    const interval = setInterval(() => {
+      if (stickyTimer.isPaused) return
+
+      const totalSessionTime = (currentSession.duration + currentSession.breakDuration) * 60 // in seconds
+      const elapsed = (currentSession.duration * 60) - stickyTimer.remaining
+      const currentCycle = Math.floor(elapsed / totalSessionTime) + 1
+      const completedBreaks = Math.max(0, currentCycle - 1)
+
+      setStickyTimer(prev => ({
+        ...prev,
+        currentCycle: Math.min(currentCycle, currentSession.cycles || 1),
+        completedBreaks: Math.min(completedBreaks, (currentSession.cycles || 1) - 1)
+      }))
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [stickyTimer.visible, stickyTimer.isPaused, currentSession, stickyTimer.remaining])
 
   const handleCreateCustom = () => {
     setActiveView('create')
@@ -92,7 +177,7 @@ export default function Focus() {
     }
   }
 
-  const handleSessionComplete = async (sessionResult) => {
+              const handleSessionComplete = async (sessionResult) => {
     // Only log to focusLogs if this is NOT a custom task (to avoid double counting)
     if (!currentSession?.taskId && typeof logFocusSession === 'function') {
       await logFocusSession(sessionResult.duration, sessionResult.task, sessionResult.completed)
@@ -107,6 +192,18 @@ export default function Focus() {
       }
     }
     
+                // If session completed and linked to a task, mark task done in local task store
+                if (sessionResult.completed && currentSession?.taskId) {
+                  try {
+                    const { toggleTask } = useTaskStore.getState()
+                    if (typeof toggleTask === 'function') {
+                      toggleTask(currentSession.taskId)
+                    }
+                  } catch (err) {
+                    console.error('Failed to auto-complete task after session:', err)
+                  }
+                }
+
     // Update focus progress (include both completed and partial sessions)
     if (typeof updateFocusProgress === 'function' && sessionResult.duration > 0) {
       const today = new Date().toISOString().slice(0, 10)
@@ -136,6 +233,13 @@ export default function Focus() {
     
     // Only show completion flow if session was actually completed
     if (sessionResult.completed) {
+      // Award XP: 1 XP per focused minute (streak logic handled automatically)
+      if (sessionResult.duration > 0) {
+        const prevLevel = useXpStore.getState().level
+        awardXp(sessionResult.duration)
+        const nextLevel = useXpStore.getState().level
+        setCompletionMeta({ xpGained: sessionResult.duration, leveledUp: nextLevel > prevLevel })
+      }
       setActiveView('complete')
     } else {
       // For partial sessions, return to dashboard
@@ -147,6 +251,7 @@ export default function Focus() {
     setCurrentSession(null)
     refreshDashboard() // Refresh dashboard data
     setActiveView('dashboard')
+    setStickyTimer(prev => ({ ...prev, visible: false }))
   }
 
 
@@ -215,14 +320,51 @@ export default function Focus() {
     return todaysSessions.reduce((total, session) => total + session.duration, 0)
   }
 
+  const calculatePlannedForToday = (allTasks) => {
+    const today = new Date().toISOString().slice(0, 10)
+    return (allTasks || [])
+      .filter(t => t.date === today && t.startAt && t.endAt)
+      .reduce((m, t) => m + Math.max(0, Math.round((t.endAt - t.startAt) / 60000)), 0)
+  }
+
   return (
     <AnimatePresence mode="wait">
       {activeView === 'dashboard' && (
-        <FocusDashboard
-          onStartSession={handleStartSession}
-          onCreateCustom={handleCreateCustom}
-          refreshTrigger={dashboardRefresh}
-        />
+        <div className="px-3 py-4 space-y-4 md:space-y-6 md:px-4 md:py-6 max-w-5xl mx-auto">
+          {nextSuggestion && (
+            <div className="glass-card p-3 rounded-lg border border-ar-gray-700/60 flex items-center justify-between">
+              <div className="text-sm text-ar-white">
+                Upcoming: <span className="font-medium">{nextSuggestion.title}</span> starts at {new Date(nextSuggestion.startAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { handleStartSession('pomodoro', { name: nextSuggestion.title }); setNextSuggestion(null) }} className="px-3 py-2 rounded bg-ar-blue text-white text-sm">Start Now</button>
+                <button onClick={() => setNextSuggestion(null)} className="px-3 py-2 rounded bg-ar-gray-700 text-ar-gray-200 text-sm">Dismiss</button>
+              </div>
+            </div>
+          )}
+          <FocusGoalCard
+            quote="Win the next block of time."
+            plannedMinutes={calculatePlannedForToday(tasks)}
+            completedMinutes={getTotalFocusedToday()}
+            xp={xp}
+            nextLevelXp={(useXpStore.getState().level) * 100}
+            streakDays={streakDays}
+          />
+
+          <div className="flex items-center gap-2 md:gap-3">
+            <button onClick={() => navigate('/focus/calendar')} className="flex-1 bg-ar-gray-800/60 border border-ar-gray-700 rounded-lg p-2 md:p-3 text-ar-white text-sm md:text-base font-medium">📆 View Schedule➤</button>
+            <button onClick={() => setIsAddOpen(true)} className="flex-1 bg-ar-blue text-white rounded-lg p-2 md:p-3 text-sm md:text-base font-medium">➕ Add New Task</button>
+          </div>
+
+          <MinimalStatsRow focusLogs={focusLogs} streakDays={streakDays} />
+          {/* Keep list on Focus page; dedicated calendar opens as separate page */}
+
+          <TimeBlockedList onStart={({ task, mode }) => handleStartSession(mode, task)} />
+
+          {/* Modals */}
+          <AddTaskModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />
+          {/* Calendar modal removed in favor of inline calendar (keeping import for now if used elsewhere) */}
+        </div>
       )}
       
       {activeView === 'create' && (
@@ -247,6 +389,8 @@ export default function Focus() {
       {activeView === 'complete' && currentSession && (
         <CompletionFlow
           sessionData={currentSession}
+          xpGained={completionMeta.xpGained}
+          leveledUp={completionMeta.leveledUp}
           onReturnToDashboard={handleReturnToDashboard}
           onAddReflection={handleAddReflection}
           totalFocusedToday={getTotalFocusedToday()}

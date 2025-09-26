@@ -88,6 +88,9 @@ export default function LiveSession({
   const isBreak = currentPhase?.type === 'break'
   const isLastPhase = currentPhaseIndex === sessionStructure.phases.length - 1
 
+  // Debug: Log session data to see what's being passed
+  console.log('LiveSession sessionData:', sessionData)
+
   // Save session state to localStorage
   const saveSessionState = () => {
     const sessionState = {
@@ -297,21 +300,24 @@ export default function LiveSession({
     }
     
     // Show cycle progress for custom cycles
-    if (sessionData.breakType === 'custom' && sessionData.customCycles) {
+    if (sessionData.cycles) {
       const currentCycle = currentPhase.cycleIndex + 1
-      const totalCycles = sessionData.customCycles.length
-      return `Cycle ${currentCycle}/${totalCycles} – Stay focused!`
+      const totalCycles = sessionData.cycles
+      const completedBreaks = Math.max(0, currentCycle - 1)
+      return `Cycle ${currentCycle}/${totalCycles} • ${completedBreaks} break${completedBreaks !== 1 ? 's' : ''} completed – Stay focused!`
     }
     
     return "Every second counts. Stay focused."
   }
 
   const getPhaseInfo = () => {
-    if (sessionData.breakType === 'custom' && sessionData.customCycles) {
+    // For custom focus sessions with cycles
+    if (sessionData.cycles) {
       const currentCycle = currentPhase.cycleIndex + 1
-      const totalCycles = sessionData.customCycles.length
+      const totalCycles = sessionData.cycles
       const phaseType = isBreak ? 'Break' : 'Focus'
-      return `${phaseType} - Cycle ${currentCycle}/${totalCycles}`
+      const completedBreaks = Math.max(0, currentCycle - 1)
+      return `${phaseType} - Cycle ${currentCycle}/${totalCycles} • ${completedBreaks} break${completedBreaks !== 1 ? 's' : ''} completed`
     }
     return isBreak ? 'Break Time' : 'Focus Session'
   }
@@ -321,7 +327,7 @@ export default function LiveSession({
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className={`glass-card p-8 rounded-2xl max-w-md w-full text-center transition-all duration-1000 ${
+        className={`glass-card p-4 md:p-8 rounded-2xl max-w-md w-full text-center transition-all duration-1000 ${
           isBreak ? 'bg-green-500/5 border-green-500/20' : 'bg-purple-500/5 border-purple-500/20'
         }`}
       >
@@ -331,17 +337,17 @@ export default function LiveSession({
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h2 className="text-2xl font-hagrid font-light text-ar-white mb-2">
+          <h2 className="text-xl md:text-2xl font-hagrid font-light text-ar-white mb-2">
             {sessionData.name}
           </h2>
-          <p className="text-ar-gray-400 text-sm mb-3">
+          <p className="text-ar-gray-400 text-xs md:text-sm mb-3">
             {getPhaseInfo()}
           </p>
           
-          {/* Custom Cycles Progress Indicator */}
-          {sessionData.breakType === 'custom' && sessionData.customCycles && sessionData.customCycles.length > 1 && (
+          {/* Cycle Progress Indicator */}
+          {sessionData.cycles && (
             <div className="flex justify-center gap-2 mb-2">
-              {sessionData.customCycles.map((_, index) => {
+              {Array.from({ length: sessionData.cycles }, (_, index) => {
                 const cycleCompleted = currentPhase.cycleIndex > index
                 const cycleActive = currentPhase.cycleIndex === index
                 
@@ -363,7 +369,7 @@ export default function LiveSession({
         </motion.div>
 
         {/* Circular Timer */}
-        <div className="relative w-64 h-64 mx-auto mb-8">
+        <div className="relative w-48 h-48 md:w-64 md:h-64 mx-auto mb-6 md:mb-8">
           {/* Background circle */}
           <div className="absolute inset-0 border-4 border-ar-gray-700 rounded-full"></div>
           
@@ -403,11 +409,11 @@ export default function LiveSession({
                 key={timeRemaining}
                 initial={{ scale: 1.1 }}
                 animate={{ scale: 1 }}
-                className="text-4xl font-light text-ar-white mb-2"
+                className="text-3xl md:text-4xl font-light text-ar-white mb-2"
               >
                 {formatTime(timeRemaining)}
               </motion.div>
-              <div className="text-sm text-ar-gray-400">
+              <div className="text-xs md:text-sm text-ar-gray-400">
                 {isBreak ? 'Break' : 'Focus'}
               </div>
             </div>
@@ -415,18 +421,18 @@ export default function LiveSession({
         </div>
 
         {/* Controls */}
-        <div className="flex justify-center gap-4 mb-6">
+        <div className="flex justify-center gap-3 md:gap-4 mb-4 md:mb-6">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handlePause}
-            className={`p-3 rounded-xl transition-colors ${
+            className={`p-2 md:p-3 rounded-xl transition-colors ${
               isBreak 
                 ? 'bg-green-600 hover:bg-green-500' 
                 : 'bg-purple-600 hover:bg-purple-500'
             } text-white`}
           >
-            {isPaused ? <Play size={20} /> : <Pause size={20} />}
+            {isPaused ? <Play size={18} /> : <Pause size={18} />}
           </motion.button>
           
           {isBreak && (
@@ -434,9 +440,9 @@ export default function LiveSession({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSkip}
-              className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors"
+              className="p-2 md:p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors"
             >
-              <SkipForward size={20} />
+              <SkipForward size={18} />
             </motion.button>
           )}
           
@@ -444,9 +450,9 @@ export default function LiveSession({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleEnd}
-            className="p-3 bg-red-600 hover:bg-red-500 text-white rounded-xl transition-colors"
+            className="p-2 md:p-3 bg-red-600 hover:bg-red-500 text-white rounded-xl transition-colors"
           >
-            <Square size={20} />
+            <Square size={18} />
           </motion.button>
         </div>
 
@@ -457,7 +463,7 @@ export default function LiveSession({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="text-ar-gray-400 text-sm italic"
+            className="text-ar-gray-400 text-xs md:text-sm italic"
           >
             {getMotivationalText()}
           </motion.div>
@@ -471,7 +477,7 @@ export default function LiveSession({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={handleSkip}
-            className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors text-sm"
+            className="mt-4 px-4 md:px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors text-xs md:text-sm"
           >
             {isLastPhase ? 'Skip Break → Complete Session' : 'Skip Break → Next Focus'}
           </motion.button>

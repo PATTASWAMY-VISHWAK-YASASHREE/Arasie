@@ -8,6 +8,7 @@ import Water from "./pages/Water"
 import Diet from "./pages/Diet"
 import MentalHealth from "./pages/MentalHealth"
 import Focus from "./pages/Focus"
+import FocusCalendar from "./pages/FocusCalendar"
 import Settings from "./pages/Settings"
 import Profile from "./pages/Profile"
 import Login from "./pages/Login"
@@ -113,6 +114,11 @@ function AppContent() {
               <Route path="/focus" element={
                 <ProtectedRoute>
                   <Focus />
+                </ProtectedRoute>
+              } />
+              <Route path="/focus/calendar" element={
+                <ProtectedRoute>
+                  <FocusCalendar />
                 </ProtectedRoute>
               } />
               <Route path="/settings" element={
