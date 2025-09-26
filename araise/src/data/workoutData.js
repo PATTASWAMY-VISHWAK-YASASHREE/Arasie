@@ -80,7 +80,8 @@ export const workoutData = {
               pose_analyzer: true,
               description: "Tricep activation warm-up",
               primaryMuscle: "Triceps",
-              secondaryMuscles: ["Chest", "Shoulders"]
+              secondaryMuscles: ["Chest", "Shoulders"],
+              video:"/videos/tricep/Tricep_Extension_Push-ups.mp4"
             },
             {
               id: 7,
@@ -171,18 +172,19 @@ export const workoutData = {
               secondaryMuscles: ["Lats", "Biceps", "Rear Deltoids"],
               video:"/videos/back/chest_rows.mp4"
             },
-            {
-              id: 4,
-              name: "Wide Grip Pulldown",
-              uniqueName:"widegrippulldown",
-              sets: 2,
-              reps: "15",
-              pose_analyzer: true,
-              description: "Lat isolation with wide grip",
-              primaryMuscle: "Lats",
-              secondaryMuscles: ["Traps", "Biceps"],
-              video:"/videos/back/nuetralgrip_pulldwon.mp4"
-            },
+            
+              {
+                id: 4,
+                name: "Cable Lat Pulldown",
+                uniqueName:"widegrippulldown",
+                sets: 1,
+                reps: "15",
+                pose_analyzer: true,
+                description: "Cable isolation for lats",
+                primaryMuscle: "Lats",
+                secondaryMuscles: ["Traps", "Rear Deltoids"],
+                video:"/videos/back/Lat_pulldown.mp4"
+              },
             {
               id: 5,
               name: "Neutral Grip Pulldown",
@@ -198,29 +200,19 @@ export const workoutData = {
             },
             {
               id: 6,
-              name: "Half-Knee Arm Lat Pulldown",
+              name: "Horizontal nertual grip",
               uniqueName:"widegrippulldown",
               sets: 2,
               reps: "12",
               pose_analyzer: true,
               description: "Functional unilateral lat movement",
               primaryMuscle: "Lats",
-              secondaryMuscles: ["Core", "Biceps"]
+              secondaryMuscles: ["Core", "Biceps"],
+               video:"/videos/back/horizontal_nuetralgrip.mp4"
             },
+            
             {
               id: 7,
-              name: "Cable Lat Pulldown",
-              uniqueName:"widegrippulldown",
-              sets: 1,
-              reps: "15",
-              pose_analyzer: true,
-              description: "Cable isolation for lats",
-              primaryMuscle: "Lats",
-              secondaryMuscles: ["Traps", "Rear Deltoids"],
-              video:"/videos/back/Lat_pulldown.mp4"
-            },
-            {
-              id: 8,
               name: "Reverse Crunches",
               uniqueName: "crunches",
               sets: 2,
@@ -229,10 +221,10 @@ export const workoutData = {
               description: "Lower abs engagement",
               primaryMuscle: "Lower Abs",
               secondaryMuscles: ["Hip Flexors"],
-              video:"/videos/abs/abs_ropecrunches.mp4"
+              video:"/videos/back/Lowerback.mp4"
             },
             {
-              id: 9,
+              id: 8,
               name: "EZ Bar Preacher Curls",
               uniqueName:"biceps",
               sets: 2,
@@ -244,7 +236,7 @@ export const workoutData = {
               video:"/videos/biceps/EZ_Bar_Preacher_Curls.mp4"
             },
             {
-              id: 10,
+              id: 9,
               name: "Incline Dumbbell Curls",
               uniqueName:"biceps",
               sets: 3,
@@ -256,7 +248,7 @@ export const workoutData = {
               video:"/videos/biceps/inclined_barbell_cruls.mp4"
             },
             {
-              id: 11,
+              id: 10,
               name: "Hammer Curls",
               uniqueName:"biceps",
               sets: 3,
