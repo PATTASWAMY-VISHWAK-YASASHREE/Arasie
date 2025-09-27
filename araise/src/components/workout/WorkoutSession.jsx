@@ -152,6 +152,7 @@ export default function WorkoutSession() {
                 autoPlay
                 loop
                 playsInline
+                muted
                 className="w-full h-full object-cover rounded-xl bg-black"
                 style={{ maxHeight: '100%', maxWidth: '100%' }}
               />
