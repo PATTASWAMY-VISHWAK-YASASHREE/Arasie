@@ -9,7 +9,7 @@ export default function FocusGoalCard({
   nextLevelXp = 100,
   streakDays = 0,
 }) {
-  const progress = Math.min((completedMinutes / plannedMinutes) * 100, 100)
+  const progress = plannedMinutes > 0 ? Math.min((completedMinutes / plannedMinutes) * 100, 100) : 0
   const xpProgress = Math.min((xp / nextLevelXp) * 100, 100)
 
   return (
