@@ -11,6 +11,7 @@ import FocusGoalCard from "../components/focus/FocusGoalCard.jsx"
 import AddTaskModal from "../components/focus/AddTaskModal.jsx"
 import TimeBlockedList from "../components/focus/TimeBlockedList.jsx"
 import MinimalStatsRow from "../components/focus/MinimalStatsRow.jsx"
+import FocusSessionsCard from "../components/focus/FocusSessionsCard.jsx"
 import notificationService from "../services/NotificationService"
 import { useTaskStore } from "../store/taskStore"
 import { useXpStore } from "../store/xpStore"
@@ -311,6 +312,74 @@ export default function Focus() {
     }
   }
 
+  // Handle focus session card events
+  const handleFocusSessionStart = (sessionData) => {
+    // Set up session data for LiveSession component
+    const sessionConfig = {
+      name: sessionData.name,
+      duration: sessionData.duration,
+      breakDuration: sessionData.breakDuration || 0,
+      cycles: sessionData.cycles || 1,
+      breakType: 'pomodoro',
+      taskId: null // No specific task for these sessions
+    }
+    
+    // Reset progress tracking for new session
+    setLastProgressUpdate(0)
+    setCurrentSession(sessionConfig)
+    setActiveView('session')
+  }
+
+  const handleFocusSessionEnd = (sessionResult) => {
+    // Handle session completion
+    if (sessionResult.completed) {
+      // Award XP based on session duration
+      const totalMinutes = sessionResult.duration
+      const xpEarned = Math.round(totalMinutes / 5) // 5 minutes = 1 XP base
+      const boostedXp = totalMinutes >= 60 ? Math.round(xpEarned * 1.2) : xpEarned // 20% boost for sessions 60+ min
+      
+      awardXp(boostedXp)
+      
+      // Log the completed session
+      if (typeof logFocusSession === 'function') {
+        logFocusSession(totalMinutes, sessionResult.name || 'Focus Session', true)
+      }
+      
+      // Update focus progress
+      if (typeof updateFocusProgress === 'function') {
+        const today = new Date().toISOString().slice(0, 10)
+        
+        // Get today's focus log sessions
+        const todaysFocusLogSessions = focusLogs.filter(log => 
+          log.time && log.time.slice(0, 10) === today
+        )
+        const focusLogMinutes = todaysFocusLogSessions.reduce((total, session) => total + session.duration, 0)
+        
+        // Get today's completed tasks
+        const todaysCompletedTasks = tasks.filter(task => 
+          task.date === today && task.done && task.focusMode
+        )
+        const taskMinutes = todaysCompletedTasks.reduce((total, task) => {
+          if (task.startAt && task.endAt) {
+            return total + Math.max(0, Math.round((task.endAt - task.startAt) / 60000))
+          }
+          return total + (task.focusDuration || 25)
+        }, 0)
+        
+        // Add current session minutes
+        const totalMinutes = focusLogMinutes + taskMinutes + totalMinutes
+        updateFocusProgress(Math.min((totalMinutes / 60) * 100, 100))
+      }
+      
+      // Show completion flow
+      setCompletionMeta({ xpGained: boostedXp, leveledUp: false })
+      setActiveView('complete')
+    } else {
+      // Session ended without completion
+      handleReturnToDashboard()
+    }
+  }
+
   // Calculate total focused time today (including completed tasks)
   const getTotalFocusedToday = () => {
     const today = new Date().toISOString().slice(0, 10)
@@ -345,7 +414,7 @@ export default function Focus() {
   return (
     <AnimatePresence mode="wait">
       {activeView === 'dashboard' && (
-        <div className="px-3 py-4 space-y-4 md:space-y-6 md:px-4 md:py-6 max-w-5xl mx-auto">
+        <div className="px-3 py-4 space-y-3 md:space-y-6 md:px-4 md:py-6 max-w-5xl mx-auto">
           {nextSuggestion && (
             <div className="glass-card p-3 rounded-lg border border-ar-gray-700/60 flex items-center justify-between">
               <div className="text-sm text-ar-white">
@@ -367,12 +436,16 @@ export default function Focus() {
           />
 
           <div className="flex items-center gap-2 md:gap-3">
-            <button onClick={() => navigate('/focus/calendar')} className="flex-1 bg-ar-gray-800/60 border border-ar-gray-700 rounded-lg p-2 md:p-3 text-ar-white text-sm md:text-base font-medium">📆 View Schedule➤</button>
-            <button onClick={() => setIsAddOpen(true)} className="flex-1 bg-ar-blue text-white rounded-lg p-2 md:p-3 text-sm md:text-base font-medium">➕ Add New Task</button>
+            <button onClick={() => navigate('/focus/calendar')} className="flex-1 bg-ar-gray-800/60 border border-ar-gray-700 rounded-lg p-2 md:p-3 text-ar-white text-sm md:text-base font-medium touch-manipulation">📆 View Schedule➤</button>
+            <button onClick={() => setIsAddOpen(true)} className="flex-1 bg-ar-blue text-white rounded-lg p-2 md:p-3 text-sm md:text-base font-medium touch-manipulation">➕ Add New Task</button>
           </div>
 
           <MinimalStatsRow focusLogs={focusLogs} streakDays={streakDays} tasks={tasks} />
-          {/* Keep list on Focus page; dedicated calendar opens as separate page */}
+
+          <FocusSessionsCard 
+            onStartSession={handleFocusSessionStart}
+            onEndSession={handleFocusSessionEnd}
+          />
 
           <TimeBlockedList onStart={({ task, mode }) => handleStartSession(mode, task)} />
 
