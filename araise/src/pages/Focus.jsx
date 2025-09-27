@@ -435,17 +435,17 @@ export default function Focus() {
             streakDays={streakDays}
           />
 
-          <div className="flex items-center gap-2 md:gap-3">
-            <button onClick={() => navigate('/focus/calendar')} className="flex-1 bg-ar-gray-800/60 border border-ar-gray-700 rounded-lg p-2 md:p-3 text-ar-white text-sm md:text-base font-medium touch-manipulation">📆 View Schedule➤</button>
-            <button onClick={() => setIsAddOpen(true)} className="flex-1 bg-ar-blue text-white rounded-lg p-2 md:p-3 text-sm md:text-base font-medium touch-manipulation">➕ Add New Task</button>
-          </div>
-
           <MinimalStatsRow focusLogs={focusLogs} streakDays={streakDays} tasks={tasks} />
 
           <FocusSessionsCard 
             onStartSession={handleFocusSessionStart}
             onEndSession={handleFocusSessionEnd}
           />
+
+          <div className="flex items-center gap-2 md:gap-3">
+            <button onClick={() => navigate('/focus/calendar')} className="flex-1 bg-ar-gray-800/60 border border-ar-gray-700 rounded-lg p-2 md:p-3 text-ar-white text-sm md:text-base font-medium touch-manipulation">📆 View Schedule➤</button>
+            <button onClick={() => setIsAddOpen(true)} className="flex-1 bg-ar-blue text-white rounded-lg p-2 md:p-3 text-sm md:text-base font-medium touch-manipulation">➕ Add New Task</button>
+          </div>
 
           <TimeBlockedList onStart={({ task, mode }) => handleStartSession(mode, task)} />
 
