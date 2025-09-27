@@ -37,12 +37,12 @@ export const useXpStore = create((set, get) => ({
   awardXp: (amount) => {
     set((state) => {
       const today = new Date().toISOString().slice(0, 10)
-      let xp = state.xp + amount
+      let xp = Math.max(0, state.xp + amount) // Ensure XP doesn't go below 0
       let dailyXp = state.dailyXp
       let streakDays = state.streakDays
       let lastStreakDate = state.lastStreakDate
 
-      // Check if it's a new day and reset streak if needed
+      // Check if it's a new day and reset daily XP to 0
       if (state.lastActiveDate && state.lastActiveDate !== today) {
         const yesterday = new Date()
         yesterday.setDate(yesterday.getDate() - 1)
@@ -54,11 +54,11 @@ export const useXpStore = create((set, get) => ({
           lastStreakDate = null
         }
         
-        // Reset daily XP for new day
+        // Reset daily XP to 0 for new day
         dailyXp = 0
       }
       
-      // Add to daily XP
+      // Add to daily XP (can be negative for deductions)
       dailyXp += amount
       
       // Check if daily threshold is reached and update streak

@@ -2,15 +2,31 @@ import { useMemo } from "react"
 import { motion } from "framer-motion"
 import { Clock, Crosshair, Flame } from "lucide-react"
 
-export default function MinimalStatsRow({ focusLogs = [], streakDays = 0 }) {
+export default function MinimalStatsRow({ focusLogs = [], streakDays = 0, tasks = [] }) {
   const today = new Date().toISOString().slice(0,10)
   const { minutes, sessions } = useMemo(() => {
-    const todays = (focusLogs || []).filter(l => l.time && l.time.slice(0,10) === today && l.completed)
+    // Count focus log sessions (pomodoro sessions)
+    const todaysFocusLogs = (focusLogs || []).filter(l => l.time && l.time.slice(0,10) === today && l.completed)
+    const focusLogMinutes = todaysFocusLogs.reduce((t, s) => t + (s.duration || 0), 0)
+    const focusLogSessions = todaysFocusLogs.length
+    
+    // Count completed focus tasks as sessions
+    const completedFocusTasks = (tasks || []).filter(t => 
+      t.date === today && t.done && t.focusMode
+    )
+    const taskMinutes = completedFocusTasks.reduce((total, task) => {
+      if (task.startAt && task.endAt) {
+        return total + Math.max(0, Math.round((task.endAt - task.startAt) / 60000))
+      }
+      return total + (task.focusDuration || 25) // fallback to focus duration
+    }, 0)
+    const taskSessions = completedFocusTasks.length
+    
     return {
-      minutes: todays.reduce((t, s) => t + (s.duration || 0), 0),
-      sessions: todays.length,
+      minutes: focusLogMinutes + taskMinutes,
+      sessions: focusLogSessions + taskSessions,
     }
-  }, [focusLogs, today])
+  }, [focusLogs, tasks, today])
 
   return (
     <div className="grid grid-cols-3 gap-2 md:gap-4">

@@ -70,12 +70,16 @@ export const useTaskStore = create((set, get) => ({
         if (t.id !== id) return t
         const newDone = !t.done
         if (newDone) {
+          // Award XP when marking as done
           awarded = t.focusMode ? 20 : 10
+        } else {
+          // Deduct XP when marking as not done
+          awarded = -(t.focusMode ? 20 : 10)
         }
         return { ...t, done: newDone }
       })
-      // Award XP after computing new state
-      if (awarded > 0 && typeof awardXp === 'function') {
+      // Award/deduct XP after computing new state
+      if (awarded !== 0 && typeof awardXp === 'function') {
         awardXp(awarded)
       }
       const next = { ...state, tasks }

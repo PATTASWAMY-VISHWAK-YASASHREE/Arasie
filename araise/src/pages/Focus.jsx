@@ -311,13 +311,28 @@ export default function Focus() {
     }
   }
 
-  // Calculate total focused time today
+  // Calculate total focused time today (including completed tasks)
   const getTotalFocusedToday = () => {
     const today = new Date().toISOString().slice(0, 10)
+    
+    // Get focus log sessions (pomodoro sessions)
     const todaysSessions = focusLogs.filter(log => 
-      log.time.slice(0, 10) === today && log.completed
+      log.time && log.time.slice(0, 10) === today && log.completed
     )
-    return todaysSessions.reduce((total, session) => total + session.duration, 0)
+    const focusLogMinutes = todaysSessions.reduce((total, session) => total + session.duration, 0)
+    
+    // Get completed tasks with focus mode (custom focus sessions)
+    const todaysCompletedTasks = tasks.filter(task => 
+      task.date === today && task.done && task.focusMode
+    )
+    const taskMinutes = todaysCompletedTasks.reduce((total, task) => {
+      if (task.startAt && task.endAt) {
+        return total + Math.max(0, Math.round((task.endAt - task.startAt) / 60000))
+      }
+      return total + (task.focusDuration || 25) // fallback to focus duration
+    }, 0)
+    
+    return focusLogMinutes + taskMinutes
   }
 
   const calculatePlannedForToday = (allTasks) => {
@@ -356,7 +371,7 @@ export default function Focus() {
             <button onClick={() => setIsAddOpen(true)} className="flex-1 bg-ar-blue text-white rounded-lg p-2 md:p-3 text-sm md:text-base font-medium">➕ Add New Task</button>
           </div>
 
-          <MinimalStatsRow focusLogs={focusLogs} streakDays={streakDays} />
+          <MinimalStatsRow focusLogs={focusLogs} streakDays={streakDays} tasks={tasks} />
           {/* Keep list on Focus page; dedicated calendar opens as separate page */}
 
           <TimeBlockedList onStart={({ task, mode }) => handleStartSession(mode, task)} />
