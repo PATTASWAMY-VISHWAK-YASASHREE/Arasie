@@ -10,9 +10,9 @@
   "categories": ["health", "fitness", "lifestyle"],
   "icons": [
     {
-      "src": "/vite.svg",
+      "src": "/araise-logo.png",
       "sizes": "any",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     }
   ],
@@ -22,28 +22,28 @@
       "short_name": "Dashboard",
       "description": "View your fitness overview",
       "url": "/dashboard",
-      "icons": [{ "src": "/vite.svg", "sizes": "any" }]
+      "icons": [{ "src": "/araise-logo.png", "sizes": "any" }]
     },
     {
       "name": "Workout",
       "short_name": "Workout",
       "description": "Start a workout session",
       "url": "/workout",
-      "icons": [{ "src": "/vite.svg", "sizes": "any" }]
+      "icons": [{ "src": "/araise-logo.png", "sizes": "any" }]
     },
     {
       "name": "Water Tracker",
       "short_name": "Water",
       "description": "Log water intake",
       "url": "/water",
-      "icons": [{ "src": "/vite.svg", "sizes": "any" }]
+      "icons": [{ "src": "/araise-logo.png", "sizes": "any" }]
     },
     {
       "name": "Diet Tracker",
       "short_name": "Diet",
       "description": "Track your meals",
       "url": "/diet",
-      "icons": [{ "src": "/vite.svg", "sizes": "any" }]
+      "icons": [{ "src": "/araise-logo.png", "sizes": "any" }]
     }
   ]
 }
