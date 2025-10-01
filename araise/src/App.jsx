@@ -9,6 +9,7 @@ import Diet from "./pages/Diet"
 import MentalHealth from "./pages/MentalHealth"
 import Focus from "./pages/Focus"
 import FocusCalendar from "./pages/FocusCalendar"
+import History from "./pages/History"
 import Settings from "./pages/Settings"
 import Profile from "./pages/Profile"
 import Login from "./pages/Login"
@@ -24,13 +25,7 @@ function AppContent() {
   const isChatOpen = useUserStore(state => state.isChatOpen)
   const setUser = useUserStore(state => state.setUser)
   const logout = useUserStore(state => state.logout)
-  const initializeAuth = useUserStore(state => state.initializeAuth)
   const { currentUser, loading } = useAuth()
-
-  // Initialize auth state on app start
-  useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
 
   // Sync Firebase auth state with Zustand store
   useEffect(() => {
@@ -119,6 +114,11 @@ function AppContent() {
               <Route path="/focus/calendar" element={
                 <ProtectedRoute>
                   <FocusCalendar />
+                </ProtectedRoute>
+              } />
+              <Route path="/history/:date" element={
+                <ProtectedRoute>
+                  <History />
                 </ProtectedRoute>
               } />
               <Route path="/settings" element={

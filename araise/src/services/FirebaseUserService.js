@@ -5,6 +5,9 @@ export class FirebaseUserService {
   constructor(userId) {
     this.userId = userId;
     this.userRef = doc(db, 'users', userId);
+    // Expose Firebase functions for direct access
+    this.updateDoc = updateDoc;
+    this.serverTimestamp = serverTimestamp;
   }
 
   // Load user progress from Firestore
@@ -136,13 +139,141 @@ export class FirebaseUserService {
     return { newMeal, newCalories, dietGoalMet };
   }
 
-  // Set workout completed
-  async setWorkoutCompleted(workoutData, currentHistory) {
-    const newHistory = workoutData ? [...currentHistory, {
+  // Save workout session with real exercise data
+  async saveWorkoutSession(workoutSessionData, currentHistory) {
+    if (!workoutSessionData || !workoutSessionData.exercises || workoutSessionData.exercises.length === 0) {
+      return { newHistory: currentHistory };
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const planName = workoutSessionData.planName || "Workout Session";
+
+    // Check if workout already exists for today with same plan
+    const existingWorkout = currentHistory.find(workout => 
+      workout.date === today && workout.planName === planName
+    );
+
+    if (existingWorkout) {
+      return { newHistory: currentHistory };
+    }
+
+    // Create workout object with real session data - clean undefined values
+    const workout = {
       id: Date.now(),
-      ...workoutData,
-      date: new Date().toISOString().slice(0, 10)
-    }] : currentHistory;
+      type: workoutSessionData.type || "split",
+      planName: planName,
+      date: today,
+      duration: workoutSessionData.duration || 30,
+      completed: true,
+      
+      // Real exercise data with actual performance
+      exercises: workoutSessionData.exercises.map(exercise => ({
+        exerciseName: exercise.exerciseName || "Exercise",
+        sets: exercise.completedSets || exercise.sets || 3,
+        reps: exercise.completedReps || exercise.reps || 12,
+        weight: exercise.actualWeight || exercise.weight || 0,
+        completed: exercise.completed !== false
+      })),
+      
+      // Session summary
+      totalExercises: workoutSessionData.exercises.length,
+      completedExercises: workoutSessionData.exercises.filter(ex => ex.completed !== false).length,
+      totalSets: workoutSessionData.exercises.reduce((sum, ex) => sum + (ex.completedSets || ex.sets || 0), 0)
+    };
+
+    // Add optional fields only if they have values (not undefined)
+    if (workoutSessionData.planId) workout.planId = workoutSessionData.planId;
+    if (workoutSessionData.dayId) workout.dayId = workoutSessionData.dayId;
+    if (workoutSessionData.startTime) workout.startTime = workoutSessionData.startTime;
+    if (workoutSessionData.endTime) workout.endTime = workoutSessionData.endTime;
+    if (workoutSessionData.totalVolume) workout.totalVolume = workoutSessionData.totalVolume;
+    if (workoutSessionData.totalDistance) workout.totalDistance = workoutSessionData.totalDistance;
+    if (workoutSessionData.totalCalories) workout.totalCalories = workoutSessionData.totalCalories;
+    if (workoutSessionData.avgHeartRate) workout.avgHeartRate = workoutSessionData.avgHeartRate;
+
+    const newHistory = [...currentHistory, workout];
+
+    const updates = {
+      workoutCompleted: true,
+      workoutHistory: newHistory,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { newHistory };
+  }
+
+  // Clean up duplicate workouts and fix data structure
+  async cleanupWorkoutHistory(currentHistory) {
+    // Remove duplicates and fix old data format
+    const cleanedHistory = [];
+    const seenWorkouts = new Set();
+
+    for (const workout of currentHistory) {
+      // Create a unique key for the workout
+      const workoutKey = `${workout.date}_${workout.planName || workout.name}_${workout.planId || workout.splitId}`;
+      
+      // Skip if we've already seen this workout
+      if (seenWorkouts.has(workoutKey)) {
+        continue;
+      }
+      
+      // Fix old data format
+      const cleanedWorkout = {
+        id: workout.id || Date.now(),
+        type: workout.type || "split",
+        planName: workout.planName || workout.name || `${workout.splitId} - ${workout.dayId}`,
+        planId: workout.planId || workout.splitId,
+        dayId: workout.dayId,
+        date: workout.date,
+        duration: workout.duration || 30,
+        exercises: Array.isArray(workout.exercises) ? workout.exercises : [],
+        completed: true
+      };
+
+      // Only add if it has valid data
+      if (cleanedWorkout.date && cleanedWorkout.planName) {
+        cleanedHistory.push(cleanedWorkout);
+        seenWorkouts.add(workoutKey);
+      }
+    }
+
+    // Update Firebase with cleaned data
+    const updates = {
+      workoutHistory: cleanedHistory,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { cleanedHistory };
+  }
+
+  // Save cardio workout
+  async saveCardioWorkout(cardioData, currentHistory) {
+    const workout = {
+      id: Date.now(),
+      type: "cardio",
+      planName: cardioData.name || "Cardio Session",
+      
+      date: new Date().toISOString().slice(0, 10),
+      duration: cardioData.duration || 30,
+      
+      exercises: cardioData.exercises || [{
+        exerciseName: cardioData.exerciseType || "Cardio",
+        duration: cardioData.duration,
+        distance: cardioData.distance,
+        speed: cardioData.speed,
+        calories: cardioData.calories
+      }],
+      
+      totalDistance: cardioData.distance,
+      totalCalories: cardioData.calories,
+      avgHeartRate: cardioData.heartRate,
+      
+      completed: true
+    };
+
+    const newHistory = [...currentHistory, workout];
 
     const updates = {
       workoutCompleted: true,
@@ -288,58 +419,7 @@ export class FirebaseUserService {
     }
   }
 
-  // Migrate localStorage workouts to Firebase (one-time migration)
-  async migrateLocalStorageWorkouts() {
-    try {
-      // Get workouts from localStorage
-      const localWorkouts = JSON.parse(localStorage.getItem('customWorkouts') || '[]');
 
-      if (localWorkouts.length === 0) {
-        console.log('No localStorage workouts to migrate');
-        return { migrated: 0 };
-      }
-
-      // Get current Firebase workouts
-      const currentWorkouts = await this.getCustomWorkouts();
-
-      // Check if migration already happened (avoid duplicates)
-      const existingIds = new Set(currentWorkouts.map(w => w.id));
-      const workoutsToMigrate = localWorkouts.filter(w => !existingIds.has(w.id));
-
-      if (workoutsToMigrate.length === 0) {
-        console.log('All localStorage workouts already migrated');
-        return { migrated: 0 };
-      }
-
-      // Add migration metadata to workouts
-      const migratedWorkouts = workoutsToMigrate.map(workout => ({
-        ...workout,
-        migrated: true,
-        migratedAt: new Date().toISOString(),
-        lastModified: workout.created || new Date().toISOString()
-      }));
-
-      // Merge with existing workouts
-      const allWorkouts = [...currentWorkouts, ...migratedWorkouts];
-
-      // Save to Firebase
-      const updates = {
-        customWorkouts: allWorkouts,
-        lastUpdated: serverTimestamp()
-      };
-
-      await updateDoc(this.userRef, updates);
-
-      // Clear localStorage after successful migration
-      localStorage.removeItem('customWorkouts');
-
-      console.log(`Successfully migrated ${migratedWorkouts.length} workouts from localStorage to Firebase`);
-      return { migrated: migratedWorkouts.length, workouts: allWorkouts };
-    } catch (error) {
-      console.error('Error migrating localStorage workouts:', error);
-      throw error;
-    }
-  }
 
   // Focus Methods
 
@@ -382,16 +462,16 @@ export class FirebaseUserService {
 
   // Save focus task
   async saveFocusTask(taskData, currentTasks) {
-    const today = new Date().toISOString().slice(0, 10);
+    const startDate = taskData.date || new Date().toISOString().slice(0, 10);
     const tasksToCreate = [];
 
-    // Create the main task for today
+    // Create the main task for the selected date
     const mainTask = {
       id: Date.now(),
       ...taskData,
       status: 'upcoming',
       completed: 0,
-      date: today,
+      date: startDate,
       created: new Date().toISOString(),
       isRepeating: taskData.repeat !== 'none',
       originalTaskId: null // This is the original task
@@ -400,13 +480,19 @@ export class FirebaseUserService {
     tasksToCreate.push(mainTask);
 
     // Handle repeat functionality
-    if (taskData.repeat === 'daily') {
-      // Create tasks for the next 7 days
-      for (let i = 1; i <= 7; i++) {
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + i);
-        const futureDateStr = futureDate.toISOString().slice(0, 10);
-
+    if (taskData.repeat === 'daily' || taskData.repeat === 'weekly') {
+      const startDateObj = new Date(startDate);
+      const endDate = taskData.repeatUntil ? new Date(taskData.repeatUntil) : null;
+      const increment = taskData.repeat === 'daily' ? 1 : 7; // 1 day or 7 days
+      let currentDate = new Date(startDateObj);
+      currentDate.setDate(currentDate.getDate() + increment); // Start from next occurrence
+      
+      let dayCounter = 1;
+      
+      // Create repeated tasks until end date or reasonable limit
+      while ((!endDate || currentDate <= endDate) && dayCounter <= 365) { // Max 1 year
+        const futureDateStr = currentDate.toISOString().slice(0, 10);
+        
         // Check if task already exists for this date
         const existingTask = currentTasks.find(task =>
           task.name === taskData.name &&
@@ -416,7 +502,7 @@ export class FirebaseUserService {
 
         if (!existingTask) {
           tasksToCreate.push({
-            id: Date.now() + i, // Ensure unique IDs
+            id: Date.now() + dayCounter, // Ensure unique IDs
             ...taskData,
             status: 'upcoming',
             completed: 0,
@@ -426,33 +512,10 @@ export class FirebaseUserService {
             originalTaskId: mainTask.id
           });
         }
-      }
-    } else if (taskData.repeat === 'weekly') {
-      // Create tasks for the next 4 weeks (same day of week)
-      for (let i = 1; i <= 4; i++) {
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + (i * 7));
-        const futureDateStr = futureDate.toISOString().slice(0, 10);
-
-        // Check if task already exists for this date
-        const existingTask = currentTasks.find(task =>
-          task.name === taskData.name &&
-          task.date === futureDateStr &&
-          task.originalTaskId === mainTask.id
-        );
-
-        if (!existingTask) {
-          tasksToCreate.push({
-            id: Date.now() + (i * 1000), // Ensure unique IDs
-            ...taskData,
-            status: 'upcoming',
-            completed: 0,
-            date: futureDateStr,
-            created: new Date().toISOString(),
-            isRepeating: true,
-            originalTaskId: mainTask.id
-          });
-        }
+        
+        // Move to next occurrence
+        currentDate.setDate(currentDate.getDate() + increment);
+        dayCounter++;
       }
     }
 
@@ -465,6 +528,30 @@ export class FirebaseUserService {
 
     await updateDoc(this.userRef, updates);
     return { newTask: mainTask, updatedTasks };
+  }
+
+  // Update an existing focus task
+  async updateFocusTask(taskId, updatedTaskData, currentTasks) {
+    const updatedTasks = currentTasks.map(task => {
+      if (task.id === taskId) {
+        return {
+          ...task,
+          ...updatedTaskData,
+          id: taskId, // Preserve the original ID
+          created: task.created, // Preserve creation date
+          lastModified: new Date().toISOString()
+        };
+      }
+      return task;
+    });
+
+    const updates = {
+      focusTasks: updatedTasks,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { updatedTasks };
   }
 
   // Update focus task progress
@@ -495,6 +582,30 @@ export class FirebaseUserService {
   // Delete focus task
   async deleteFocusTask(taskId, currentTasks) {
     const updatedTasks = currentTasks.filter(task => task.id !== taskId);
+
+    const updates = {
+      focusTasks: updatedTasks,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(this.userRef, updates);
+    return { updatedTasks };
+  }
+
+  // Delete entire series of repeated tasks
+  async deleteFocusTaskSeries(taskId, currentTasks) {
+    const taskToDelete = currentTasks.find(task => task.id === taskId);
+    if (!taskToDelete) {
+      throw new Error('Task not found');
+    }
+
+    // Find the original task ID (either this task or its parent)
+    const originalTaskId = taskToDelete.originalTaskId || taskId;
+
+    // Delete all tasks in the series (original + all repeats)
+    const updatedTasks = currentTasks.filter(task => 
+      task.id !== originalTaskId && task.originalTaskId !== originalTaskId
+    );
 
     const updates = {
       focusTasks: updatedTasks,
@@ -669,57 +780,7 @@ export class FirebaseUserService {
     return [...currentTasks, ...tasksToAdd];
   }
 
-  // Migrate localStorage focus tasks to Firebase (one-time migration)
-  async migrateLocalStorageFocusTasks() {
-    try {
-      // Get focus tasks from localStorage
-      const localTasks = JSON.parse(localStorage.getItem('focusCustomTasks') || '[]');
 
-      if (localTasks.length === 0) {
-        console.log('No localStorage focus tasks to migrate');
-        return { migrated: 0 };
-      }
-
-      // Get current Firebase focus tasks
-      const currentTasks = await this.getFocusTasks();
-
-      // Check if migration already happened (avoid duplicates)
-      const existingIds = new Set(currentTasks.map(t => t.id));
-      const tasksToMigrate = localTasks.filter(t => !existingIds.has(t.id));
-
-      if (tasksToMigrate.length === 0) {
-        console.log('All localStorage focus tasks already migrated');
-        return { migrated: 0 };
-      }
-
-      // Add migration metadata to tasks
-      const migratedTasks = tasksToMigrate.map(task => ({
-        ...task,
-        migrated: true,
-        migratedAt: new Date().toISOString()
-      }));
-
-      // Merge with existing tasks
-      const allTasks = [...currentTasks, ...migratedTasks];
-
-      // Save to Firebase
-      const updates = {
-        focusTasks: allTasks,
-        lastUpdated: serverTimestamp()
-      };
-
-      await updateDoc(this.userRef, updates);
-
-      // Clear localStorage after successful migration
-      localStorage.removeItem('focusCustomTasks');
-
-      console.log(`Successfully migrated ${migratedTasks.length} focus tasks from localStorage to Firebase`);
-      return { migrated: migratedTasks.length, tasks: allTasks };
-    } catch (error) {
-      console.error('Error migrating localStorage focus tasks:', error);
-      throw error;
-    }
-  }
 
   // Journal Entry Methods
   async saveJournalEntry(entry) {
@@ -786,49 +847,51 @@ export class FirebaseUserService {
     }
   }
 
-  // Migrate localStorage journal entries to Firebase (one-time migration)
-  async migrateLocalStorageJournalEntries() {
+
+
+  // Get activities for a specific date
+  async getActivitiesForDate(date) {
     try {
-      // Get journal entries from localStorage
-      const localEntries = JSON.parse(localStorage.getItem('journalEntries') || '[]');
-
-      if (localEntries.length === 0) {
-        console.log('No localStorage journal entries to migrate');
-        return { migrated: 0 };
-      }
-
-      // Get current entries from Firebase
       const userDoc = await getDoc(this.userRef);
-      const currentData = userDoc.exists() ? userDoc.data() : {};
-      const currentEntries = currentData.journalEntries || [];
-
-      // Filter out entries that already exist in Firebase (by ID)
-      const existingIds = new Set(currentEntries.map(entry => entry.id));
-      const entriesToMigrate = localEntries.filter(entry => !existingIds.has(entry.id));
-
-      if (entriesToMigrate.length === 0) {
-        console.log('All localStorage journal entries already migrated');
-        return { migrated: 0 };
+      if (!userDoc.exists()) {
+        return {
+          water: [],
+          diet: [],
+          workout: [],
+          focus: [],
+          mentalWellness: []
+        };
       }
 
-      // Merge with existing entries
-      const allEntries = [...entriesToMigrate, ...currentEntries];
+      const data = userDoc.data();
+      const targetDate = new Date(date).toISOString().slice(0, 10);
 
-      const updates = {
-        journalEntries: allEntries,
-        lastUpdated: serverTimestamp()
+      return {
+        water: (data.waterLogs || []).filter(log => 
+          new Date(log.time).toISOString().slice(0, 10) === targetDate
+        ),
+        diet: (data.meals || []).filter(meal => 
+          new Date(meal.time).toISOString().slice(0, 10) === targetDate
+        ),
+        workout: (data.workoutHistory || []).filter(workout => 
+          workout.date === targetDate
+        ),
+        focus: (data.focusTasks || []).filter(task => 
+          task.date === targetDate
+        ),
+        mentalWellness: (data.mentalHealthLogs || []).filter(log => 
+          new Date(log.time).toISOString().slice(0, 10) === targetDate
+        )
       };
-
-      await updateDoc(this.userRef, updates);
-
-      // Clear localStorage after successful migration
-      localStorage.removeItem('journalEntries');
-
-      console.log(`Successfully migrated ${entriesToMigrate.length} journal entries from localStorage to Firebase`);
-      return { migrated: entriesToMigrate.length, entries: allEntries };
     } catch (error) {
-      console.error('Error migrating localStorage journal entries:', error);
-      throw error;
+      console.error('Error getting activities for date:', error);
+      return {
+        water: [],
+        diet: [],
+        workout: [],
+        focus: [],
+        mentalWellness: []
+      };
     }
   }
 

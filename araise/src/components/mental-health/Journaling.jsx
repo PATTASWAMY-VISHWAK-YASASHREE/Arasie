@@ -16,6 +16,7 @@ export default function Journaling({ onBack }) {
     journalEntries, 
     updateMentalHealthProgress, 
     logMentalHealthEntry,
+    logJournalActivity,
     saveJournalEntry,
     updateJournalEntry,
     deleteJournalEntry,
@@ -68,10 +69,13 @@ export default function Journaling({ onBack }) {
       }
       
       await saveJournalEntry(newEntry)
-      logMentalHealthEntry(selectedMood, journalNote.trim())
+      
+      // Log journal activity with word count
+      const wordCount = journalNote.trim().split(/\s+/).length
+      await logJournalActivity('Daily Journal', journalNote.trim(), wordCount, selectedMood)
       
       // Give 25% progress for journal entry
-      updateMentalHealthProgress(25)
+      await updateMentalHealthProgress(25)
       
       setJournalNote('')
       setIsWriting(false)

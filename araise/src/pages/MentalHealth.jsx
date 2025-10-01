@@ -58,7 +58,7 @@ export default function MentalHealth() {
   const [selectedMood, setSelectedMood] = useState(null)
   const [moodMessage, setMoodMessage] = useState('')
 
-  const { name, updateMentalHealthProgress, setChatOpen } = useUserStore()
+  const { name, updateMentalHealthProgress, setChatOpen, logMentalHealthEntry } = useUserStore()
 
   // Handle chat state when activeSection changes
   useEffect(() => {
@@ -121,10 +121,11 @@ export default function MentalHealth() {
           {moodOptions.map((mood) => (
             <button
               key={mood.id}
-              onClick={() => {
+              onClick={async () => {
                 setSelectedMood(mood)
                 setMoodMessage(mood.message)
-                updateMentalHealthProgress(20)
+                await updateMentalHealthProgress(20)
+                await logMentalHealthEntry(mood.id, mood.message)
               }}
               className={`p-2 sm:p-4 rounded-2xl transition-all transform hover:scale-110 flex-shrink-0 ${mood.color} ${selectedMood?.id === mood.id ? 'scale-110 bg-white/10' : ''
                 }`}

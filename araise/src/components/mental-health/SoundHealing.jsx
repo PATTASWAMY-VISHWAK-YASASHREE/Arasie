@@ -60,7 +60,7 @@ export default function SoundHealing({ onBack }) {
     }
   }, [])
 
-  const handlePlaySound = (soundId) => {
+  const handlePlaySound = async (soundId) => {
     const currentAudio = audioRefs.current[soundId]
     const sound = sounds.find(s => s.id === soundId)
     
@@ -70,10 +70,10 @@ export default function SoundHealing({ onBack }) {
       currentAudio.currentTime = 0
       
       if (sessionStartTime && sound) {
-        const sessionDuration = (Date.now() - sessionStartTime) / 1000 // Convert to seconds
-        if (sessionDuration >= 30) { // Only log if session was at least 30 seconds
-          logSoundHealingSession(sound.name, sessionDuration)
-          updateMentalHealthProgress(20) // 20% for sound healing session
+        const sessionDurationMinutes = Math.round((Date.now() - sessionStartTime) / 60000) // Convert to minutes
+        if (sessionDurationMinutes >= 1) { // Only log if session was at least 1 minute
+          await logSoundHealingSession(sound.name, sessionDurationMinutes, sound.id)
+          await updateMentalHealthProgress(20) // 20% for sound healing session
         }
       }
       
@@ -83,10 +83,10 @@ export default function SoundHealing({ onBack }) {
       // Stop any currently playing sound and log its session
       if (playingSound && audioRefs.current[playingSound] && sessionStartTime) {
         const previousSound = sounds.find(s => s.id === playingSound)
-        const sessionDuration = (Date.now() - sessionStartTime) / 1000
-        if (sessionDuration >= 30 && previousSound) {
-          logSoundHealingSession(previousSound.name, sessionDuration)
-          updateMentalHealthProgress(20)
+        const sessionDurationMinutes = Math.round((Date.now() - sessionStartTime) / 60000)
+        if (sessionDurationMinutes >= 1 && previousSound) {
+          await logSoundHealingSession(previousSound.name, sessionDurationMinutes, previousSound.id)
+          await updateMentalHealthProgress(20)
         }
         
         audioRefs.current[playingSound].pause()

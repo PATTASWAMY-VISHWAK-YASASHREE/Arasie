@@ -13,7 +13,7 @@ import TimeBlockedList from "../components/focus/TimeBlockedList.jsx"
 import MinimalStatsRow from "../components/focus/MinimalStatsRow.jsx"
 import FocusSessionsCard from "../components/focus/FocusSessionsCard.jsx"
 import notificationService from "../services/NotificationService"
-import { useTaskStore } from "../store/taskStore"
+
 import { useXpStore } from "../store/xpStore"
 
 export default function Focus() {
@@ -46,7 +46,7 @@ export default function Focus() {
     addFocusTaskReflection,
     focusTasks = []
   } = useUserStore()
-  const { tasks } = useTaskStore()
+
   const { xp, level, streakDays, awardXp, touchStreak } = useXpStore()
 
   // Function to trigger dashboard refresh
@@ -101,9 +101,12 @@ export default function Focus() {
     const interval = setInterval(() => {
       const now = Date.now()
       const today = new Date().toISOString().slice(0, 10)
-      const upcoming = (tasks || [])
-        .filter(t => t.date === today && t.startAt && t.endAt)
-        .filter(t => t.startAt >= now && (t.startAt - now) <= 5 * 60 * 1000)
+      const upcoming = (focusTasks || [])
+        .filter(t => t.date === today && t.startTime && t.endTime)
+        .filter(t => {
+          const startAt = new Date(`${t.date}T${t.startTime}:00`).getTime()
+          return startAt >= now && (startAt - now) <= 5 * 60 * 1000
+        })
         .sort((a,b) => a.startAt - b.startAt)[0]
       if (upcoming && !stickyTimer.visible) {
         setNextSuggestion(upcoming)
@@ -119,7 +122,7 @@ export default function Focus() {
       }
     }, 30000)
     return () => clearInterval(interval)
-  }, [tasks, stickyTimer.visible])
+  }, [focusTasks, stickyTimer.visible])
 
   // Track cycle progress during focus sessions
   useEffect(() => {
@@ -196,10 +199,8 @@ export default function Focus() {
                 // If session completed and linked to a task, mark task done in local task store
                 if (sessionResult.completed && currentSession?.taskId) {
                   try {
-                    const { toggleTask } = useTaskStore.getState()
-                    if (typeof toggleTask === 'function') {
-                      toggleTask(currentSession.taskId)
-                    }
+                    // Mark the focus task as completed by updating its progress
+                    await updateFocusTaskProgress(currentSession.taskId, sessionResult.duration)
                   } catch (err) {
                     console.error('Failed to auto-complete task after session:', err)
                   }
@@ -356,12 +357,14 @@ export default function Focus() {
         const focusLogMinutes = todaysFocusLogSessions.reduce((total, session) => total + session.duration, 0)
         
         // Get today's completed tasks
-        const todaysCompletedTasks = tasks.filter(task => 
-          task.date === today && task.done && task.focusMode
+        const todaysCompletedTasks = focusTasks.filter(task => 
+          task.date === today && task.status === 'completed'
         )
         const taskMinutes = todaysCompletedTasks.reduce((total, task) => {
-          if (task.startAt && task.endAt) {
-            return total + Math.max(0, Math.round((task.endAt - task.startAt) / 60000))
+          if (task.startTime && task.endTime) {
+            const startAt = new Date(`${task.date}T${task.startTime}:00`).getTime()
+            const endAt = new Date(`${task.date}T${task.endTime}:00`).getTime()
+            return total + Math.max(0, Math.round((endAt - startAt) / 60000))
           }
           return total + (task.focusDuration || 25)
         }, 0)
@@ -391,12 +394,14 @@ export default function Focus() {
     const focusLogMinutes = todaysSessions.reduce((total, session) => total + session.duration, 0)
     
     // Get completed tasks with focus mode (custom focus sessions)
-    const todaysCompletedTasks = tasks.filter(task => 
-      task.date === today && task.done && task.focusMode
+    const todaysCompletedTasks = focusTasks.filter(task => 
+      task.date === today && task.status === 'completed'
     )
     const taskMinutes = todaysCompletedTasks.reduce((total, task) => {
-      if (task.startAt && task.endAt) {
-        return total + Math.max(0, Math.round((task.endAt - task.startAt) / 60000))
+      if (task.startTime && task.endTime) {
+        const startAt = new Date(`${task.date}T${task.startTime}:00`).getTime()
+        const endAt = new Date(`${task.date}T${task.endTime}:00`).getTime()
+        return total + Math.max(0, Math.round((endAt - startAt) / 60000))
       }
       return total + (task.focusDuration || 25) // fallback to focus duration
     }, 0)
@@ -407,8 +412,12 @@ export default function Focus() {
   const calculatePlannedForToday = (allTasks) => {
     const today = new Date().toISOString().slice(0, 10)
     return (allTasks || [])
-      .filter(t => t.date === today && t.startAt && t.endAt)
-      .reduce((m, t) => m + Math.max(0, Math.round((t.endAt - t.startAt) / 60000)), 0)
+      .filter(t => t.date === today && t.startTime && t.endTime)
+      .reduce((m, t) => {
+        const startAt = new Date(`${t.date}T${t.startTime}:00`).getTime()
+        const endAt = new Date(`${t.date}T${t.endTime}:00`).getTime()
+        return m + Math.max(0, Math.round((endAt - startAt) / 60000))
+      }, 0)
   }
 
   return (
@@ -428,14 +437,14 @@ export default function Focus() {
           )}
           <FocusGoalCard
             quote="Win the next block of time."
-            plannedMinutes={calculatePlannedForToday(tasks)}
+            plannedMinutes={calculatePlannedForToday(focusTasks)}
             completedMinutes={getTotalFocusedToday()}
             xp={xp}
             nextLevelXp={(useXpStore.getState().level) * 100}
             streakDays={streakDays}
           />
 
-          <MinimalStatsRow focusLogs={focusLogs} streakDays={streakDays} tasks={tasks} />
+          <MinimalStatsRow focusLogs={focusLogs} streakDays={streakDays} tasks={focusTasks} />
 
           <FocusSessionsCard 
             onStartSession={handleFocusSessionStart}
@@ -447,7 +456,7 @@ export default function Focus() {
             <button onClick={() => setIsAddOpen(true)} className="flex-1 bg-ar-blue text-white rounded-lg p-2 md:p-3 text-sm md:text-base font-medium touch-manipulation">➕ Add New Task</button>
           </div>
 
-          <TimeBlockedList onStart={({ task, mode }) => handleStartSession(mode, task)} />
+          <TimeBlockedList onStart={(task) => handleStartSession('custom', task)} />
 
           {/* Modals */}
           <AddTaskModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />

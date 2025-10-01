@@ -4,6 +4,7 @@ import { Clock, Play, Square, CheckCircle, Sparkles } from "lucide-react"
 import { useXpStore } from "../../store/xpStore"
 import CustomSessionModal from "./CustomSessionModal"
 
+
 const SESSION_MODES = [
   {
     id: 'quick',
@@ -86,6 +87,8 @@ export default function FocusSessionsCard({ onStartSession, onEndSession }) {
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
+
+
 
   const getCardColor = (color) => {
     const colors = {

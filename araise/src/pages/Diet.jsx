@@ -1,6 +1,6 @@
 import { useState, useRef } from "react"
 import { motion } from "framer-motion"
-import { Utensils, Plus, Camera, Clock, Target, Zap, TrendingUp, Upload, X, Check } from "lucide-react"
+import { Utensils, Plus, Camera, Clock, Target, TrendingUp, Upload, X, Check } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 
@@ -11,10 +11,10 @@ export default function Diet() {
   const [showScanResults, setShowScanResults] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
   const [scanResults, setScanResults] = useState(null)
-  const [selectedImage, setSelectedImage] = useState(null)
+
   const fileInputRef = useRef(null)
   const cameraInputRef = useRef(null)
-  
+
   const [mealForm, setMealForm] = useState({
     name: "",
     calories: "",
@@ -99,10 +99,10 @@ export default function Diet() {
   const scanFoodImage = async (imageFile) => {
     setIsScanning(true)
     setShowScanOptions(false)
-    
+
     try {
       // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp','image/jpg']
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg']
       if (!allowedTypes.includes(imageFile.type)) {
         throw new Error('Please select a valid image file (JPEG, PNG, GIF, or WebP)')
       }
@@ -128,7 +128,7 @@ export default function Diet() {
 
       const data = await response.json()
       console.log('Food analysis result:', data)
-      
+
       // Extract required data from API response
       const foodData = {
         name: data.food_identification?.primary_dish || 'Unknown Food',
@@ -179,7 +179,7 @@ export default function Diet() {
       { name: "Avocado", calories: 234, protein: 3, carbs: 12, fat: 21 },
     ]
     const randomFood = mockFoods[Math.floor(Math.random() * mockFoods.length)]
-    
+
     await logMeal(randomFood)
     setShowFoodScanModal(false)
   }
@@ -218,7 +218,7 @@ export default function Diet() {
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6 text-center">Calorie Intake</h2>
-          
+
           <div className="text-center mb-4 md:mb-6">
             <div className="text-3xl md:text-4xl font-bold text-ar-white mb-2">
               {dietCalories}
@@ -233,7 +233,7 @@ export default function Diet() {
 
           {/* Progress Bar */}
           <div className="w-full bg-ar-gray-800 rounded-full h-2 md:h-4 mb-4 md:mb-6">
-            <motion.div 
+            <motion.div
               className="bg-ar-orange h-2 md:h-4 rounded-full transition-all duration-1000"
               style={{ width: `${progressPercentage}%` }}
               initial={{ width: 0 }}
@@ -274,7 +274,7 @@ export default function Diet() {
           transition={{ duration: 0.6, delay: 0.2 }}
         >
           <h2 className="text-lg md:text-2xl font-bold mb-3 md:mb-6 text-center">Macronutrients</h2>
-          
+
           {macroData.some(macro => macro.value > 0) ? (
             <>
               <div className="h-40 md:h-56 mb-2 md:mb-4">
@@ -294,7 +294,7 @@ export default function Diet() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{
                         backgroundColor: '#1E1E1E',
                         border: '1px solid #3B82F6',
@@ -306,12 +306,12 @@ export default function Diet() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              
+
               <div className="space-y-1 md:space-y-2">
                 {macroData.map(macro => (
                   <div key={macro.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-1 md:gap-2">
-                      <div 
+                      <div
                         className="w-2 h-2 md:w-3 md:h-3 rounded-full"
                         style={{ backgroundColor: macro.color }}
                       />
@@ -399,7 +399,7 @@ export default function Diet() {
         transition={{ duration: 0.6, delay: 0.6 }}
       >
         <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Today's Meals</h2>
-        
+
         {meals.length === 0 ? (
           <div className="text-center py-8 text-ar-gray-400">
             <Utensils size={48} className="mx-auto mb-4 opacity-50" />
@@ -477,20 +477,20 @@ export default function Diet() {
             exit={{ scale: 0.9, opacity: 0 }}
           >
             <h2 className="text-2xl font-bold mb-6">Add Meal</h2>
-            
+
             <div className="space-y-4">
               <input
                 type="text"
                 placeholder="Meal name"
                 value={mealForm.name}
-                onChange={(e) => setMealForm({...mealForm, name: e.target.value})}
+                onChange={(e) => setMealForm({ ...mealForm, name: e.target.value })}
                 className="w-full bg-ar-gray-800 border border-ar-blue/30 rounded-xl px-4 py-3 text-ar-white placeholder-ar-gray-400 focus:outline-none focus:border-ar-blue focus:shadow-card"
               />
               <input
                 type="number"
                 placeholder="Calories"
                 value={mealForm.calories}
-                onChange={(e) => setMealForm({...mealForm, calories: e.target.value})}
+                onChange={(e) => setMealForm({ ...mealForm, calories: e.target.value })}
                 className="w-full bg-ar-gray-800 border border-ar-blue/30 rounded-xl px-4 py-3 text-ar-white placeholder-ar-gray-400 focus:outline-none focus:border-ar-blue focus:shadow-card"
               />
               <div className="grid grid-cols-3 gap-4">
@@ -498,21 +498,21 @@ export default function Diet() {
                   type="number"
                   placeholder="Protein (g)"
                   value={mealForm.protein}
-                  onChange={(e) => setMealForm({...mealForm, protein: e.target.value})}
+                  onChange={(e) => setMealForm({ ...mealForm, protein: e.target.value })}
                   className="bg-ar-gray-800 border border-ar-blue/30 rounded-xl px-3 py-2 text-ar-white placeholder-ar-gray-400 focus:outline-none focus:border-ar-blue text-sm focus:shadow-card"
                 />
                 <input
                   type="number"
                   placeholder="Carbs (g)"
                   value={mealForm.carbs}
-                  onChange={(e) => setMealForm({...mealForm, carbs: e.target.value})}
+                  onChange={(e) => setMealForm({ ...mealForm, carbs: e.target.value })}
                   className="bg-ar-gray-800 border border-ar-green/30 rounded-xl px-3 py-2 text-ar-white placeholder-ar-gray-400 focus:outline-none focus:border-ar-green text-sm focus:shadow-card"
                 />
                 <input
                   type="number"
                   placeholder="Fat (g)"
                   value={mealForm.fat}
-                  onChange={(e) => setMealForm({...mealForm, fat: e.target.value})}
+                  onChange={(e) => setMealForm({ ...mealForm, fat: e.target.value })}
                   className="bg-ar-gray-800 border border-ar-orange/30 rounded-xl px-3 py-2 text-ar-white placeholder-ar-gray-400 focus:outline-none focus:border-ar-orange text-sm focus:shadow-card"
                 />
               </div>
@@ -569,13 +569,13 @@ export default function Diet() {
             exit={{ scale: 0.9, opacity: 0 }}
           >
             <h2 className="text-2xl font-bold mb-6 text-center">Food Scanner</h2>
-            
+
             <div className="text-center py-4">
               <Camera size={64} className="mx-auto mb-4 text-ar-blue" />
               <p className="text-ar-gray mb-6">
                 Choose how you want to scan your food
               </p>
-              
+
               <div className="space-y-4">
                 <button
                   onClick={handleCameraCapture}
@@ -584,7 +584,7 @@ export default function Diet() {
                   <Camera size={20} />
                   Take Photo
                 </button>
-                
+
                 <button
                   onClick={handleImportImage}
                   className="w-full bg-ar-green hover:bg-ar-green/80 text-white font-bold py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-3"
@@ -593,7 +593,7 @@ export default function Diet() {
                   Import Image
                 </button>
               </div>
-              
+
               <button
                 onClick={resetScanStates}
                 className="w-full mt-4 bg-ar-gray-700 hover:bg-ar-gray-600 text-ar-white font-bold py-3 rounded-xl transition-all duration-300"
@@ -649,7 +649,7 @@ export default function Diet() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               {/* Food Name */}
               <div className="text-center p-4 bg-ar-dark-gray/30 rounded-xl">
@@ -669,14 +669,14 @@ export default function Diet() {
                   </div>
                   <div className="text-sm text-ar-gray">Protein</div>
                 </div>
-                
+
                 <div className="text-center p-3 bg-ar-green/20 rounded-xl border border-ar-green/30">
                   <div className="text-lg font-bold text-ar-green">
                     {scanResults.carbohydrates}g
                   </div>
                   <div className="text-sm text-ar-gray">Carbs</div>
                 </div>
-                
+
                 <div className="text-center p-3 bg-ar-orange/20 rounded-xl border border-ar-orange/30">
                   <div className="text-lg font-bold text-ar-orange">
                     {scanResults.fat}g
@@ -720,13 +720,13 @@ export default function Diet() {
             exit={{ scale: 0.9, opacity: 0 }}
           >
             <h2 className="text-2xl font-bold mb-6 text-center">Food Scanner</h2>
-            
+
             <div className="text-center py-8">
               <Camera size={64} className="mx-auto mb-4 text-ar-blue" />
               <p className="text-ar-gray mb-6">
                 This is a demo version. Click below to scan a random food item!
               </p>
-              
+
               <div className="flex gap-4">
                 <button
                   onClick={() => setShowFoodScanModal(false)}

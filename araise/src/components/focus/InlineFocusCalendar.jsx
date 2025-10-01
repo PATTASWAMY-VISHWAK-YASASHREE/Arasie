@@ -1,112 +1,208 @@
-import { useMemo, useState } from "react"
+import { useState, useMemo } from "react"
 import { motion } from "framer-motion"
-import { ChevronLeft, ChevronRight, Clock, Trash2, ArrowUp, ArrowDown, MoveHorizontal, MoveVertical } from "lucide-react"
-import { useTaskStore } from "../../store/taskStore"
+import { ChevronLeft, ChevronRight, Clock, Play } from "lucide-react"
+import { useUserStore } from "../../store/userStore"
 
-function formatDay(date) {
-  return date.toISOString().slice(8,10)
-}
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
 
-function formatMonthDays(baseDate) {
-  const first = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1)
-  const daysInMonth = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0).getDate()
-  return Array.from({ length: daysInMonth }).map((_, i) => new Date(first.getFullYear(), first.getMonth(), i + 1))
-}
-
-function formatRangeLabel(baseDate) {
-  const start = new Date(baseDate)
-  const day = start.getDay() || 7
-  if (day !== 1) start.setDate(start.getDate() - (day - 1))
-  const end = new Date(start)
-  end.setDate(start.getDate() + 6)
-  const sameMonth = start.getMonth() === end.getMonth()
-  if (sameMonth) {
-    return `${start.toLocaleString(undefined,{ month:'long' })} ${start.getDate()}–${end.getDate()}, ${end.getFullYear()}`
-  }
-  return `${start.toLocaleString(undefined,{ month:'short' })} ${start.getDate()} – ${end.toLocaleString(undefined,{ month:'short' })} ${end.getDate()}, ${end.getFullYear()}`
-}
-
-function fmt(ms) {
-  const d = new Date(ms)
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-export default function InlineFocusCalendar() {
-  const { tasks, getTasksForDate, deleteOccurrence, deleteSeries, shiftTask, resizeTask } = useTaskStore()
+export default function InlineFocusCalendar({ onTaskSelect, className = "" }) {
   const [currentDate, setCurrentDate] = useState(new Date())
+  const { focusTasks } = useUserStore()
 
-  const monthDays = formatMonthDays(currentDate)
-  const activeDay = currentDate.toISOString().slice(0,10)
-  const rangeLabel = formatRangeLabel(currentDate)
+  const { calendarDays, monthYear } = useMemo(() => {
+    const year = currentDate.getFullYear()
+    const month = currentDate.getMonth()
+    
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const startDate = new Date(firstDay)
+    startDate.setDate(startDate.getDate() - firstDay.getDay())
+    
+    const days = []
+    const current = new Date(startDate)
+    
+    for (let i = 0; i < 42; i++) {
+      const dateStr = current.toISOString().slice(0, 10)
+      const tasksForDay = focusTasks.filter(task => task.date === dateStr)
+      
+      days.push({
+        date: new Date(current),
+        dateStr,
+        isCurrentMonth: current.getMonth() === month,
+        isToday: dateStr === new Date().toISOString().slice(0, 10),
+        tasks: tasksForDay
+      })
+      
+      current.setDate(current.getDate() + 1)
+    }
+    
+    return {
+      calendarDays: days,
+      monthYear: `${MONTHS[month]} ${year}`
+    }
+  }, [currentDate, focusTasks])
 
-  const dayTasks = useMemo(() => {
-    return (getTasksForDate?.(activeDay) || [])
-      .filter(t => t.startAt && t.endAt)
-      .sort((a,b) => a.startAt - b.startAt)
-  }, [tasks, activeDay, getTasksForDate])
+  const navigateMonth = (direction) => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev)
+      newDate.setMonth(prev.getMonth() + direction)
+      return newDate
+    })
+  }
+
+  const getTaskColor = (task) => {
+    const colors = {
+      study: 'bg-ar-blue',
+      work: 'bg-ar-green',
+      reading: 'bg-ar-violet',
+      selfcare: 'bg-ar-pink',
+      routine: 'bg-ar-yellow',
+      personalwork: 'bg-ar-orange'
+    }
+    return colors[task.category] || 'bg-ar-gray-500'
+  }
 
   return (
-    <div className="glass-card p-4 md:p-6 rounded-2xl">
-      {/* Month header */}
-      <div className="flex items-center justify-between mb-1">
-        <button onClick={() => setCurrentDate(d => { const n = new Date(d); n.setMonth(d.getMonth()-1); return n })} className="p-2 text-ar-gray-300 hover:text-white"><ChevronLeft size={18} /></button>
-        <div className="text-ar-white font-medium">
-          {currentDate.toLocaleString(undefined, { month: 'long', year: 'numeric' })}
+    <div className={`glass-card p-4 rounded-xl border border-ar-gray-700/60 ${className}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-hagrid font-light text-ar-white">
+          Focus Calendar
+        </h3>
+        
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigateMonth(-1)}
+            className="p-2 hover:bg-ar-gray-700 rounded-lg transition-colors"
+          >
+            <ChevronLeft size={16} className="text-ar-gray-400" />
+          </button>
+          
+          <div className="text-sm font-medium text-ar-white min-w-[120px] text-center">
+            {monthYear}
+          </div>
+          
+          <button
+            onClick={() => navigateMonth(1)}
+            className="p-2 hover:bg-ar-gray-700 rounded-lg transition-colors"
+          >
+            <ChevronRight size={16} className="text-ar-gray-400" />
+          </button>
         </div>
-        <button onClick={() => setCurrentDate(d => { const n = new Date(d); n.setMonth(d.getMonth()+1); return n })} className="p-2 text-ar-gray-300 hover:text-white"><ChevronRight size={18} /></button>
-      </div>
-      <div className="text-xs text-ar-gray-400 mb-3">Week: {rangeLabel}</div>
-
-      {/* Month strip (wraps into rows if space) */}
-      <div className="flex flex-wrap gap-2 pb-2">
-        {monthDays.map(d => {
-          const iso = d.toISOString().slice(0,10)
-          const isActive = iso === activeDay
-          return (
-            <button key={iso} onClick={() => setCurrentDate(d)} className={`flex flex-col items-center justify-center w-10 py-2 rounded-full ${isActive ? 'bg-ar-blue text-white' : 'bg-ar-gray-800/60 text-ar-gray-200'}`}>
-              <div className="text-[10px] uppercase">{d.toLocaleDateString(undefined, { weekday: 'short' }).slice(0,1)}</div>
-              <div className="text-sm">{formatDay(d)}</div>
-            </button>
-          )
-        })}
       </div>
 
-      {/* Day timeline */}
-      <div className="mt-4 space-y-2">
-        {dayTasks.length === 0 && (
-          <div className="text-ar-gray-400 text-sm">No time-blocked tasks for this day.</div>
-        )}
-        {dayTasks.map(t => (
-          <motion.div key={t.id + ':' + activeDay} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl p-4 text-white" style={{ background: `linear-gradient(90deg, rgba(59,130,246,0.25), rgba(99,102,241,0.25))` }}>
-            <div className="text-xs text-ar-gray-200 flex items-center gap-2"><Clock size={14} /> {fmt(t.startAt)} – {fmt(t.endAt)}</div>
-            <div className="text-base font-medium mt-1">{t.title}</div>
-            <div className="mt-2 flex items-center gap-2 flex-wrap">
-              <button onClick={() => deleteOccurrence(t.id, activeDay)} className="px-2 py-1 rounded bg-ar-gray-800 text-ar-gray-200 text-xs flex items-center gap-1" title="Delete this occurrence">
-                <Trash2 size={14} /> This
-              </button>
-              <button onClick={() => deleteSeries(t.id)} className="px-2 py-1 rounded bg-red-600/30 text-red-200 text-xs flex items-center gap-1" title="Delete entire series">
-                <Trash2 size={14} /> Series
-              </button>
-              {/* Move controls (affect base task) */}
-              <button onClick={() => shiftTask(t.id, -15)} className="px-2 py-1 rounded bg-ar-gray-800 text-ar-gray-200 text-xs flex items-center gap-1" title="Move earlier 15m">
-                <ArrowUp size={14} /> -15m
-              </button>
-              <button onClick={() => shiftTask(t.id, 15)} className="px-2 py-1 rounded bg-ar-gray-800 text-ar-gray-200 text-xs flex items-center gap-1" title="Move later 15m">
-                <ArrowDown size={14} /> +15m
-              </button>
-              {/* Resize controls */}
-              <button onClick={() => resizeTask(t.id, -15)} className="px-2 py-1 rounded bg-ar-gray-800 text-ar-gray-200 text-xs flex items-center gap-1" title="Shorten 15m">
-                <MoveHorizontal size={14} /> -15m
-              </button>
-              <button onClick={() => resizeTask(t.id, 15)} className="px-2 py-1 rounded bg-ar-gray-800 text-ar-gray-200 text-xs flex items-center gap-1" title="Extend 15m">
-                <MoveVertical size={14} /> +15m
-              </button>
+      {/* Days Header */}
+      <div className="grid grid-cols-7 gap-1 mb-2">
+        {DAYS.map(day => (
+          <div key={day} className="text-xs text-ar-gray-400 text-center py-2">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Calendar Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {calendarDays.map((day, index) => (
+          <motion.div
+            key={index}
+            className={`
+              relative p-2 rounded-lg cursor-pointer transition-colors min-h-[40px]
+              ${
+                day.isCurrentMonth
+                  ? 'hover:bg-ar-gray-700/50'
+                  : 'opacity-40'
+              }
+              ${
+                day.isToday
+                  ? 'bg-ar-blue/20 border border-ar-blue/40'
+                  : ''
+              }
+            `}
+            whileHover={{ scale: 1.02 }}
+            onClick={() => {
+              if (day.tasks.length > 0 && onTaskSelect) {
+                onTaskSelect(day.tasks[0])
+              }
+            }}
+          >
+            <div className={`
+              text-xs text-center
+              ${
+                day.isCurrentMonth
+                  ? day.isToday
+                    ? 'text-ar-blue font-medium'
+                    : 'text-ar-white'
+                  : 'text-ar-gray-500'
+              }
+            `}>
+              {day.date.getDate()}
             </div>
+            
+            {/* Task Indicators */}
+            {day.tasks.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {day.tasks.slice(0, 2).map((task, taskIndex) => (
+                  <div
+                    key={taskIndex}
+                    className={`w-1.5 h-1.5 rounded-full ${getTaskColor(task)}`}
+                    title={task.title || task.name}
+                  />
+                ))}
+                {day.tasks.length > 2 && (
+                  <div className="text-xs text-ar-gray-400">+{day.tasks.length - 2}</div>
+                )}
+              </div>
+            )}
           </motion.div>
         ))}
       </div>
+
+      {/* Today's Tasks Preview */}
+      {(() => {
+        const today = new Date().toISOString().slice(0, 10)
+        const todayTasks = focusTasks.filter(task => task.date === today)
+        
+        if (todayTasks.length === 0) return null
+        
+        return (
+          <div className="mt-4 pt-4 border-t border-ar-gray-700">
+            <div className="text-sm font-medium text-ar-white mb-2">Today's Tasks</div>
+            <div className="space-y-2">
+              {todayTasks.slice(0, 3).map((task, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-ar-gray-800/50 rounded-lg"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${getTaskColor(task)}`} />
+                    <span className="text-sm text-ar-white">{task.title || task.name}</span>
+                  </div>
+                  
+                  {task.startTime && (
+                    <div className="flex items-center gap-1 text-xs text-ar-gray-400">
+                      <Clock size={12} />
+                      {task.startTime}
+                    </div>
+                  )}
+                  
+                  {onTaskSelect && (
+                    <button
+                      onClick={() => onTaskSelect(task)}
+                      className="p-1 hover:bg-ar-gray-700 rounded transition-colors"
+                    >
+                      <Play size={12} className="text-ar-blue" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
-
-

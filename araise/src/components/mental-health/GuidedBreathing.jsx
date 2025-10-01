@@ -7,7 +7,7 @@ export default function GuidedBreathing({ onBack }) {
   const [selectedExercise, setSelectedExercise] = useState(null)
   const [isBreathing, setIsBreathing] = useState(false)
   const [sessionComplete, setSessionComplete] = useState(false)
-  const { updateMentalHealthProgress } = useUserStore()
+  const { updateMentalHealthProgress, logBreathingSession } = useUserStore()
 
   const breathingExercises = [
     {
@@ -108,18 +108,17 @@ export default function GuidedBreathing({ onBack }) {
 
 
 
-  const handleSessionComplete = () => {
+  const handleSessionComplete = async () => {
     const exercise = breathingExercises.find(ex => ex.id === selectedExercise)
     if (exercise) {
-      // Calculate session duration in seconds
-      const sessionDuration = exercise.cycles * exercise.steps.reduce((sum, step) => sum + step.duration, 0) / 1000
+      // Calculate session duration in minutes
+      const sessionDurationMinutes = Math.round((exercise.cycles * exercise.steps.reduce((sum, step) => sum + step.duration, 0)) / 60000)
       
       // Log the breathing session
-      const { logBreathingSession, updateMentalHealthProgress } = useUserStore.getState()
-      logBreathingSession(exercise.name, sessionDuration)
+      await logBreathingSession(exercise.name, sessionDurationMinutes)
       
       // Add progress (25% for completing a breathing session)
-      updateMentalHealthProgress(25)
+      await updateMentalHealthProgress(25)
     }
     
     setIsBreathing(false)

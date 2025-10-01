@@ -8,11 +8,10 @@ import {
   Camera,
   ArrowLeft,
   Clock,
-  Flame,
   Trophy,
   Sparkles,
-  Plus,
-  Heart
+  Heart,
+  Flame
 } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import PoseAnalyzer from "../components/PoseAnalyzer"
@@ -20,7 +19,7 @@ import WorkoutHub from "../components/workout/WorkoutHub"
 import CategorySelection from "../components/workout/CategorySelection"
 import SplitDetail from "../components/workout/SplitDetail"
 import WorkoutSession from "../components/workout/WorkoutSession"
-import { exerciseLibrary } from "../data/workoutData"
+import { exerciseLibrary, workoutData } from "../data/workoutData"
 
 // Form Analyzer Component
 function FormAnalyzer() {
@@ -61,37 +60,141 @@ function FormAnalyzer() {
 function WorkoutComplete() {
   const { category, splitId, dayId } = useParams()
   const navigate = useNavigate()
-  const { setWorkoutCompleted } = useUserStore()
+  const { 
+    startWorkoutSession, 
+    completeWorkoutSession, 
+    currentWorkoutSession,
+    updateExerciseInSession 
+  } = useUserStore()
   const [showConfetti, setShowConfetti] = useState(true)
+  const [workoutSaved, setWorkoutSaved] = useState(false)
 
   const getCompletionData = () => {
-    // This would normally fetch from workoutData, but for now we'll use placeholder
-    return {
-      name: dayId ? `${splitId} - ${dayId}` : splitId,
-      type: category === 'gym' ? 'Strength' : category === 'calisthenics' ? 'Bodyweight' : 'Flexibility',
-      duration: '30 mins',
-      category
+    // Get workout data from workoutData structure
+    const workoutPlan = workoutData[category]?.[splitId];
+    
+    if (!workoutPlan) {
+      return {
+        planName: dayId ? `${splitId} - ${dayId}` : splitId,
+        type: category || "split",
+        duration: 30,
+        exercises: []
+      };
     }
+
+    // Handle sequence-based workouts (stretching & yoga)
+    if (workoutPlan.sequence) {
+      const exercises = workoutPlan.sequence.map(pose => ({
+        exerciseName: pose.pose,
+        sets: 1, // Poses are typically held once
+        reps: pose.duration || "30 seconds",
+        weight: 0, // No weight for poses
+        primaryMuscle: "Full Body", // Default for stretching/yoga
+        secondaryMuscles: [],
+        description: pose.description || ""
+      }));
+
+      return {
+        planName: workoutPlan.name,
+        planId: splitId,
+        dayId: null, // No dayId for sequence-based workouts
+        type: category === "stretching" ? "stretching" : "yoga",
+        duration: 30, // Default duration for yoga/stretching
+        exercises: exercises
+      };
+    }
+
+    // Handle day-based workouts (gym/calisthenics)
+    const dayData = workoutPlan?.days?.[dayId];
+    if (!dayData) {
+      return {
+        planName: dayId ? `${splitId} - ${dayId}` : splitId,
+        type: category || "split", // Use actual category
+        duration: 30,
+        exercises: []
+      };
+    }
+
+    // Convert workout exercises to new schema format
+    const exercises = dayData.exercises.map(exercise => ({
+      exerciseName: exercise.exerciseName,
+      sets: exercise.sets,
+      reps: parseInt(exercise.reps) || 12,
+      weight: 0, // Default weight, user would set this during workout
+      primaryMuscle: exercise.primaryMuscle,
+      secondaryMuscles: exercise.secondaryMuscles
+    }));
+
+    return {
+      planName: `${workoutPlan.name} - ${dayData.splitDay || dayData.name}`,
+      planId: splitId,
+      dayId: dayId,
+      type: category || "split", // Use actual category (gym, calisthenics, etc.)
+      duration: 45, // Default duration
+      exercises: exercises
+    };
   }
 
   const completionData = getCompletionData()
 
   useEffect(() => {
-    // Mark workout as completed
-    const markCompleted = async () => {
-      await setWorkoutCompleted({
-        category,
-        splitId,
-        dayId,
-        name: completionData?.name,
-        type: completionData?.type,
-        duration: completionData?.duration
-      })
-    }
-    if (completionData) {
-      markCompleted()
-    }
-  }, [setWorkoutCompleted, category, splitId, dayId, completionData])
+    // Save workout data only once when component loads
+    const saveWorkoutData = async () => {
+      if (workoutSaved) {
+        return;
+      }
+
+      if (completionData && completionData.exercises && completionData.exercises.length > 0) {
+        setWorkoutSaved(true); // Set flag immediately to prevent multiple saves
+        
+        try {
+          // Use the saveWorkoutSession method directly with proper data structure
+          const state = useUserStore.getState();
+          const { saveWorkoutSession, firebaseService } = state;
+          
+          const workoutSessionData = {
+            id: Date.now(),
+            type: completionData.type || "split",
+            planName: completionData.planName,
+            planId: completionData.planId || splitId,
+            dayId: completionData.dayId || dayId,
+            date: new Date().toISOString().slice(0, 10),
+            duration: completionData.duration || 45,
+            startTime: new Date().toISOString(),
+            endTime: new Date().toISOString(),
+            exercises: completionData.exercises.map(exercise => ({
+              exerciseName: exercise.exerciseName,
+              sets: exercise.sets || 1,
+              reps: exercise.reps || (typeof exercise.reps === 'string' ? exercise.reps : 12),
+              weight: exercise.weight || 0,
+              completed: true,
+              primaryMuscle: exercise.primaryMuscle || "Full Body",
+              secondaryMuscles: exercise.secondaryMuscles || []
+            })),
+            completed: true,
+            totalExercises: completionData.exercises.length,
+            completedExercises: completionData.exercises.length
+          };
+
+          if (!firebaseService) {
+            setWorkoutSaved(false); // Reset flag on error
+            return;
+          }
+          
+          if (!saveWorkoutSession) {
+            setWorkoutSaved(false); // Reset flag on error
+            return;
+          }
+          
+          await saveWorkoutSession(workoutSessionData);
+        } catch (error) {
+          setWorkoutSaved(false); // Reset flag on error to allow retry
+        }
+      }
+    };
+
+    saveWorkoutData();
+  }, [category, splitId, dayId, workoutSaved]) // Remove completionData from dependencies
 
   useEffect(() => {
     // Hide confetti after animation
@@ -430,7 +533,7 @@ function CustomWorkoutBuilder() {
               {selectedExercises.map((exercise, index) => (
                 <div key={exercise.id} className="flex items-center justify-between p-2 bg-ar-dark-gray/30 rounded-lg">
                   <div>
-                    <span className="text-sm font-medium">{index + 1}. {exercise.name}</span>
+                    <span className="text-sm font-medium">{index + 1}. {exercise.exerciseName}</span>
                     <div className="text-xs text-ar-gray">
                       {exercise.sets ? `${exercise.sets} sets × ${exercise.reps}` : exercise.duration}
                     </div>
@@ -485,7 +588,7 @@ function CustomWorkoutBuilder() {
               <div key={exercise.id} className="glass-card p-4 rounded-xl">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h4 className="font-bold">{exercise.name}</h4>
+                    <h4 className="font-bold">{exercise.exerciseName}</h4>
                     <p className="text-sm text-ar-gray">
                       {exercise.sets ? `${exercise.sets} sets × ${exercise.reps}` : exercise.duration}
                     </p>
@@ -682,7 +785,7 @@ function CustomWorkoutSession() {
   }
 
   const handleAnalyzer = () => {
-    navigate(`/workout/custom/${workoutId}/session/${exercise.id}/analyzer/${exercise.name}`)
+    navigate(`/workout/custom/${workoutId}/session/${exercise.id}/analyzer/${exercise.exerciseName}`)
   }
 
   return (
@@ -737,7 +840,7 @@ function CustomWorkoutSession() {
           </div>
         </div>
 
-        <h2 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">{exercise.name}</h2>
+        <h2 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">{exercise.exerciseName}</h2>
         <p className="text-ar-violet text-lg md:text-xl font-bold mb-1">
           {exercise.sets ? `${exercise.sets} sets × ${exercise.reps} reps` : exercise.duration}
         </p>
@@ -777,9 +880,16 @@ function CustomWorkoutSession() {
 function CustomWorkoutComplete() {
   const { workoutId } = useParams()
   const navigate = useNavigate()
-  const { setWorkoutCompleted, customWorkouts, loadCustomWorkouts } = useUserStore()
+  const { 
+    startWorkoutSession, 
+    completeWorkoutSession, 
+    currentWorkoutSession,
+    customWorkouts, 
+    loadCustomWorkouts 
+  } = useUserStore()
   const [workout, setWorkout] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [workoutSaved, setWorkoutSaved] = useState(false)
 
   useEffect(() => {
     const loadWorkout = async () => {
@@ -789,13 +899,51 @@ function CustomWorkoutComplete() {
         const foundWorkout = customWorkouts.find(w => w.id === parseInt(workoutId))
         setWorkout(foundWorkout)
 
-        if (foundWorkout) {
-          await setWorkoutCompleted({
-            category: 'custom',
-            name: foundWorkout.name,
-            goal: foundWorkout.goal,
-            exercises: foundWorkout.exercises.length
-          })
+        if (foundWorkout && !workoutSaved) {
+          // Save custom workout session data only once
+          setWorkoutSaved(true); // Set flag immediately to prevent multiple saves
+          
+          try {
+            const state = useUserStore.getState();
+            const { saveWorkoutSession, firebaseService } = state;
+            
+            const workoutSessionData = {
+              id: Date.now(),
+              type: "custom",
+              planName: foundWorkout.name,
+              planId: `custom-${foundWorkout.id}`,
+              dayId: null,
+              date: new Date().toISOString().slice(0, 10),
+              duration: 45, // Default duration for custom workouts
+              startTime: new Date().toISOString(),
+              endTime: new Date().toISOString(),
+              exercises: foundWorkout.exercises.map(exercise => ({
+                exerciseName: exercise.exerciseName,
+                sets: exercise.sets || 3,
+                reps: exercise.reps || 12,
+                weight: exercise.weight || 0,
+                completed: true
+              })),
+              completed: true,
+              totalExercises: foundWorkout.exercises.length,
+              completedExercises: foundWorkout.exercises.length,
+              goal: foundWorkout.goal
+            };
+
+            if (!firebaseService) {
+              setWorkoutSaved(false); // Reset flag on error
+              return;
+            }
+            
+            if (!saveWorkoutSession) {
+              setWorkoutSaved(false); // Reset flag on error
+              return;
+            }
+            
+            await saveWorkoutSession(workoutSessionData);
+          } catch (error) {
+            setWorkoutSaved(false); // Reset flag on error to allow retry
+          }
         }
       } catch (error) {
         console.error('Error loading workout:', error)
@@ -805,7 +953,7 @@ function CustomWorkoutComplete() {
     }
     
     loadWorkout()
-  }, [workoutId, setWorkoutCompleted, loadCustomWorkouts])
+  }, [workoutId, loadCustomWorkouts])
 
   // Also check when customWorkouts updates
   useEffect(() => {

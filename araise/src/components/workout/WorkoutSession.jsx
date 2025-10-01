@@ -26,7 +26,7 @@ export default function WorkoutSession() {
         name: splitData.name,
         exercises: splitData.sequence.map((pose, index) => ({
           id: index + 1,
-          name: pose.pose,
+          exerciseName: pose.pose,
           reps: pose.duration,
           description: pose.description,
           pose_analyzer: false,
@@ -38,7 +38,7 @@ export default function WorkoutSession() {
     // Handle day-based (gym/calisthenics)
     if (dayId && splitData.days?.[dayId]) {
       return {
-        name: splitData.days[dayId].name,
+        name: splitData.days[dayId].splitDay,
         exercises: splitData.days[dayId].exercises
       }
     }
@@ -164,7 +164,7 @@ export default function WorkoutSession() {
           </div>
         </div>
 
-        <h2 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">{exercise.name}</h2>
+        <h2 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">{exercise.exerciseName}</h2>
         <p className={`${colors.text} text-lg md:text-xl font-bold mb-1`}>
           {exercise.sets ? `${exercise.sets} sets × ${exercise.reps} reps` : exercise.reps}
         </p>

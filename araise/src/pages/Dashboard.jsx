@@ -6,6 +6,7 @@ import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Responsi
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "../contexts/AuthContext"
 import WaterBottle from "../components/WaterBottle"
+import Calendar from "../components/Calendar"
 
 
 // Motivational quotes
@@ -238,42 +239,13 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* Streak Calendar Heatmap */}
+        {/* Interactive Calendar */}
         <motion.div
-          className="glass-card p-4 md:p-6 rounded-2xl"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <h2 className="text-xl md:text-2xl font-hagrid font-light mb-4 md:mb-6 text-center tracking-tight">Streak Calendar</h2>
-          <div className="grid grid-cols-7 gap-2">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-              <div key={`${day}-${index}`} className="text-center text-sm text-ar-gray-400 font-hagrid font-light">
-                {day}
-              </div>
-            ))}
-            {calendarDays.map((day, index) => (
-              <motion.div
-                key={index}
-                className={`
-                  aspect-square rounded-lg border-2 flex items-center justify-center text-xs font-hagrid font-light
-                  ${day.completed 
-                    ? 'bg-ar-blue border-ar-blue text-ar-white shadow-card-hover' 
-                    : day.isToday
-                    ? 'border-ar-green text-ar-green'
-                    : 'border-ar-gray-700 text-ar-gray-500'
-                  }
-                `}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {day.day}
-              </motion.div>
-            ))}
-          </div>
-          <div className="mt-4 text-center text-sm text-ar-gray-400 font-hagrid font-light">
-            <span className="text-ar-blue font-medium">{streakStats.thisWeek}/7</span> days completed this week
-          </div>
+          <Calendar />
         </motion.div>
 
         {/* Water Bottle Widget */}

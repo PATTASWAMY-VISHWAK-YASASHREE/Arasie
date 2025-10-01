@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { FirebaseUserService } from '../services/FirebaseUserService'
+import { useXpStore } from './xpStore'
 
 export const useUserStore = create(
   persist(
@@ -36,14 +37,17 @@ export const useUserStore = create(
       focusTasks: [], // [{ id, name, planned, completed, status, date, created, breakType, customCycles, repeat }]
       customWorkouts: [], // [{ id, name, goal, exercises, created, lastModified }]
       journalEntries: [], // [{ id, content, date, mood, isAutoCreated, lastModified }]
-      migrationCompleted: 0, // Number of workouts migrated on last login
-      focusMigrationCompleted: 0, // Number of focus tasks migrated on last login
+
 
       // Real-time subscription
       unsubscribeFromUpdates: null,
 
       // UI state
       isChatOpen: false,
+
+      // Workout session state
+      currentWorkoutSession: null,
+      workoutStartTime: null,
 
       // User actions
       updateName: (name) => set({ name }),
@@ -52,29 +56,7 @@ export const useUserStore = create(
       // UI actions
       setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
 
-      // Initialize authentication state
-      initializeAuth: () => set({
-        user: null,
-        isAuthenticated: false,
-        firebaseService: null,
-        name: 'Guest', // This should never be seen by users since they'll be redirected
-        waterProgress: 0,
-        dietCalories: 0,
-        workoutCompleted: false,
-        waterGoalMet: false,
-        dietGoalMet: false,
-        mentalHealthProgress: 0,
-        focusProgress: 0,
-        meals: [],
-        waterLogs: [],
-        mentalHealthLogs: [],
-        focusLogs: [],
-        focusTasks: [],
-        level: 1,
-        streakCount: 0,
-        calendar: [],
-        workoutHistory: []
-      }),
+
 
       // Authentication methods - updated to work with Firebase
       setUser: async (user) => {
@@ -94,68 +76,20 @@ export const useUserStore = create(
             const progress = await firebaseService.loadUserProgress();
             set(progress);
 
-            // Migrate localStorage workouts to Firebase
-            try {
-              const migrationResult = await firebaseService.migrateLocalStorageWorkouts();
-              if (migrationResult.migrated > 0) {
-                console.log(`✅ Successfully migrated ${migrationResult.migrated} workouts to Firebase`);
-                // Update the store with the migrated workouts
-                set({ customWorkouts: migrationResult.workouts });
-
-                // Set migration notification flag (could be used for UI notification)
-                set({ migrationCompleted: migrationResult.migrated });
-              } else {
-                console.log('ℹ️ No workouts to migrate or migration already completed');
-              }
-            } catch (migrationError) {
-              console.error('❌ Error migrating workouts:', migrationError);
-              // Keep workouts in localStorage if migration fails
-            }
-
-            // Migrate localStorage focus tasks to Firebase
-            try {
-              const focusMigrationResult = await firebaseService.migrateLocalStorageFocusTasks();
-              if (focusMigrationResult.migrated > 0) {
-                console.log(`✅ Successfully migrated ${focusMigrationResult.migrated} focus tasks to Firebase`);
-                // Update the store with the migrated tasks
-                set({ focusTasks: focusMigrationResult.tasks });
-
-                // Set migration notification flag
-                set({ focusMigrationCompleted: focusMigrationResult.migrated });
-              } else {
-                console.log('ℹ️ No focus tasks to migrate or migration already completed');
-              }
-            } catch (focusMigrationError) {
-              console.error('❌ Error migrating focus tasks:', focusMigrationError);
-              // Keep tasks in localStorage if migration fails
-            }
-
-            // Migrate localStorage journal entries to Firebase
-            try {
-              const journalMigrationResult = await firebaseService.migrateLocalStorageJournalEntries();
-              if (journalMigrationResult.migrated > 0) {
-                console.log(`✅ Successfully migrated ${journalMigrationResult.migrated} journal entries to Firebase`);
-                // Update the store with the migrated entries
-                set({ journalEntries: journalMigrationResult.entries });
-              } else {
-                console.log('ℹ️ No journal entries to migrate or migration already completed');
-              }
-            } catch (journalMigrationError) {
-              console.error('❌ Error migrating journal entries:', journalMigrationError);
-              // Keep entries in localStorage if migration fails
-            }
-
             // Set up real-time listener for updates
             const unsubscribe = firebaseService.subscribeToUserProgress((updates) => {
               set(updates);
             });
             set({ unsubscribeFromUpdates: unsubscribe });
 
-            // Also reset daily progress if needed
+            // Reset daily progress if needed
             await firebaseService.resetDaily();
-            
+
             // Check for missed days and reset streak if necessary
             await get().checkAndResetStreakForMissedDays();
+
+            // Update focus progress based on completed tasks
+            await get().updateFocusProgress();
           } catch (error) {
             console.error('Error loading user progress:', error);
           }
@@ -164,12 +98,12 @@ export const useUserStore = create(
 
       logout: () => {
         const state = get();
-        
+
         // Unsubscribe from real-time updates
         if (state.unsubscribeFromUpdates) {
           state.unsubscribeFromUpdates();
         }
-        
+
         set({
           user: null,
           isAuthenticated: false,
@@ -194,9 +128,7 @@ export const useUserStore = create(
           streakCount: 0,
           calendar: [],
           workoutHistory: [],
-          customWorkouts: [],
-          migrationCompleted: 0,
-          focusMigrationCompleted: 0
+          customWorkouts: []
         });
       },
 
@@ -204,26 +136,17 @@ export const useUserStore = create(
       addStreak: async (date) => {
         const state = get();
         if (!state.firebaseService) {
-          // Fallback for non-authenticated users
-          const newStreak = state.streakCount + 1;
-          const newCalendar = [...state.calendar, { date, completed: true }];
-          const newLevel = newStreak % 30 === 0 ? state.level + 1 : state.level;
-          
-          set({
-            streakCount: newStreak,
-            calendar: newCalendar,
-            level: newLevel
-          });
+          console.error('Firebase service not available');
           return;
         }
 
         try {
           // First check if we should reset streak before adding
           await get().checkAndResetStreakForMissedDays();
-          
+
           // Get updated state after potential reset
           const updatedState = get();
-          
+
           const { newStreak, newCalendar, newLevel } = await state.firebaseService.addStreak(
             date,
             updatedState.streakCount,
@@ -236,8 +159,8 @@ export const useUserStore = create(
             calendar: newCalendar,
             level: newLevel
           });
-          
-          console.log(`Streak added! New streak: ${newStreak} days`);
+
+
         } catch (error) {
           console.error('Error adding streak:', error);
         }
@@ -246,32 +169,12 @@ export const useUserStore = create(
       // Daily reset (call this at midnight or app start for new day)
       resetDaily: async () => {
         const state = get();
-        
+
         // Check for missed days and reset streak if necessary
         await get().checkAndResetStreakForMissedDays();
-        
+
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const today = new Date().toISOString().slice(0, 10);
-          const lastReset = localStorage.getItem('lastReset');
-          if (lastReset === today) return;
-
-          set({
-            workoutCompleted: false,
-            waterGoalMet: false,
-            dietGoalMet: false,
-            waterProgress: 0,
-            dietCalories: 0,
-            mentalHealthProgress: 0,
-            focusProgress: 0,
-            meals: [],
-            waterLogs: [],
-            mentalHealthLogs: [],
-            focusLogs: [],
-            focusTasks: [],
-          });
-
-          localStorage.setItem('lastReset', today);
+          console.error('Firebase service not available');
           return;
         }
 
@@ -302,20 +205,7 @@ export const useUserStore = create(
       logWater: async (amount) => {
         const state = get();
         if (!state.firebaseService) {
-          // Fallback for non-authenticated users
-          const newProgress = state.waterProgress + amount;
-          const waterGoalMet = newProgress >= state.waterGoal;
-          const newLog = {
-            id: Date.now(),
-            amount,
-            time: new Date().toISOString()
-          };
-
-          set({
-            waterProgress: newProgress,
-            waterGoalMet,
-            waterLogs: [...state.waterLogs, newLog]
-          });
+          console.error('Firebase service not available');
           return;
         }
 
@@ -341,20 +231,7 @@ export const useUserStore = create(
       logMeal: async (meal) => {
         const state = get();
         if (!state.firebaseService) {
-          // Fallback for non-authenticated users
-          const newMeal = {
-            id: Date.now(),
-            ...meal,
-            time: new Date().toISOString()
-          };
-          const newCalories = state.dietCalories + meal.calories;
-          const dietGoalMet = state.meals.length + 1 >= 3; // 3 meals minimum
-
-          set({
-            dietCalories: newCalories,
-            dietGoalMet,
-            meals: [...state.meals, newMeal]
-          });
+          console.error('Firebase service not available');
           return;
         }
 
@@ -376,26 +253,41 @@ export const useUserStore = create(
       },
 
       // Workout tracking
-      setWorkoutCompleted: async (workoutData = null) => {
+      // Save workout session with real exercise data
+      saveWorkoutSession: async (workoutSessionData) => {
         const state = get();
-        if (!state.firebaseService) {
-          // Fallback for non-authenticated users
-          const newHistory = workoutData ? [...state.workoutHistory, {
-            id: Date.now(),
-            ...workoutData,
-            date: new Date().toISOString().slice(0, 10)
-          }] : state.workoutHistory;
 
-          set({
-            workoutCompleted: true,
-            workoutHistory: newHistory
-          });
+        if (!state.firebaseService) {
           return;
         }
 
         try {
-          const { newHistory } = await state.firebaseService.setWorkoutCompleted(
-            workoutData,
+          // Check if the function exists
+          if (!state.firebaseService.saveWorkoutSession) {
+            // Fallback to old method with new data structure
+            const legacyData = {
+              type: workoutSessionData.type,
+              planName: workoutSessionData.planName,
+              planId: workoutSessionData.planId,
+              dayId: workoutSessionData.dayId,
+              duration: workoutSessionData.duration,
+              exercises: workoutSessionData.exercises
+            };
+
+            const { newHistory } = await state.firebaseService.setWorkoutCompleted(
+              legacyData,
+              state.workoutHistory
+            );
+
+            set({
+              workoutCompleted: true,
+              workoutHistory: newHistory
+            });
+            return;
+          }
+
+          const { newHistory } = await state.firebaseService.saveWorkoutSession(
+            workoutSessionData,
             state.workoutHistory
           );
 
@@ -404,18 +296,139 @@ export const useUserStore = create(
             workoutHistory: newHistory
           });
         } catch (error) {
-          console.error('Error setting workout completed:', error);
+          // Error saving workout session
+        }
+      },
+
+
+
+      // Start workout session
+      startWorkoutSession: (workoutPlan) => {
+        const session = {
+          id: Date.now(),
+          planName: workoutPlan.planName,
+          planId: workoutPlan.planId,
+          dayId: workoutPlan.dayId,
+          type: workoutPlan.type || "split",
+          startTime: new Date().toISOString(),
+          exercises: workoutPlan.exercises.map(exercise => ({
+            ...exercise,
+            completed: false,
+            completedSets: 0,
+            completedReps: [],
+            actualWeight: [],
+            notes: ""
+          }))
+        };
+
+        set({
+          currentWorkoutSession: session,
+          workoutStartTime: new Date().toISOString()
+        });
+
+        console.log('Workout session started:', session);
+        return session;
+      },
+
+      // Update exercise in current session
+      updateExerciseInSession: (exerciseIndex, updates) => {
+        const state = get();
+        if (!state.currentWorkoutSession) return;
+
+        const updatedSession = {
+          ...state.currentWorkoutSession,
+          exercises: state.currentWorkoutSession.exercises.map((exercise, index) =>
+            index === exerciseIndex ? { ...exercise, ...updates } : exercise
+          )
+        };
+
+        set({ currentWorkoutSession: updatedSession });
+      },
+
+      // Complete workout session
+      completeWorkoutSession: async () => {
+        const state = get();
+        if (!state.currentWorkoutSession) return;
+
+        const endTime = new Date().toISOString();
+        const startTime = new Date(state.workoutStartTime);
+        const duration = Math.round((new Date(endTime) - startTime) / (1000 * 60)); // minutes
+
+        const sessionData = {
+          ...state.currentWorkoutSession,
+          endTime,
+          duration,
+          totalVolume: state.currentWorkoutSession.exercises.reduce((sum, exercise) => {
+            const weight = Array.isArray(exercise.actualWeight)
+              ? exercise.actualWeight.reduce((a, b) => a + b, 0)
+              : exercise.actualWeight || 0;
+            const reps = Array.isArray(exercise.completedReps)
+              ? exercise.completedReps.reduce((a, b) => a + b, 0)
+              : exercise.completedReps || 0;
+            return sum + (weight * reps);
+          }, 0)
+        };
+
+        await state.saveWorkoutSession(sessionData);
+
+        // Clear session
+        set({
+          currentWorkoutSession: null,
+          workoutStartTime: null
+        });
+
+        return sessionData;
+      },
+
+      // Cancel workout session
+      cancelWorkoutSession: () => {
+        set({
+          currentWorkoutSession: null,
+          workoutStartTime: null
+        });
+      },
+
+
+
+
+
+
+
+
+
+      // Save cardio workout
+      saveCardioWorkout: async (cardioData) => {
+        const state = get();
+        if (!state.firebaseService) {
+          return;
+        }
+
+        try {
+          const { newHistory } = await state.firebaseService.saveCardioWorkout(
+            cardioData,
+            state.workoutHistory
+          );
+
+          set({
+            workoutCompleted: true,
+            workoutHistory: newHistory
+          });
+        } catch (error) {
+          // Silent error handling - could be logged to external service
         }
       },
 
       // Streak logic - check if all daily goals are met
       checkStreak: async () => {
         const state = get();
-        
+
         // First, check for missed days and reset streak if necessary
         await get().checkAndResetStreakForMissedDays();
-        
-        if (state.workoutCompleted && state.waterGoalMet && state.dietGoalMet) {
+
+        // Check if focus goal is met (60+ minutes or 100% progress)
+        const focusGoalMet = state.focusProgress >= 100;
+
+        if (state.workoutCompleted && state.waterGoalMet && state.dietGoalMet && focusGoalMet) {
           const today = new Date().toISOString().slice(0, 10);
           // Only add streak if not already added today
           if (!state.calendar.find(c => c.date === today && c.completed)) {
@@ -424,12 +437,28 @@ export const useUserStore = create(
         }
       },
 
+      // Get XP and focus stats
+      getXpStats: () => {
+        const xpState = useXpStore.getState();
+        const dailyProgress = xpState.getDailyProgress();
+
+        return {
+          totalXp: xpState.xp,
+          level: xpState.level,
+          streakDays: xpState.streakDays,
+          dailyXp: dailyProgress.dailyXp,
+          dailyThreshold: dailyProgress.threshold,
+          dailyProgress: dailyProgress.progress,
+          isThresholdReached: dailyProgress.isThresholdReached
+        };
+      },
+
       // Check for missed days and reset streak if necessary
       checkAndResetStreakForMissedDays: async () => {
         const state = get();
         const today = new Date();
         const todayStr = today.toISOString().slice(0, 10);
-        
+
         // If no streak, nothing to check
         if (state.streakCount === 0) {
           return;
@@ -437,7 +466,6 @@ export const useUserStore = create(
 
         // If no calendar entries, reset streak
         if (state.calendar.length === 0) {
-          console.log('Streak reset: No calendar entries found');
           await get().resetStreak();
           return;
         }
@@ -449,7 +477,6 @@ export const useUserStore = create(
 
         // If no completed days but we have a streak, reset it
         if (completedDays.length === 0) {
-          console.log('Streak reset: No completed days found');
           await get().resetStreak();
           return;
         }
@@ -460,7 +487,6 @@ export const useUserStore = create(
         // If more than 1 day has passed since last completion, reset streak
         // Allow for same day (0 days) and yesterday (1 day), but reset if 2+ days
         if (daysDifference > 1) {
-          console.log(`Streak reset: ${daysDifference} days since last completion (${completedDays[0].date})`);
           await get().resetStreak();
         }
       },
@@ -469,7 +495,7 @@ export const useUserStore = create(
       resetStreak: async () => {
         const state = get();
         if (!state.firebaseService) {
-          set({ streakCount: 0 });
+          console.error('Firebase service not available');
           return;
         }
 
@@ -478,8 +504,6 @@ export const useUserStore = create(
           set({ streakCount: 0 });
         } catch (error) {
           console.error('Error resetting streak:', error);
-          // Fallback to local reset
-          set({ streakCount: 0 });
         }
       },
 
@@ -503,31 +527,7 @@ export const useUserStore = create(
         }
       },
 
-      // Get streak debug information
-      getStreakDebugInfo: () => {
-        const state = get();
-        const today = new Date();
-        const todayStr = today.toISOString().slice(0, 10);
-        
-        const completedDays = state.calendar
-          .filter(c => c.completed)
-          .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        const lastCompletedDate = completedDays.length > 0 ? completedDays[0].date : null;
-        const daysSinceLastCompletion = lastCompletedDate 
-          ? Math.floor((today - new Date(lastCompletedDate)) / (1000 * 60 * 60 * 24))
-          : null;
-
-        return {
-          currentStreak: state.streakCount,
-          todayCompleted: state.calendar.some(c => c.date === todayStr && c.completed),
-          lastCompletedDate,
-          daysSinceLastCompletion,
-          totalCalendarEntries: state.calendar.length,
-          completedDaysCount: completedDays.length,
-          recentCompletedDays: completedDays.slice(0, 5).map(d => d.date)
-        };
-      },
 
       // Get progress percentages for dashboard
       getProgressStats: () => {
@@ -545,9 +545,9 @@ export const useUserStore = create(
       updateMentalHealthProgress: async (percentage) => {
         const state = get();
         const newProgress = Math.min(state.mentalHealthProgress + percentage, 100);
-        
+
         if (!state.firebaseService) {
-          set({ mentalHealthProgress: newProgress });
+          console.error('Firebase service not available');
           return;
         }
 
@@ -556,8 +556,6 @@ export const useUserStore = create(
           set({ mentalHealthProgress: newProgress });
         } catch (error) {
           console.error('Error updating mental health progress:', error);
-          // Fallback to local update
-          set({ mentalHealthProgress: newProgress });
         }
       },
 
@@ -573,9 +571,7 @@ export const useUserStore = create(
         };
 
         if (!state.firebaseService) {
-          set({
-            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
-          });
+          console.error('Firebase service not available');
           return;
         }
 
@@ -587,10 +583,6 @@ export const useUserStore = create(
           set({ mentalHealthLogs: updatedLogs });
         } catch (error) {
           console.error('Error logging breathing session:', error);
-          // Fallback to local storage
-          set({
-            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
-          });
         }
       },
 
@@ -605,9 +597,7 @@ export const useUserStore = create(
         };
 
         if (!state.firebaseService) {
-          set({
-            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
-          });
+          console.error('Firebase service not available');
           return;
         }
 
@@ -619,9 +609,6 @@ export const useUserStore = create(
           set({ mentalHealthLogs: updatedLogs });
         } catch (error) {
           console.error('Error logging meditation session:', error);
-          set({
-            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
-          });
         }
       },
 
@@ -636,9 +623,7 @@ export const useUserStore = create(
         };
 
         if (!state.firebaseService) {
-          set({
-            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
-          });
+          console.error('Firebase service not available');
           return;
         }
 
@@ -650,30 +635,40 @@ export const useUserStore = create(
           set({ mentalHealthLogs: updatedLogs });
         } catch (error) {
           console.error('Error logging sound healing session:', error);
-          set({
-            mentalHealthLogs: [...state.mentalHealthLogs, newLog]
-          });
         }
       },
 
-      logMentalHealthEntry: (mood, journalEntry = '') => {
+      logMentalHealthEntry: async (mood, journalEntry = '') => {
         const state = get()
         const newLog = {
           id: Date.now(),
+          type: 'mood_check',
           mood,
           journalEntry,
           time: new Date().toISOString()
         }
-        set({
-          mentalHealthLogs: [...state.mentalHealthLogs, newLog]
-        })
+
+        if (!state.firebaseService) {
+          console.error('Firebase service not available');
+          return;
+        }
+
+        try {
+          const { updatedLogs } = await state.firebaseService.logMentalHealthActivity(
+            newLog,
+            state.mentalHealthLogs
+          );
+          set({ mentalHealthLogs: updatedLogs });
+        } catch (error) {
+          console.error('Error logging mental health entry:', error);
+        }
       },
 
       // Focus tracking
       updateFocusProgress: async (percentage) => {
         const state = get();
         if (!state.firebaseService) {
-          set({ focusProgress: Math.min(percentage, 100) });
+          console.error('Firebase service not available');
           return;
         }
 
@@ -691,16 +686,7 @@ export const useUserStore = create(
       logFocusSession: async (duration, task, completed = true) => {
         const state = get();
         if (!state.firebaseService) {
-          const newLog = {
-            id: Date.now(),
-            duration,
-            task,
-            completed,
-            time: new Date().toISOString()
-          };
-          set({
-            focusLogs: [...state.focusLogs, newLog]
-          });
+          console.error('Firebase service not available');
           return;
         }
 
@@ -719,64 +705,15 @@ export const useUserStore = create(
         }
       },
 
-      // Update water progress (simplified method) - now saves to Firebase
-      updateWaterProgress: async (amount) => {
-        const state = get();
-        if (!state.firebaseService) {
-          // Fallback for non-authenticated users
-          const newProgress = state.waterProgress + amount;
-          const waterGoalMet = newProgress >= state.waterGoal;
-          const newLog = {
-            id: Date.now(),
-            amount,
-            time: new Date().toISOString()
-          };
 
-          set({
-            waterProgress: newProgress,
-            waterGoalMet,
-            waterLogs: [...state.waterLogs, newLog]
-          });
-          return;
-        }
-
-        try {
-          const { newProgress, waterGoalMet, newLog } = await state.firebaseService.logWater(
-            amount,
-            state.waterProgress,
-            state.waterGoal,
-            state.waterLogs
-          );
-
-          set({
-            waterProgress: newProgress,
-            waterGoalMet,
-            waterLogs: [...state.waterLogs, newLog]
-          });
-        } catch (error) {
-          console.error('Error updating water progress:', error);
-        }
-      },
 
       // Custom Workout Management
       saveCustomWorkout: async (workoutData) => {
         const state = get();
 
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const newWorkout = {
-            id: Date.now(),
-            ...workoutData,
-            created: new Date().toISOString(),
-            lastModified: new Date().toISOString()
-          };
-
-          const savedWorkouts = JSON.parse(localStorage.getItem('customWorkouts') || '[]');
-          const updatedWorkouts = [...savedWorkouts, newWorkout];
-          localStorage.setItem('customWorkouts', JSON.stringify(updatedWorkouts));
-
-          set({ customWorkouts: updatedWorkouts });
-          return newWorkout;
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
         }
 
         try {
@@ -797,17 +734,8 @@ export const useUserStore = create(
         const state = get();
 
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const savedWorkouts = JSON.parse(localStorage.getItem('customWorkouts') || '[]');
-          const updatedWorkouts = savedWorkouts.map(workout =>
-            workout.id === workoutId
-              ? { ...workout, ...workoutData, lastModified: new Date().toISOString() }
-              : workout
-          );
-          localStorage.setItem('customWorkouts', JSON.stringify(updatedWorkouts));
-
-          set({ customWorkouts: updatedWorkouts });
-          return updatedWorkouts;
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
         }
 
         try {
@@ -829,13 +757,8 @@ export const useUserStore = create(
         const state = get();
 
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const savedWorkouts = JSON.parse(localStorage.getItem('customWorkouts') || '[]');
-          const updatedWorkouts = savedWorkouts.filter(workout => workout.id !== workoutId);
-          localStorage.setItem('customWorkouts', JSON.stringify(updatedWorkouts));
-
-          set({ customWorkouts: updatedWorkouts });
-          return updatedWorkouts;
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
         }
 
         try {
@@ -856,10 +779,8 @@ export const useUserStore = create(
         const state = get();
 
         if (!state.firebaseService) {
-          // Load from localStorage for non-authenticated users
-          const savedWorkouts = JSON.parse(localStorage.getItem('customWorkouts') || '[]');
-          set({ customWorkouts: savedWorkouts });
-          return savedWorkouts;
+          console.error('Firebase service not available');
+          return [];
         }
 
         try {
@@ -876,19 +797,8 @@ export const useUserStore = create(
         const state = get();
 
         if (!state.firebaseService) {
-          // Load from localStorage for non-authenticated users
-          const savedTasks = JSON.parse(localStorage.getItem('focusCustomTasks') || '[]');
-          
-          // Check and create missing repeated tasks
-          const updatedTasks = state.checkAndCreateRepeatedTasksLocal(savedTasks);
-          
-          // If new tasks were created, save them
-          if (updatedTasks.length > savedTasks.length) {
-            localStorage.setItem('focusCustomTasks', JSON.stringify(updatedTasks));
-          }
-          
-          set({ focusTasks: updatedTasks });
-          return updatedTasks;
+          console.error('Firebase service not available');
+          return [];
         }
 
         try {
@@ -901,155 +811,15 @@ export const useUserStore = create(
         }
       },
 
-      // Helper function for localStorage repeated tasks
-      checkAndCreateRepeatedTasksLocal: (currentTasks) => {
-        const today = new Date().toISOString().slice(0, 10);
-        const tasksToAdd = [];
 
-        // Find all original repeating tasks
-        const originalRepeatingTasks = currentTasks.filter(task => 
-          task.isRepeating && task.originalTaskId === null
-        );
-
-        for (const originalTask of originalRepeatingTasks) {
-          if (originalTask.repeat === 'daily') {
-            // Check if we need to create today's task
-            const todayTaskExists = currentTasks.some(task => 
-              task.originalTaskId === originalTask.id && task.date === today
-            );
-
-            if (!todayTaskExists && originalTask.date !== today) {
-              const newId = Date.now() + Math.random() * 1000;
-              tasksToAdd.push({
-                ...originalTask,
-                id: newId,
-                status: 'upcoming',
-                completed: 0,
-                date: today,
-                created: new Date().toISOString(),
-                isRepeating: true,
-                originalTaskId: originalTask.id
-              });
-            }
-          } else if (originalTask.repeat === 'weekly') {
-            // Get the day of week from original task
-            const originalDate = new Date(originalTask.date);
-            const originalDayOfWeek = originalDate.getDay();
-            const todayDate = new Date();
-            const todayDayOfWeek = todayDate.getDay();
-
-            // Check if today matches the original day of week
-            if (originalDayOfWeek === todayDayOfWeek) {
-              const todayTaskExists = currentTasks.some(task => 
-                task.originalTaskId === originalTask.id && task.date === today
-              );
-
-              if (!todayTaskExists && originalTask.date !== today) {
-                const newId = Date.now() + Math.random() * 1000;
-                tasksToAdd.push({
-                  ...originalTask,
-                  id: newId,
-                  status: 'upcoming',
-                  completed: 0,
-                  date: today,
-                  created: new Date().toISOString(),
-                  isRepeating: true,
-                  originalTaskId: originalTask.id
-                });
-              }
-            }
-          }
-        }
-
-        return [...currentTasks, ...tasksToAdd];
-      },
 
       // Focus Task Management
       saveFocusTask: async (taskData) => {
         const state = get();
 
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const today = new Date().toISOString().slice(0, 10);
-          const savedTasks = JSON.parse(localStorage.getItem('focusCustomTasks') || '[]');
-          const tasksToCreate = [];
-
-          // Create the main task for today
-          const mainTask = {
-            id: Date.now(),
-            ...taskData,
-            status: 'upcoming',
-            completed: 0,
-            date: today,
-            created: new Date().toISOString(),
-            isRepeating: taskData.repeat !== 'none',
-            originalTaskId: null
-          };
-
-          tasksToCreate.push(mainTask);
-
-          // Handle repeat functionality
-          if (taskData.repeat === 'daily') {
-            // Create tasks for the next 7 days
-            for (let i = 1; i <= 7; i++) {
-              const futureDate = new Date();
-              futureDate.setDate(futureDate.getDate() + i);
-              const futureDateStr = futureDate.toISOString().slice(0, 10);
-
-              // Check if task already exists for this date
-              const existingTask = savedTasks.find(task => 
-                task.name === taskData.name && 
-                task.date === futureDateStr &&
-                task.originalTaskId === mainTask.id
-              );
-
-              if (!existingTask) {
-                tasksToCreate.push({
-                  id: Date.now() + i,
-                  ...taskData,
-                  status: 'upcoming',
-                  completed: 0,
-                  date: futureDateStr,
-                  created: new Date().toISOString(),
-                  isRepeating: true,
-                  originalTaskId: mainTask.id
-                });
-              }
-            }
-          } else if (taskData.repeat === 'weekly') {
-            // Create tasks for the next 4 weeks
-            for (let i = 1; i <= 4; i++) {
-              const futureDate = new Date();
-              futureDate.setDate(futureDate.getDate() + (i * 7));
-              const futureDateStr = futureDate.toISOString().slice(0, 10);
-
-              // Check if task already exists for this date
-              const existingTask = savedTasks.find(task => 
-                task.name === taskData.name && 
-                task.date === futureDateStr &&
-                task.originalTaskId === mainTask.id
-              );
-
-              if (!existingTask) {
-                tasksToCreate.push({
-                  id: Date.now() + (i * 1000),
-                  ...taskData,
-                  status: 'upcoming',
-                  completed: 0,
-                  date: futureDateStr,
-                  created: new Date().toISOString(),
-                  isRepeating: true,
-                  originalTaskId: mainTask.id
-                });
-              }
-            }
-          }
-
-          const updatedTasks = [...savedTasks, ...tasksToCreate];
-          localStorage.setItem('focusCustomTasks', JSON.stringify(updatedTasks));
-
-          set({ focusTasks: updatedTasks });
-          return mainTask;
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
         }
 
         try {
@@ -1066,37 +836,68 @@ export const useUserStore = create(
         }
       },
 
+      updateFocusTask: async (taskId, updatedTaskData) => {
+        const state = get();
+
+        if (!state.firebaseService) {
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
+        }
+
+        try {
+          const { updatedTasks } = await state.firebaseService.updateFocusTask(
+            taskId,
+            updatedTaskData,
+            state.focusTasks
+          );
+
+          set({ focusTasks: updatedTasks });
+          return { success: true, updatedTasks };
+        } catch (error) {
+          console.error('Error updating focus task:', error);
+          throw error;
+        }
+      },
+
       updateFocusTaskProgress: async (taskId, minutesCompleted) => {
         const state = get();
 
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const savedTasks = JSON.parse(localStorage.getItem('focusCustomTasks') || '[]');
-          const updatedTasks = savedTasks.map(task => {
-            if (task.id === taskId) {
-              const newCompleted = task.completed + minutesCompleted;
-              const newStatus = newCompleted >= task.planned ? 'completed' : 'in-progress';
-              return {
-                ...task,
-                completed: Math.min(newCompleted, task.planned),
-                status: newStatus,
-                lastUpdated: new Date().toISOString()
-              };
-            }
-            return task;
-          });
-          localStorage.setItem('focusCustomTasks', JSON.stringify(updatedTasks));
-
-          set({ focusTasks: updatedTasks });
-          return updatedTasks;
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
         }
 
         try {
+          // Find the task before updating to check previous status
+          const taskBefore = state.focusTasks.find(task => task.id === taskId);
+          const wasCompleted = taskBefore?.status === 'completed';
+
           const { updatedTasks } = await state.firebaseService.updateFocusTaskProgress(
             taskId,
             minutesCompleted,
             state.focusTasks
           );
+
+          // Find the updated task to check new status
+          const taskAfter = updatedTasks.find(task => task.id === taskId);
+          const isNowCompleted = taskAfter?.status === 'completed';
+
+          // Award XP when task is completed (not when uncompleted)
+          if (!wasCompleted && isNowCompleted && minutesCompleted > 0) {
+            // Award XP based on minutes completed (1 XP per minute)
+            const xpToAward = Math.max(1, minutesCompleted); // Minimum 1 XP
+            useXpStore.getState().awardXp(xpToAward);
+
+            // Update focus progress
+            await get().updateFocusProgress();
+          } else if (wasCompleted && !isNowCompleted) {
+            // Deduct XP when task is uncompleted
+            const xpToDeduct = -(taskBefore.completed || taskBefore.planned || 25);
+            useXpStore.getState().awardXp(xpToDeduct);
+
+            // Update focus progress
+            await get().updateFocusProgress();
+          }
 
           set({ focusTasks: updatedTasks });
           return updatedTasks;
@@ -1106,17 +907,41 @@ export const useUserStore = create(
         }
       },
 
+      // Update focus progress based on completed tasks
+      updateFocusProgress: async () => {
+        const state = get();
+        const today = new Date().toISOString().slice(0, 10);
+
+        // Get today's completed focus tasks
+        const todaysCompletedTasks = state.focusTasks.filter(task =>
+          task.date === today && task.status === 'completed'
+        );
+
+        // Calculate total minutes completed today
+        const totalMinutesCompleted = todaysCompletedTasks.reduce((total, task) => {
+          return total + (task.completed || task.planned || 25);
+        }, 0);
+
+        // Calculate progress percentage (60 minutes = 100%)
+        const progressPercentage = Math.min((totalMinutesCompleted / 60) * 100, 100);
+
+        // Update focus progress
+        if (state.firebaseService) {
+          try {
+            await state.firebaseService.updateFocusProgress(progressPercentage, 0);
+            set({ focusProgress: progressPercentage });
+          } catch (error) {
+            console.error('Error updating focus progress:', error);
+          }
+        }
+      },
+
       deleteFocusTask: async (taskId) => {
         const state = get();
 
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const savedTasks = JSON.parse(localStorage.getItem('focusCustomTasks') || '[]');
-          const updatedTasks = savedTasks.filter(task => task.id !== taskId);
-          localStorage.setItem('focusCustomTasks', JSON.stringify(updatedTasks));
-
-          set({ focusTasks: updatedTasks });
-          return updatedTasks;
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
         }
 
         try {
@@ -1133,26 +958,34 @@ export const useUserStore = create(
         }
       },
 
+      deleteFocusTaskSeries: async (taskId) => {
+        const state = get();
+
+        if (!state.firebaseService) {
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
+        }
+
+        try {
+          const { updatedTasks } = await state.firebaseService.deleteFocusTaskSeries(
+            taskId,
+            state.focusTasks
+          );
+
+          set({ focusTasks: updatedTasks });
+          return updatedTasks;
+        } catch (error) {
+          console.error('Error deleting focus task series:', error);
+          throw error;
+        }
+      },
+
       addFocusTaskReflection: async (taskId, reflection) => {
         const state = get();
 
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const savedTasks = JSON.parse(localStorage.getItem('focusCustomTasks') || '[]');
-          const updatedTasks = savedTasks.map(task => {
-            if (task.id === taskId) {
-              return {
-                ...task,
-                completionDescription: reflection.trim(),
-                lastUpdated: new Date().toISOString()
-              };
-            }
-            return task;
-          });
-          localStorage.setItem('focusCustomTasks', JSON.stringify(updatedTasks));
-
-          set({ focusTasks: updatedTasks });
-          return updatedTasks;
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
         }
 
         try {
@@ -1175,13 +1008,8 @@ export const useUserStore = create(
         const state = get();
 
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const savedEntries = JSON.parse(localStorage.getItem('journalEntries') || '[]');
-          const updatedEntries = [entry, ...savedEntries];
-          localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
-
-          set({ journalEntries: updatedEntries });
-          return updatedEntries;
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
         }
 
         try {
@@ -1198,17 +1026,8 @@ export const useUserStore = create(
         const state = get();
 
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const savedEntries = JSON.parse(localStorage.getItem('journalEntries') || '[]');
-          const updatedEntries = savedEntries.map(entry => 
-            entry.id === entryId 
-              ? { ...entry, content: updatedContent, lastModified: new Date().toISOString() }
-              : entry
-          );
-          localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
-
-          set({ journalEntries: updatedEntries });
-          return updatedEntries;
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
         }
 
         try {
@@ -1225,13 +1044,8 @@ export const useUserStore = create(
         const state = get();
 
         if (!state.firebaseService) {
-          // Fallback to localStorage for non-authenticated users
-          const savedEntries = JSON.parse(localStorage.getItem('journalEntries') || '[]');
-          const updatedEntries = savedEntries.filter(entry => entry.id !== entryId);
-          localStorage.setItem('journalEntries', JSON.stringify(updatedEntries));
-
-          set({ journalEntries: updatedEntries });
-          return updatedEntries;
+          console.error('Firebase service not available');
+          throw new Error('Authentication required');
         }
 
         try {
@@ -1248,10 +1062,8 @@ export const useUserStore = create(
         const state = get();
 
         if (!state.firebaseService) {
-          // Load from localStorage for non-authenticated users
-          const savedEntries = JSON.parse(localStorage.getItem('journalEntries') || '[]');
-          set({ journalEntries: savedEntries });
-          return savedEntries;
+          console.error('Firebase service not available');
+          return [];
         }
 
         try {
@@ -1263,25 +1075,75 @@ export const useUserStore = create(
           return [];
         }
       },
+
+
+
+
+
+      logChatSession: async (summary, topics = []) => {
+        const state = get();
+        const newLog = {
+          id: Date.now(),
+          type: 'chat',
+          activity: 'AI Assistant Chat',
+          summary: summary,
+          topics: topics,
+          time: new Date().toISOString()
+        };
+
+        if (!state.firebaseService) {
+          console.error('Firebase service not available');
+          return;
+        }
+
+        try {
+          const { updatedLogs } = await state.firebaseService.logMentalHealthActivity(
+            newLog,
+            state.mentalHealthLogs
+          );
+          set({ mentalHealthLogs: updatedLogs });
+        } catch (error) {
+          console.error('Error logging chat session:', error);
+        }
+      },
+
+      logJournalActivity: async (title, content, wordCount, mood = null) => {
+        const state = get();
+        const newLog = {
+          id: Date.now(),
+          type: 'journal',
+          activity: 'Journal Entry',
+          title: title,
+          content: content,
+          wordCount: wordCount,
+          mood: mood,
+          time: new Date().toISOString()
+        };
+
+        if (!state.firebaseService) {
+          console.error('Firebase service not available');
+          return;
+        }
+
+        try {
+          const { updatedLogs } = await state.firebaseService.logMentalHealthActivity(
+            newLog,
+            state.mentalHealthLogs
+          );
+          set({ mentalHealthLogs: updatedLogs });
+        } catch (error) {
+          console.error('Error logging journal activity:', error);
+        }
+      },
     }),
     {
       name: 'araise-user-store',
-      // Don't persist authentication state - let Firebase handle it
+      // Only persist minimal UI state - Firebase handles all data
       partialize: (state) => ({
-        // Only persist non-sensitive data that doesn't affect authentication
-        email: state.email,
-        name: state.name
+        isChatOpen: state.isChatOpen
       }),
     }
   )
 )
 
-// Initialize daily reset on store creation (only for authenticated users)
-const initializeDailyReset = async () => {
-  const state = useUserStore.getState();
-  if (state.isAuthenticated) {
-    await state.resetDaily();
-  }
-};
 
-initializeDailyReset();

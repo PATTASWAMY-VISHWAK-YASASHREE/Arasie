@@ -8,14 +8,14 @@ export default function WaterBottle() {
   const [waterAmount, setWaterAmount] = useState(250)
   const [showAnimation, setShowAnimation] = useState(false)
 
-  const { updateWaterProgress, getProgressStats } = useUserStore()
+  const { logWater, getProgressStats } = useUserStore()
   const progressStats = getProgressStats()
 
   // Quick add amounts
   const quickAmounts = [250, 500, 750, 1000]
 
   const handleLogWater = async () => {
-    await updateWaterProgress(waterAmount)
+    await logWater(waterAmount)
     setShowAnimation(true)
     setShowModal(false)
 

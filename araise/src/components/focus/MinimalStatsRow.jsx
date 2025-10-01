@@ -12,13 +12,15 @@ export default function MinimalStatsRow({ focusLogs = [], streakDays = 0, tasks 
     
     // Count completed focus tasks as sessions
     const completedFocusTasks = (tasks || []).filter(t => 
-      t.date === today && t.done && t.focusMode
+      t.date === today && t.status === 'completed'
     )
     const taskMinutes = completedFocusTasks.reduce((total, task) => {
-      if (task.startAt && task.endAt) {
-        return total + Math.max(0, Math.round((task.endAt - task.startAt) / 60000))
+      if (task.startTime && task.endTime) {
+        const startAt = new Date(`${task.date}T${task.startTime}:00`).getTime()
+        const endAt = new Date(`${task.date}T${task.endTime}:00`).getTime()
+        return total + Math.max(0, Math.round((endAt - startAt) / 60000))
       }
-      return total + (task.focusDuration || 25) // fallback to focus duration
+      return total + (task.completed || task.planned || task.focusDuration || 25)
     }, 0)
     const taskSessions = completedFocusTasks.length
     

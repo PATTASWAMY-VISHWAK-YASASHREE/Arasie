@@ -9,7 +9,20 @@ import VoiceModal from "./VoiceModal"
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
 
 export default function Chat({ onBack }) {
-  const handleBack = () => {
+  const { updateMentalHealthProgress, logChatSession } = useUserStore()
+  
+  const handleBack = async () => {
+    // Log chat session when user leaves
+    const session = chatSessions.find(s => s.id === currentSessionId)
+    if (session && session.messages.length > 1) { // More than just the initial AI message
+      const userMessages = session.messages.filter(m => m.type === 'user')
+      const topics = userMessages.map(m => m.content.substring(0, 50)).slice(0, 3) // First 3 user messages as topics
+      const summary = `Chat session with ${userMessages.length} messages`
+      
+      await logChatSession(summary, topics)
+      await updateMentalHealthProgress(15) // 15% for chat session
+    }
+    
     onBack()
   }
   const [chatSessions, setChatSessions] = useState([

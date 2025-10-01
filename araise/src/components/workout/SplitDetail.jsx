@@ -177,7 +177,7 @@ export default function SplitDetail() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <h3 className="text-lg font-bold text-ar-white mb-2">
-                            {index + 1}. {exercise.name}
+                            {index + 1}. {exercise.exerciseName}
                           </h3>
                           <p className="text-ar-blue font-medium mb-1">
                             {exercise.sets} sets × {exercise.reps} reps

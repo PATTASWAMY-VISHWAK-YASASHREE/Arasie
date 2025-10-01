@@ -3,17 +3,18 @@ export const workoutData = {
   // Gym Splits
   gym: {
     ppl: {
+      splitId: "ppl",
       name: "Push/Pull/Legs",
       description: "6-day hypertrophy split",
       duration: "6 days/week",
       type: "Hypertrophy",
       days: {
         push: {
-          name: "Push Day",
+          splitDay: "Push Day",
           exercises: [
             {
               id: 1,
-              name: "Push-ups",
+              exerciseName: "Push-ups",
               uniqueName: "pushups",
               sets: 3,
               reps: "15",
@@ -24,7 +25,7 @@ export const workoutData = {
               video: "/videos/chest/pushups.mp4"
             },
             {
-              name: "Incline Dumbbell Press",
+              exerciseName: "Incline Dumbbell Press",
               id: 2,
               uniqueName: "benchpress",
               sets: 3,
@@ -37,7 +38,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Incline Barbell Bench Press",
+              exerciseName: "Incline Barbell Bench Press",
               uniqueName: "benchpress",
               sets: 3,
               reps: "15",
@@ -49,7 +50,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Flat Barbell Bench Press",
+              exerciseName: "Flat Barbell Bench Press",
               uniqueName: "benchpress",
               sets: 3,
               reps: "10-12",
@@ -61,7 +62,7 @@ export const workoutData = {
             },
             {
               id: 5,
-              name: "Rope Pulldowns (Chest)",
+              exerciseName: "Rope Pulldowns (Chest)",
               uniqueName: "ropepulldown",
               sets: 2,
               reps: "12-15",
@@ -69,11 +70,11 @@ export const workoutData = {
               description: "Lower chest isolation",
               primaryMuscle: "Lower Chest",
               secondaryMuscles: ["Triceps"],
-              video:"/videos/chest/chest_flys.mp4"
+              video: "/videos/chest/chest_flys.mp4"
             },
             {
               id: 6,
-              name: "Tricep Extension Push-ups",
+              exerciseName: "Tricep Extension Push-ups",
               uniqueName: "benttricep",
               sets: 1,
               reps: "20",
@@ -81,11 +82,11 @@ export const workoutData = {
               description: "Tricep activation warm-up",
               primaryMuscle: "Triceps",
               secondaryMuscles: ["Chest", "Shoulders"],
-              video:"/videos/tricep/Tricep_Extension_Push-ups.mp4"
+              video: "/videos/tricep/Tricep_Extension_Push-ups.mp4"
             },
             {
               id: 7,
-              name: "Bent Tricep Pull",
+              exerciseName: "Bent Tricep Pull",
               uniqueName: "benttricep",
               sets: 2,
               reps: "10",
@@ -93,11 +94,11 @@ export const workoutData = {
               description: "Free-weight tricep isolation",
               primaryMuscle: "Triceps",
               secondaryMuscles: [],
-              video:"/videos/tricep/long_head.mp4"
+              video: "/videos/tricep/long_head.mp4"
             },
             {
               id: 8,
-              name: "Tricep Rope Pulldown",
+              exerciseName: "Tricep Rope Pulldown",
               uniqueName: "benttricep",
               sets: 2,
               reps: "15",
@@ -105,11 +106,11 @@ export const workoutData = {
               description: "Cable-based tricep isolation",
               primaryMuscle: "Triceps",
               secondaryMuscles: ["Forearms"],
-              video:"/videos/tricep/tricpe_shape.mp4"
+              video: "/videos/tricep/tricpe_shape.mp4"
             },
             {
               id: 9,
-              name: "Crunches",
+              exerciseName: "Crunches",
               uniqueName: "crunches",
               sets: 3,
               reps: "20",
@@ -121,7 +122,7 @@ export const workoutData = {
             },
             {
               id: 10,
-              name: "Plank",
+              exerciseName: "Plank",
               uniqueName: "plank",
               sets: 3,
               reps: "60s hold",
@@ -134,12 +135,12 @@ export const workoutData = {
           ]
         },
         pull: {
-          name: "Pull Day",
+          splitDay: "Pull Day",
           exercises: [
             {
               id: 1,
-              name: "Wide Grip Pull-ups",
-              uniqueName:"pullup",
+              exerciseName: "Wide Grip Pull-ups",
+              uniqueName: "pullup",
               sets: 3,
               reps: "10",
               pose_analyzer: true,
@@ -150,70 +151,70 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Neutral Grip Pull-ups",
-              uniqueName:"pullup",
+              exerciseName: "Neutral Grip Pull-ups",
+              uniqueName: "pullup",
               sets: 3,
               reps: "10",
               pose_analyzer: true,
               description: "Balanced back & arm engagement",
               primaryMuscle: "Lats",
               secondaryMuscles: ["Biceps", "Forearms"],
-              video:"/videos/back/Neutral_grip_pull_ups.mp4"
+              video: "/videos/back/Neutral_grip_pull_ups.mp4"
             },
             {
               id: 3,
-              name: "Chest Supported Rows",
-              uniqueName:"chestsupportedrow",
+              exerciseName: "Chest Supported Rows",
+              uniqueName: "chestsupportedrow",
               sets: 3,
               reps: "10",
               pose_analyzer: true,
               description: "Mid-back and rhomboid activation",
               primaryMuscle: "Middle Back",
               secondaryMuscles: ["Lats", "Biceps", "Rear Deltoids"],
-              video:"/videos/back/chest_rows.mp4"
+              video: "/videos/back/chest_rows.mp4"
             },
-            
-              {
-                id: 4,
-                name: "Cable Lat Pulldown",
-                uniqueName:"widegrippulldown",
-                sets: 1,
-                reps: "15",
-                pose_analyzer: true,
-                description: "Cable isolation for lats",
-                primaryMuscle: "Lats",
-                secondaryMuscles: ["Traps", "Rear Deltoids"],
-                video:"/videos/back/Lat_pulldown.mp4"
-              },
+
+            {
+              id: 4,
+              exerciseName: "Cable Lat Pulldown",
+              uniqueName: "widegrippulldown",
+              sets: 1,
+              reps: "15",
+              pose_analyzer: true,
+              description: "Cable isolation for lats",
+              primaryMuscle: "Lats",
+              secondaryMuscles: ["Traps", "Rear Deltoids"],
+              video: "/videos/back/Lat_pulldown.mp4"
+            },
             {
               id: 5,
-              name: "Neutral Grip Pulldown",
-              uniqueName:"widegrippulldown",
+              exerciseName: "Neutral Grip Pulldown",
+              uniqueName: "widegrippulldown",
               sets: 1,
               reps: "15",
               pose_analyzer: true,
               description: "Neutral grip for lats & biceps",
               primaryMuscle: "Lats",
               secondaryMuscles: ["Biceps", "Rear Deltoids"],
-              video:"/videos/back/nuetralgrip_pulldwon.mp4"
-              
+              video: "/videos/back/nuetralgrip_pulldwon.mp4"
+
             },
             {
               id: 6,
-              name: "Horizontal nertual grip",
-              uniqueName:"widegrippulldown",
+              exerciseName: "Horizontal nertual grip",
+              uniqueName: "widegrippulldown",
               sets: 2,
               reps: "12",
               pose_analyzer: true,
               description: "Functional unilateral lat movement",
               primaryMuscle: "Lats",
               secondaryMuscles: ["Core", "Biceps"],
-               video:"/videos/back/horizontal_nuetralgrip.mp4"
+              video: "/videos/back/horizontal_nuetralgrip.mp4"
             },
-            
+
             {
               id: 7,
-              name: "Reverse Crunches",
+              exerciseName: "Reverse Crunches",
               uniqueName: "crunches",
               sets: 2,
               reps: "15",
@@ -221,52 +222,52 @@ export const workoutData = {
               description: "Lower abs engagement",
               primaryMuscle: "Lower Abs",
               secondaryMuscles: ["Hip Flexors"],
-              video:"/videos/back/Lowerback.mp4"
+              video: "/videos/back/Lowerback.mp4"
             },
             {
               id: 8,
-              name: "EZ Bar Preacher Curls",
-              uniqueName:"biceps",
+              exerciseName: "EZ Bar Preacher Curls",
+              uniqueName: "biceps",
               sets: 2,
               reps: "15",
               pose_analyzer: true,
               description: "Strict bicep curl variation",
               primaryMuscle: "Biceps",
               secondaryMuscles: ["Forearms"],
-              video:"/videos/biceps/EZ_Bar_Preacher_Curls.mp4"
+              video: "/videos/biceps/EZ_Bar_Preacher_Curls.mp4"
             },
             {
               id: 9,
-              name: "Incline Dumbbell Curls",
-              uniqueName:"biceps",
+              exerciseName: "Incline Dumbbell Curls",
+              uniqueName: "biceps",
               sets: 3,
               reps: "15",
               pose_analyzer: true,
               description: "Bicep peak isolation",
               primaryMuscle: "Biceps",
               secondaryMuscles: ["Forearms"],
-              video:"/videos/biceps/inclined_barbell_cruls.mp4"
+              video: "/videos/biceps/inclined_barbell_cruls.mp4"
             },
             {
               id: 10,
-              name: "Hammer Curls",
-              uniqueName:"biceps",
+              exerciseName: "Hammer Curls",
+              uniqueName: "biceps",
               sets: 3,
               reps: "15",
               pose_analyzer: true,
               description: "Biceps & brachialis thickness",
               primaryMuscle: "Biceps",
               secondaryMuscles: ["Forearms"],
-              video:"/videos/biceps/hammercurls.mp4"
+              video: "/videos/biceps/hammercurls.mp4"
             }
           ]
         },
         legs: {
-          name: "Leg Day",
+          splitDay: "Leg Day",
           exercises: [
             {
               id: 1,
-              name: "Squats",
+              exerciseName: "Squats",
               sets: 3,
               uniqueName: "squats",
               reps: "12-15",
@@ -274,47 +275,47 @@ export const workoutData = {
               description: "Compound lower body builder",
               primaryMuscle: "Quadriceps",
               secondaryMuscles: ["Glutes", "Hamstrings", "Core"],
-              video:"/videos/legs/Squats.mp4"
+              video: "/videos/legs/Squats.mp4"
             },
             {
               id: 2,
-              name: "Leg Press (Close Stance)",
-              uniqueName:"legpress",
+              exerciseName: "Leg Press (Close Stance)",
+              uniqueName: "legpress",
               sets: 1,
               reps: "12-15",
               pose_analyzer: true,
               description: "Quad dominant press variation",
               primaryMuscle: "Quadriceps",
               secondaryMuscles: ["Glutes", "Hamstrings"],
-              video:"/videos/legs/Leg_press.mp4"
+              video: "/videos/legs/Leg_press.mp4"
             },
             {
               id: 3,
-              name: "Leg Press (Wide Stance)",
-              uniqueName:"legpress",
+              exerciseName: "Leg Press (Wide Stance)",
+              uniqueName: "legpress",
               sets: 1,
               reps: "12-15",
               pose_analyzer: true,
               description: "Glute and hamstring emphasis",
               primaryMuscle: "Glutes",
               secondaryMuscles: ["Hamstrings", "Quadriceps"],
-              video:"/videos/legs/Leg_press.mp4"
+              video: "/videos/legs/Leg_press.mp4"
             },
             {
               id: 4,
-              name: "Leg Press (Feet High)",
-              uniqueName:"legpress",
+              exerciseName: "Leg Press (Feet High)",
+              uniqueName: "legpress",
               sets: 1,
               reps: "12-15",
               pose_analyzer: true,
               description: "Hamstring and glute focus",
               primaryMuscle: "Hamstrings",
               secondaryMuscles: ["Glutes", "Quadriceps"],
-              video:"/videos/legs/Leg_press.mp4"
+              video: "/videos/legs/Leg_press.mp4"
             },
             {
               id: 5,
-              name: "Calf Raises",
+              exerciseName: "Calf Raises",
               sets: 2,
               reps: "15-20",
               pose_analyzer: false,
@@ -324,8 +325,8 @@ export const workoutData = {
             },
             {
               id: 6,
-              name: "Chest Supported Shoulder Press",
-              uniqueName:"chestsupportedshoulderpress",
+              exerciseName: "Chest Supported Shoulder Press",
+              uniqueName: "chestsupportedshoulderpress",
               sets: 2,
               reps: "12",
               pose_analyzer: true,
@@ -335,8 +336,8 @@ export const workoutData = {
             },
             {
               id: 7,
-              name: "Cable Lateral Raises",
-              uniqueName:"chestsupportedshoulderpress",
+              exerciseName: "Cable Lateral Raises",
+              uniqueName: "chestsupportedshoulderpress",
               sets: 2,
               reps: "15",
               pose_analyzer: true,
@@ -346,8 +347,8 @@ export const workoutData = {
             },
             {
               id: 8,
-              name: "Overhead Shoulder Press",
-              uniqueName:"overheadshoulderpress",
+              exerciseName: "Overhead Shoulder Press",
+              uniqueName: "overheadshoulderpress",
               sets: 2,
               reps: "12",
               pose_analyzer: true,
@@ -357,8 +358,8 @@ export const workoutData = {
             },
             {
               id: 9,
-              name: "Cable Rope Press",
-              uniqueName:"biceps",
+              exerciseName: "Cable Rope Press",
+              uniqueName: "biceps",
               sets: 2,
               reps: "15",
               pose_analyzer: true,
@@ -368,8 +369,8 @@ export const workoutData = {
             },
             {
               id: 10,
-              name: "Front Raises",
-              uniqueName:"chestsupportedshoulderpress",
+              exerciseName: "Front Raises",
+              uniqueName: "chestsupportedshoulderpress",
               sets: 2,
               reps: "12",
               pose_analyzer: true,
@@ -379,7 +380,7 @@ export const workoutData = {
             },
             {
               id: 11,
-              name: "Abs Circuit",
+              exerciseName: "Abs Circuit",
               sets: 3,
               reps: "Varied",
               pose_analyzer: false,
@@ -392,17 +393,18 @@ export const workoutData = {
       }
     },
     upperLower: {
+      splitId: "upperLower",
       name: "Upper/Lower",
       description: "Balanced strength split",
       duration: "4 days/week",
       type: "Strength",
       days: {
         upper: {
-          name: "Upper Body",
+          splitDay: "Upper Body",
           exercises: [
             {
               id: 1,
-              name: "Bench Press",
+              exerciseName: "Bench Press",
               sets: 4,
               reps: "6-8",
               pose_analyzer: true,
@@ -412,7 +414,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Pull-ups",
+              exerciseName: "Pull-ups",
               sets: 4,
               reps: "8-10",
               pose_analyzer: true,
@@ -422,7 +424,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Overhead Press",
+              exerciseName: "Overhead Press",
               sets: 3,
               reps: "8-10",
               pose_analyzer: true,
@@ -432,7 +434,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Barbell Rows",
+              exerciseName: "Barbell Rows",
               sets: 3,
               reps: "8-10",
               pose_analyzer: true,
@@ -443,11 +445,11 @@ export const workoutData = {
           ]
         },
         lower: {
-          name: "Lower Body",
+          splitDay: "Lower Body",
           exercises: [
             {
               id: 1,
-              name: "Squats",
+              exerciseName: "Squats",
               sets: 4,
               reps: "6-8",
               pose_analyzer: true,
@@ -457,7 +459,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Deadlifts",
+              exerciseName: "Deadlifts",
               sets: 3,
               reps: "5-6",
               pose_analyzer: true,
@@ -467,7 +469,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Lunges",
+              exerciseName: "Lunges",
               sets: 3,
               reps: "12 each",
               pose_analyzer: true,
@@ -477,7 +479,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Hip Thrusts",
+              exerciseName: "Hip Thrusts",
               sets: 3,
               reps: "12-15",
               pose_analyzer: true,
@@ -490,17 +492,18 @@ export const workoutData = {
       }
     },
     fullBody: {
+      splitId: "fullBody",
       name: "Full Body",
       description: "Efficiency for beginners",
       duration: "3 days/week",
       type: "Beginner-Friendly",
       days: {
         workout: {
-          name: "Full Body Workout",
+          splitDay: "Full Body Workout",
           exercises: [
             {
               id: 1,
-              name: "Squats",
+              exerciseName: "Squats",
               sets: 3,
               reps: "10-12",
               pose_analyzer: true,
@@ -510,7 +513,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Push-ups",
+              exerciseName: "Push-ups",
               sets: 3,
               reps: "8-12",
               pose_analyzer: true,
@@ -520,7 +523,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Bent-over Rows",
+              exerciseName: "Bent-over Rows",
               sets: 3,
               reps: "10-12",
               pose_analyzer: true,
@@ -530,7 +533,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Overhead Press",
+              exerciseName: "Overhead Press",
               sets: 3,
               reps: "8-10",
               pose_analyzer: true,
@@ -540,7 +543,7 @@ export const workoutData = {
             },
             {
               id: 5,
-              name: "Plank",
+              exerciseName: "Plank",
               sets: 3,
               reps: "30-60s",
               pose_analyzer: true,
@@ -550,7 +553,7 @@ export const workoutData = {
             },
             {
               id: 6,
-              name: "Glute Bridges",
+              exerciseName: "Glute Bridges",
               sets: 3,
               reps: "12-15",
               pose_analyzer: true,
@@ -563,17 +566,18 @@ export const workoutData = {
       }
     },
     broSplit: {
+      splitId: "broSplit",
       name: "Bro-Split",
       description: "Focused body part days",
       duration: "5 days/week",
       type: "Bodybuilding",
       days: {
         chest: {
-          name: "Chest Day",
+          splitDay: "Chest Day",
           exercises: [
             {
               id: 1,
-              name: "Bench Press",
+              exerciseName: "Bench Press",
               sets: 4,
               reps: "8-10",
               pose_analyzer: true,
@@ -583,7 +587,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Incline Dumbbell Press",
+              exerciseName: "Incline Dumbbell Press",
               sets: 4,
               reps: "10-12",
               pose_analyzer: true,
@@ -593,7 +597,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Chest Flyes",
+              exerciseName: "Chest Flyes",
               sets: 3,
               reps: "12-15",
               pose_analyzer: true,
@@ -603,7 +607,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Dips",
+              exerciseName: "Dips",
               sets: 3,
               reps: "10-12",
               pose_analyzer: true,
@@ -614,11 +618,11 @@ export const workoutData = {
           ]
         },
         back: {
-          name: "Back Day",
+          splitDay: "Back Day",
           exercises: [
             {
               id: 1,
-              name: "Deadlifts",
+              exerciseName: "Deadlifts",
               sets: 4,
               reps: "6-8",
               pose_analyzer: true,
@@ -628,7 +632,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Pull-ups",
+              exerciseName: "Pull-ups",
               sets: 4,
               reps: "8-12",
               pose_analyzer: true,
@@ -638,7 +642,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Barbell Rows",
+              exerciseName: "Barbell Rows",
               sets: 4,
               reps: "10-12",
               pose_analyzer: true,
@@ -648,7 +652,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Cable Rows",
+              exerciseName: "Cable Rows",
               sets: 3,
               reps: "12-15",
               pose_analyzer: true,
@@ -659,11 +663,11 @@ export const workoutData = {
           ]
         },
         arms: {
-          name: "Arms Day",
+          splitDay: "Arms Day",
           exercises: [
             {
               id: 1,
-              name: "Barbell Curls",
+              exerciseName: "Barbell Curls",
               sets: 4,
               reps: "10-12",
               pose_analyzer: true,
@@ -673,7 +677,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Close-Grip Bench Press",
+              exerciseName: "Close-Grip Bench Press",
               sets: 4,
               reps: "8-10",
               pose_analyzer: true,
@@ -683,7 +687,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Hammer Curls",
+              exerciseName: "Hammer Curls",
               sets: 3,
               reps: "12-15",
               pose_analyzer: true,
@@ -693,7 +697,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Tricep Extensions",
+              exerciseName: "Tricep Extensions",
               sets: 3,
               reps: "12-15",
               pose_analyzer: true,
@@ -704,11 +708,11 @@ export const workoutData = {
           ]
         },
         legs: {
-          name: "Legs Day",
+          splitDay: "Legs Day",
           exercises: [
             {
               id: 1,
-              name: "Squats",
+              exerciseName: "Squats",
               sets: 4,
               reps: "8-12",
               pose_analyzer: true,
@@ -718,7 +722,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Romanian Deadlifts",
+              exerciseName: "Romanian Deadlifts",
               sets: 4,
               reps: "10-12",
               pose_analyzer: true,
@@ -728,7 +732,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Leg Press",
+              exerciseName: "Leg Press",
               sets: 3,
               reps: "15-20",
               pose_analyzer: true,
@@ -738,7 +742,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Calf Raises",
+              exerciseName: "Calf Raises",
               sets: 4,
               reps: "15-20",
               pose_analyzer: false,
@@ -749,11 +753,11 @@ export const workoutData = {
           ]
         },
         shoulders: {
-          name: "Shoulders Day",
+          splitDay: "Shoulders Day",
           exercises: [
             {
               id: 1,
-              name: "Overhead Press",
+              exerciseName: "Overhead Press",
               sets: 4,
               reps: "8-10",
               pose_analyzer: true,
@@ -763,7 +767,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Lateral Raises",
+              exerciseName: "Lateral Raises",
               sets: 4,
               reps: "12-15",
               pose_analyzer: true,
@@ -773,7 +777,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Rear Delt Flyes",
+              exerciseName: "Rear Delt Flyes",
               sets: 3,
               reps: "15-20",
               pose_analyzer: true,
@@ -783,7 +787,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Upright Rows",
+              exerciseName: "Upright Rows",
               sets: 3,
               reps: "12-15",
               pose_analyzer: true,
@@ -796,17 +800,18 @@ export const workoutData = {
       }
     },
     hybrid: {
+      splitId: "hybrid",
       name: "Hybrid Split",
       description: "Strength + Conditioning mix for athletes",
       duration: "4 days/week",
       type: "Athletic Performance",
       days: {
         strengthUpper: {
-          name: "Strength Upper",
+          splitDay: "Strength Upper",
           exercises: [
             {
               id: 1,
-              name: "Bench Press",
+              exerciseName: "Bench Press",
               sets: 5,
               reps: "3-5",
               pose_analyzer: true,
@@ -816,7 +821,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Pull-ups",
+              exerciseName: "Pull-ups",
               sets: 4,
               reps: "6-8",
               pose_analyzer: true,
@@ -826,7 +831,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Overhead Press",
+              exerciseName: "Overhead Press",
               sets: 4,
               reps: "5-6",
               pose_analyzer: true,
@@ -836,7 +841,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Battle Ropes",
+              exerciseName: "Battle Ropes",
               sets: 3,
               reps: "30s",
               pose_analyzer: false,
@@ -847,11 +852,11 @@ export const workoutData = {
           ]
         },
         strengthLower: {
-          name: "Strength Lower",
+          splitDay: "Strength Lower",
           exercises: [
             {
               id: 1,
-              name: "Squats",
+              exerciseName: "Squats",
               sets: 5,
               reps: "3-5",
               pose_analyzer: true,
@@ -861,7 +866,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Deadlifts",
+              exerciseName: "Deadlifts",
               sets: 4,
               reps: "3-5",
               pose_analyzer: true,
@@ -871,7 +876,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Box Jumps",
+              exerciseName: "Box Jumps",
               sets: 4,
               reps: "8-10",
               pose_analyzer: true,
@@ -881,7 +886,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Sled Push",
+              exerciseName: "Sled Push",
               sets: 3,
               reps: "20m",
               pose_analyzer: false,
@@ -892,11 +897,11 @@ export const workoutData = {
           ]
         },
         conditioning: {
-          name: "Conditioning",
+          splitDay: "Conditioning",
           exercises: [
             {
               id: 1,
-              name: "Burpees",
+              exerciseName: "Burpees",
               sets: 4,
               reps: "10-15",
               pose_analyzer: true,
@@ -906,7 +911,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Mountain Climbers",
+              exerciseName: "Mountain Climbers",
               sets: 4,
               reps: "30s",
               pose_analyzer: true,
@@ -916,7 +921,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Kettlebell Swings",
+              exerciseName: "Kettlebell Swings",
               sets: 4,
               reps: "20-25",
               pose_analyzer: true,
@@ -926,7 +931,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "High Knees",
+              exerciseName: "High Knees",
               sets: 3,
               reps: "30s",
               pose_analyzer: false,
@@ -941,7 +946,7 @@ export const workoutData = {
           exercises: [
             {
               id: 1,
-              name: "Light Squats",
+              exerciseName: "Light Squats",
               sets: 3,
               reps: "15-20",
               pose_analyzer: true,
@@ -951,7 +956,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Band Pull-Aparts",
+              exerciseName: "Band Pull-Aparts",
               sets: 3,
               reps: "20-25",
               pose_analyzer: false,
@@ -961,7 +966,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Plank",
+              exerciseName: "Plank",
               sets: 3,
               reps: "45-60s",
               pose_analyzer: true,
@@ -971,7 +976,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Walking",
+              exerciseName: "Walking",
               sets: 1,
               reps: "20-30 mins",
               pose_analyzer: false,
@@ -998,7 +1003,7 @@ export const workoutData = {
           exercises: [
             {
               id: 1,
-              name: "Push-ups",
+              exerciseName: "Push-ups",
               sets: 3,
               reps: "8-12",
               pose_analyzer: true,
@@ -1008,7 +1013,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Bodyweight Squats",
+              exerciseName: "Bodyweight Squats",
               sets: 3,
               reps: "15-20",
               pose_analyzer: true,
@@ -1018,7 +1023,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Plank",
+              exerciseName: "Plank",
               sets: 3,
               reps: "30-60s",
               pose_analyzer: true,
@@ -1028,7 +1033,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Glute Bridges",
+              exerciseName: "Glute Bridges",
               sets: 3,
               reps: "15-20",
               pose_analyzer: true,
@@ -1051,7 +1056,7 @@ export const workoutData = {
           exercises: [
             {
               id: 1,
-              name: "Planche Lean",
+              exerciseName: "Planche Lean",
               sets: 5,
               reps: "20-30s",
               pose_analyzer: true,
@@ -1061,7 +1066,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Pseudo Planche Push-ups",
+              exerciseName: "Pseudo Planche Push-ups",
               sets: 4,
               reps: "5-8",
               pose_analyzer: true,
@@ -1071,7 +1076,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Tuck Planche Hold",
+              exerciseName: "Tuck Planche Hold",
               sets: 4,
               reps: "10-20s",
               pose_analyzer: true,
@@ -1081,7 +1086,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Planche Push-ups",
+              exerciseName: "Planche Push-ups",
               sets: 3,
               reps: "3-5",
               pose_analyzer: true,
@@ -1096,7 +1101,7 @@ export const workoutData = {
           exercises: [
             {
               id: 1,
-              name: "Wall Handstand",
+              exerciseName: "Wall Handstand",
               sets: 4,
               reps: "30-60s",
               pose_analyzer: true,
@@ -1106,7 +1111,7 @@ export const workoutData = {
             },
             {
               id: 2,
-              name: "Hollow Body Hold",
+              exerciseName: "Hollow Body Hold",
               sets: 4,
               reps: "30-45s",
               pose_analyzer: true,
@@ -1116,7 +1121,7 @@ export const workoutData = {
             },
             {
               id: 3,
-              name: "Handstand Push-ups",
+              exerciseName: "Handstand Push-ups",
               sets: 3,
               reps: "5-8",
               pose_analyzer: true,
@@ -1126,7 +1131,7 @@ export const workoutData = {
             },
             {
               id: 4,
-              name: "Freestanding Handstand",
+              exerciseName: "Freestanding Handstand",
               sets: 5,
               reps: "10-30s",
               pose_analyzer: true,

@@ -1,308 +1,216 @@
-import { useMemo, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Clock, Tag, Edit3, Trash2, Play, CheckSquare, Square } from "lucide-react"
-import { useTaskStore } from "../../store/taskStore"
-import EditTaskModal from "./EditTaskModal"
-
-function fmt(ms) {
-  const d = new Date(ms)
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
+import { motion } from "framer-motion"
+import { Clock, Play, Edit2, Trash2, Tag } from "lucide-react"
+import { useUserStore } from "../../store/userStore"
+import { useState } from "react"
+import AddTaskModal from "./AddTaskModal"
 
 export default function TimeBlockedList({ onStart }) {
-  const { tasks, removeTask, toggleTask } = useTaskStore()
-  const today = new Date().toISOString().slice(0, 10)
-  const [editTask, setEditTask] = useState(null)
+  const { focusTasks, updateFocusTaskProgress, deleteFocusTask } = useUserStore()
+  const [editingTask, setEditingTask] = useState(null)
+  
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0]
+  
+  // Helper function to format time - defined first so it can be used in sorting
+  const formatTime = (timeString) => {
+    if (!timeString || typeof timeString !== 'string') return null
+    const [hours, minutes] = timeString.split(':')
+    if (!hours || !minutes) return null
+    const hour = parseInt(hours)
+    const ampm = hour >= 12 ? 'PM' : 'AM'
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour
+    return `${displayHour}:${minutes} ${ampm}`
+  }
 
-  const { scheduled, unscheduled } = useMemo(() => {
-    const todays = (tasks || []).filter(t => t.date === today)
-    return {
-      scheduled: todays.filter(t => t.startAt && t.endAt).sort((a,b) => {
-        // Sort completed tasks to bottom
-        if (a.done && !b.done) return 1
-        if (!a.done && b.done) return -1
-        return a.startAt - b.startAt
-      }),
-      unscheduled: todays.filter(t => !t.startAt || !t.endAt).sort((a,b) => {
-        // Sort completed tasks to bottom
-        if (a.done && !b.done) return 1
-        if (!a.done && b.done) return -1
-        return (a.order ?? 0) - (b.order ?? 0)
-      })
+  // Get all tasks for today (not just time-blocked ones)
+  const todaysTasks = (focusTasks || []).filter(task => 
+    task && task.date === today
+  )
+
+  // Sort tasks by start time, putting tasks without valid time at the end
+  const sortedTasks = todaysTasks.sort((a, b) => {
+    const aHasValidTime = a.startTime && a.startTime.trim() !== '' && formatTime(a.startTime)
+    const bHasValidTime = b.startTime && b.startTime.trim() !== '' && formatTime(b.startTime)
+    
+    if (!aHasValidTime && !bHasValidTime) return 0
+    if (!aHasValidTime) return 1
+    if (!bHasValidTime) return -1
+    
+    const timeA = a.startTime.replace(':', '')
+    const timeB = b.startTime.replace(':', '')
+    return timeA.localeCompare(timeB)
+  })
+
+  const handleToggleComplete = async (task) => {
+    if (task.status === 'completed') {
+      // If already completed, mark as pending
+      await updateFocusTaskProgress(task.id, 0)
+    } else {
+      // Mark as completed with full duration
+      const duration = task.planned || task.focusDuration || 25
+      await updateFocusTaskProgress(task.id, duration)
     }
-  }, [tasks, today])
+  }
 
-  const allForToday = [...scheduled, ...unscheduled]
-  const totalCount = allForToday.length
-  const doneCount = allForToday.filter(t => t.done).length
-  const remaining = totalCount - doneCount
+  const handleStartTask = (task) => {
+    if (onStart) {
+      onStart(task)
+    }
+  }
+
+  const handleDeleteTask = async (taskId) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      await deleteFocusTask(taskId)
+    }
+  }
+
+  const completedCount = todaysTasks.filter(task => task.status === 'completed').length
+  const totalCount = todaysTasks.length
 
   return (
-    <div className="glass-card p-4 md:p-6 rounded-xl md:rounded-2xl">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg md:text-xl font-hagrid font-light text-ar-white">Today's Task List</h2>
-        <div className="text-xs text-ar-gray-300">Remaining {remaining}/{totalCount}</div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-hagrid font-light text-ar-white">
+          Today's Task List
+        </h3>
+        <div className="text-ar-gray-400 text-sm">
+          Remaining {totalCount - completedCount}/{totalCount}
+        </div>
       </div>
-
-      <div className="space-y-2">
-        <AnimatePresence>
-          {scheduled.map((t) => (
-            <motion.div 
-              key={t.id} 
-              initial={{ opacity: 0, y: 6 }} 
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                scale: t.done ? 0.98 : 1,
-                backgroundColor: t.done ? 'rgba(34, 197, 94, 0.1)' : 'rgba(31, 41, 55, 0.4)'
-              }}
-              exit={{ opacity: 0, y: -6, scale: 0.95 }}
+      
+      {sortedTasks.length === 0 ? (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-card rounded-xl p-6 text-center"
+        >
+          <div className="text-ar-gray-300 mb-4">
+            <Clock size={48} className="mx-auto mb-4 text-ar-gray-500" />
+            <h4 className="text-lg font-medium mb-2">No Tasks Today</h4>
+            <p className="text-sm text-ar-gray-400">
+              Create focus tasks to see them here.
+            </p>
+          </div>
+        </motion.div>
+      ) : (
+        <div className="space-y-3">
+          {sortedTasks.map((task, index) => (
+            <motion.div
+              key={task.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ 
-                type: "spring", 
-                stiffness: 300, 
-                damping: 30,
-                duration: 0.3
+                delay: index * 0.1,
+                duration: 0.3,
+                ease: "easeOut"
               }}
-              className={`p-3 border rounded-md transition-all duration-300 ${
-                t.done 
-                  ? 'border-green-500/30 bg-green-500/5' 
-                  : 'border-ar-gray-700 bg-ar-gray-800/40 hover:border-ar-gray-600'
-              }`}
+              className="glass-card rounded-xl p-4 hover:bg-ar-gray-800/50 transition-all duration-200"
             >
-              <div className="flex items-center md:items-start justify-between gap-2">
-                <div className="flex items-center md:items-start gap-2 md:gap-3 flex-1 min-w-0">
-                  <motion.button 
-                    onClick={() => toggleTask(t.id)} 
-                    className={`p-1 md:p-1.5 rounded flex-shrink-0 transition-all duration-300 ${
-                      t.done 
-                        ? 'bg-green-600/20 text-green-300 hover:bg-green-600/30' 
-                        : 'bg-ar-gray-700 text-ar-gray-200 hover:bg-ar-gray-600'
+              {/* Time Display - Show for any task with valid time blocks */}
+              {task.startTime && task.endTime && 
+               task.startTime.trim() !== '' && task.endTime.trim() !== '' &&
+               formatTime(task.startTime) && formatTime(task.endTime) && (
+                <div className="flex items-center gap-2 text-ar-gray-400 text-sm mb-3">
+                  <Clock size={16} />
+                  <span>{formatTime(task.startTime)} - {formatTime(task.endTime)}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                {/* Left side - Checkbox and Task Info */}
+                <div className="flex items-center gap-3 flex-1">
+                  {/* Checkbox */}
+                  <button
+                    onClick={() => handleToggleComplete(task)}
+                    className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                      task.status === 'completed'
+                        ? 'bg-ar-blue-500 border-ar-blue-500 text-white scale-110'
+                        : 'border-ar-gray-500 hover:border-ar-blue-400 hover:scale-105'
                     }`}
-                    title={t.done ? 'Mark as not done' : 'Mark as done'}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
                   >
-                    <motion.div
-                      initial={false}
-                      animate={{ 
-                        scale: t.done ? 1.1 : 1,
-                        rotate: t.done ? 360 : 0
-                      }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      {t.done ? <CheckSquare size={14} /> : <Square size={14} />}
-                    </motion.div>
-                  </motion.button>
-                  <div className="min-w-0 flex-1">
-                    <motion.div 
-                      className="text-[11px] md:text-xs text-ar-gray-400 flex items-center gap-2"
-                      animate={{ opacity: t.done ? 0.6 : 1 }}
-                    >
-                      <Clock size={12} /> {fmt(t.startAt)} – {fmt(t.endAt)}
-                    </motion.div>
-                    <motion.div 
-                      className={`text-sm md:text-base font-medium mt-0.5 truncate transition-all duration-300 ${
-                        t.done 
-                          ? 'text-green-300 line-through decoration-green-400 decoration-2' 
-                          : 'text-ar-white'
-                      }`}
-                      animate={{ 
-                        textDecoration: t.done ? 'line-through' : 'none',
-                        opacity: t.done ? 0.7 : 1
-                      }}
-                    >
-                      {t.title}
-                    </motion.div>
-                    <motion.div 
-                      className="text-[11px] md:text-xs text-ar-gray-400 mt-1 flex items-center gap-2"
-                      animate={{ opacity: t.done ? 0.5 : 1 }}
-                    >
-                      <Tag size={12} /> {t.tag}{t.focusMode ? ' • Focus' : ''}
-                    </motion.div>
+                    {task.status === 'completed' && (
+                      <motion.svg 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="w-4 h-4" 
+                        fill="currentColor" 
+                        viewBox="0 0 20 20"
+                      >
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </motion.svg>
+                    )}
+                  </button>
+
+                  {/* Task Content */}
+                  <div className="flex-1">
+                    {/* Task Title - Prominently displayed */}
+                    <h4 className={`text-lg font-medium mb-1 transition-all duration-200 ${
+                      task.status === 'completed' 
+                        ? 'text-ar-gray-400 line-through' 
+                        : 'text-ar-white'
+                    }`}>
+                      {task.title || task.name || 'Untitled Task'}
+                    </h4>
+                    
+                    {/* Tags */}
+                    <div className="flex items-center gap-2 text-ar-gray-400 text-sm">
+                      <Tag size={12} />
+                      <span>
+                        {task.category || 'study'}
+                        {task.focusMode !== false && ' • Focus'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <motion.div 
-                  className="flex items-center gap-1 md:gap-2 flex-shrink-0"
-                  animate={{ opacity: t.done ? 0.6 : 1 }}
-                >
-                  {onStart && t.focusMode && !t.done && (
-                    <motion.button 
-                      onClick={() => onStart({ 
-                        task: t, 
-                        mode: 'custom', 
-                        focusDuration: t.focusDuration || 25, 
-                        breakDuration: t.breakDuration || 5,
-                        cycles: t.cycles || 1
-                      })} 
-                      className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-ar-blue hover:bg-ar-blue/80 text-white transition-all duration-300 flex items-center justify-center" 
-                      title={`Start Focus Timer: ${t.focusDuration || 25}min focus + ${t.breakDuration || 5}min break (${t.cycles || 1} cycle${(t.cycles || 1) > 1 ? 's' : ''})`}
-                      whileHover={{ scale: 1.08 }}
+
+                {/* Right side - Action Buttons */}
+                <div className="flex items-center gap-2">
+                  {task.status !== 'completed' && task.focusMode !== false && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
+                      onClick={() => handleStartTask(task)}
+                      className="w-12 h-12 bg-ar-blue-500 hover:bg-ar-blue-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg"
+                      title="Start Focus Session"
                     >
-                      <Play size={14} />
+                      <Play size={18} />
                     </motion.button>
                   )}
-                  <motion.button 
-                    onClick={() => setEditTask(t)} 
-                    className="p-1 md:p-1.5 rounded hover:bg-ar-gray-700 text-ar-gray-300 transition-all duration-300" 
-                    title="Edit"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                  
+                  {task.status !== 'completed' && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setEditingTask(task)}
+                      className="w-10 h-10 bg-ar-gray-700 hover:bg-ar-gray-600 text-ar-gray-300 hover:text-white rounded-full flex items-center justify-center transition-colors"
+                      title="Edit Task"
+                    >
+                      <Edit2 size={16} />
+                    </motion.button>
+                  )}
+                  
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleDeleteTask(task.id)}
+                    className="w-10 h-10 bg-ar-red-600 hover:bg-ar-red-500 text-white rounded-full flex items-center justify-center transition-colors"
+                    title="Delete Task"
                   >
-                    <Edit3 size={14} />
+                    <Trash2 size={16} />
                   </motion.button>
-                  <motion.button 
-                    onClick={() => removeTask(t.id)} 
-                    className="p-1 md:p-1.5 rounded hover:bg-red-500/20 text-red-400 transition-all duration-300" 
-                    title="Delete"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <Trash2 size={14} />
-                  </motion.button>
-                </motion.div>
+                </div>
               </div>
             </motion.div>
           ))}
-        </AnimatePresence>
-      </div>
-
-      {unscheduled.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-ar-gray-700">
-          <div className="text-sm text-ar-gray-400 mb-2">Unscheduled</div>
-          <div className="space-y-2">
-            <AnimatePresence>
-              {unscheduled.map((t) => (
-                <motion.div
-                  key={t.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ 
-                    opacity: 1, 
-                    y: 0,
-                    scale: t.done ? 0.98 : 1,
-                    backgroundColor: t.done ? 'rgba(34, 197, 94, 0.1)' : 'rgba(31, 41, 55, 0.4)'
-                  }}
-                  exit={{ opacity: 0, y: -6, scale: 0.95 }}
-                  transition={{ 
-                    type: "spring", 
-                    stiffness: 300, 
-                    damping: 30,
-                    duration: 0.3
-                  }}
-                  className={`p-3 border rounded-md transition-all duration-300 ${
-                    t.done 
-                      ? 'border-green-500/30 bg-green-500/5' 
-                      : 'border-ar-gray-700 bg-ar-gray-800/40 hover:border-ar-gray-600'
-                  }`}
-                  draggable
-                  onDragStart={(e) => e.dataTransfer.setData('text/task-id', t.id)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    const srcId = e.dataTransfer.getData('text/task-id')
-                    if (srcId && srcId !== t.id) {
-                      useTaskStore.getState().reorderUnscheduled(today, srcId, t.id)
-                    }
-                  }}
-                >
-                  <div className="flex items-center md:items-start justify-between gap-2">
-                    <div className="flex items-center md:items-start gap-2 md:gap-3 flex-1 min-w-0">
-                      <motion.button 
-                        onClick={() => toggleTask(t.id)} 
-                        className={`p-1 md:p-1.5 rounded flex-shrink-0 transition-all duration-300 ${
-                          t.done 
-                            ? 'bg-green-600/20 text-green-300 hover:bg-green-600/30' 
-                            : 'bg-ar-gray-700 text-ar-gray-200 hover:bg-ar-gray-600'
-                        }`}
-                        title={t.done ? 'Mark as not done' : 'Mark as done'}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <motion.div
-                          initial={false}
-                          animate={{ 
-                            scale: t.done ? 1.1 : 1,
-                            rotate: t.done ? 360 : 0
-                          }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          {t.done ? <CheckSquare size={14} /> : <Square size={14} />}
-                        </motion.div>
-                      </motion.button>
-                      <div className="min-w-0 flex-1">
-                        <motion.div 
-                          className={`text-sm md:text-base font-medium truncate transition-all duration-300 ${
-                            t.done 
-                              ? 'text-green-300 line-through decoration-green-400 decoration-2' 
-                              : 'text-ar-white'
-                          }`}
-                          animate={{ 
-                            textDecoration: t.done ? 'line-through' : 'none',
-                            opacity: t.done ? 0.7 : 1
-                          }}
-                        >
-                          {t.title}
-                        </motion.div>
-                        <motion.div 
-                          className="text-[11px] md:text-xs text-ar-gray-400 mt-1 flex items-center gap-2"
-                          animate={{ opacity: t.done ? 0.5 : 1 }}
-                        >
-                          <Tag size={12} /> {t.tag}{t.focusMode ? ' • Focus' : ''}
-                          {t.repeat !== 'none' && (
-                            <span className="ml-2 px-2 py-0.5 rounded bg-ar-gray-700 text-ar-gray-300">{t.repeat}{t.repeatUntil ? ` until ${t.repeatUntil}` : ''}</span>
-                          )}
-                        </motion.div>
-                      </div>
-                    </div>
-                    <motion.div 
-                      className="flex items-center gap-1 md:gap-2 flex-shrink-0"
-                      animate={{ opacity: t.done ? 0.6 : 1 }}
-                    >
-                      {onStart && t.focusMode && !t.done && (
-                        <motion.button 
-                          onClick={() => onStart({ 
-                            task: t, 
-                            mode: 'custom', 
-                            focusDuration: t.focusDuration || 25, 
-                            breakDuration: t.breakDuration || 5,
-                            cycles: t.cycles || 1
-                          })} 
-                          className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-ar-blue hover:bg-ar-blue/80 text-white transition-all duration-300 flex items-center justify-center" 
-                          title={`Start Focus Timer: ${t.focusDuration || 25}min focus + ${t.breakDuration || 5}min break (${t.cycles || 1} cycle${(t.cycles || 1) > 1 ? 's' : ''})`}
-                          whileHover={{ scale: 1.08 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Play size={14} />
-                        </motion.button>
-                      )}
-                      <motion.button 
-                        onClick={() => setEditTask(t)} 
-                        className="p-1 md:p-1.5 rounded hover:bg-ar-gray-700 text-ar-gray-300 transition-all duration-300" 
-                        title="Edit"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Edit3 size={14} />
-                      </motion.button>
-                      <motion.button 
-                        onClick={() => removeTask(t.id)} 
-                        className="p-1 md:p-1.5 rounded hover:bg-red-500/20 text-red-400 transition-all duration-300" 
-                        title="Delete"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                      >
-                        <Trash2 size={14} />
-                      </motion.button>
-                    </motion.div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
         </div>
       )}
-      <EditTaskModal isOpen={!!editTask} onClose={() => setEditTask(null)} task={editTask} />
+      
+      {/* Edit Task Modal */}
+      <AddTaskModal 
+        isOpen={!!editingTask} 
+        onClose={() => setEditingTask(null)}
+        editTask={editingTask}
+      />
     </div>
   )
 }
-
-

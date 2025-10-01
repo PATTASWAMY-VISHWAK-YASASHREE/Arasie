@@ -1,43 +1,83 @@
-import { motion, AnimatePresence } from "framer-motion"
-import { Pause, Play, Square, NotebookPen } from "lucide-react"
+import { motion } from "framer-motion"
+import { Clock, Play, Pause, Square } from "lucide-react"
 
-export default function FocusTimerBar({ visible, remaining, mode = 'Pomodoro', taskName, isPaused, onPause, onResume, onEnd, onNote, cycles = 1, currentCycle = 1, breakDuration = 5, completedBreaks = 0 }) {
-  const mm = Math.floor(remaining / 60).toString().padStart(2, '0')
-  const ss = Math.floor(remaining % 60).toString().padStart(2, '0')
+export default function FocusTimerBar({ 
+  isVisible, 
+  timeRemaining, 
+  totalTime, 
+  isRunning, 
+  sessionName,
+  onTogglePause,
+  onStop 
+}) {
+  if (!isVisible) return null
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const progress = totalTime > 0 ? ((totalTime - timeRemaining) / totalTime) * 100 : 0
+
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} className="fixed bottom-2 md:bottom-4 left-1/2 -translate-x-1/2 z-40 w-[96%] md:w-[92%] max-w-3xl safe-area-bottom mobile-bottom-offset">
-          <div className="glass-card rounded-xl md:rounded-2xl p-2 md:p-3 border border-ar-gray-700/60">
-            {/* Mobile: Stack vertically, Desktop: Horizontal */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-              <div className="min-w-0 flex-1 w-full md:w-auto">
-                <div className="text-xs text-ar-gray-400 truncate">Focus Mode: {mode}</div>
-                <div className="text-ar-white text-sm font-medium truncate">{taskName || 'Untitled task'}</div>
-                {cycles > 1 && (
-                  <div className="text-xs text-ar-gray-400 mt-1 truncate">
-                    Cycle {currentCycle}/{cycles} • {completedBreaks} break{completedBreaks !== 1 ? 's' : ''} completed
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-1 md:gap-2 flex-shrink-0 w-full md:w-auto justify-between md:justify-end">
-                <div className="text-ar-white font-mono text-lg md:text-lg">{mm}:{ss}</div>
-                <div className="flex items-center gap-1">
-                  {isPaused ? (
-                    <button onClick={onResume} className="p-2 rounded bg-ar-blue/20 text-ar-blue hover:bg-ar-blue/30"><Play size={14} /></button>
-                  ) : (
-                    <button onClick={onPause} className="p-2 rounded bg-ar-gray-700 text-ar-gray-200 hover:bg-ar-gray-600"><Pause size={14} /></button>
-                  )}
-                  <button onClick={onEnd} className="p-2 rounded bg-red-600/30 text-red-300 hover:bg-red-600/40"><Square size={14} /></button>
-                  <button onClick={onNote} className="p-2 rounded bg-ar-gray-700 text-ar-gray-200 hover:bg-ar-gray-600"><NotebookPen size={14} /></button>
-                </div>
-              </div>
+    <motion.div
+      className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50"
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: -100, opacity: 0 }}
+    >
+      <div className="glass-card px-4 py-3 rounded-full border border-ar-gray-700/60 backdrop-blur-md">
+        <div className="flex items-center gap-4">
+          {/* Session Info */}
+          <div className="flex items-center gap-2">
+            <Clock size={16} className="text-ar-blue" />
+            <span className="text-sm text-ar-white font-medium">
+              {sessionName}
+            </span>
+          </div>
+
+          {/* Timer Display */}
+          <div className="flex items-center gap-2">
+            <div className="text-lg font-mono text-ar-white">
+              {formatTime(timeRemaining)}
+            </div>
+            
+            {/* Progress Bar */}
+            <div className="w-20 h-2 bg-ar-gray-700 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-ar-blue rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.3 }}
+              />
             </div>
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+
+          {/* Controls */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onTogglePause}
+              className="p-2 hover:bg-ar-gray-700 rounded-lg transition-colors"
+              title={isRunning ? "Pause" : "Resume"}
+            >
+              {isRunning ? (
+                <Pause size={16} className="text-ar-yellow" />
+              ) : (
+                <Play size={16} className="text-ar-green" />
+              )}
+            </button>
+            
+            <button
+              onClick={onStop}
+              className="p-2 hover:bg-ar-gray-700 rounded-lg transition-colors"
+              title="Stop Session"
+            >
+              <Square size={16} className="text-ar-red" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   )
 }
-
-
