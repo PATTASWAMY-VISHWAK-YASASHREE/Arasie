@@ -52,6 +52,7 @@ export const useUserStore = create(
       // User actions
       updateName: (name) => set({ name }),
       updateLevel: (level) => set({ level }),
+      updateWaterGoal: (goal) => set({ waterGoal: goal }),
 
       // UI actions
       setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
@@ -181,6 +182,9 @@ export const useUserStore = create(
         try {
           const wasReset = await state.firebaseService.resetDaily();
           if (wasReset) {
+            // Get today's date for filtering
+            const today = new Date().toISOString().slice(0, 10);
+            
             set({
               workoutCompleted: false,
               waterGoalMet: false,
@@ -189,11 +193,15 @@ export const useUserStore = create(
               dietCalories: 0,
               mentalHealthProgress: 0,
               focusProgress: 0,
+              
+              // Clear current day data (archived data is preserved in Firebase)
               meals: [],
               waterLogs: [],
               mentalHealthLogs: [],
               focusLogs: [],
-              focusTasks: [],
+              
+              // Keep only today's focus tasks (scheduled tasks)
+              focusTasks: (state.focusTasks || []).filter(task => task.date === today),
             });
           }
         } catch (error) {

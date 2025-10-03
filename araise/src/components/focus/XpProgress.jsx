@@ -3,10 +3,11 @@ import { Sparkles, Star } from "lucide-react"
 import { useXpStore } from "../../store/xpStore"
 
 export default function XpProgress({ className = "" }) {
-  const { level, xp, xpToNextLevel, totalXpForLevel } = useXpStore()
+  const { level, getDailyProgress } = useXpStore()
+  const dailyProgress = getDailyProgress()
   
-  const progress = totalXpForLevel > 0 ? (xp / totalXpForLevel) * 100 : 0
-  const xpNeeded = xpToNextLevel
+  const progress = dailyProgress.progress
+  const xpNeeded = dailyProgress.threshold - dailyProgress.dailyXp
 
   return (
     <div className={`glass-card p-4 rounded-xl border border-ar-gray-700/60 ${className}`}>
@@ -16,14 +17,14 @@ export default function XpProgress({ className = "" }) {
             <Star size={16} className="text-ar-violet" />
           </div>
           <div>
-            <div className="text-sm font-medium text-ar-white">Level {level}</div>
-            <div className="text-xs text-ar-gray-400">{xp} / {totalXpForLevel} XP</div>
+            <div className="text-sm font-medium text-ar-white">Daily Progress</div>
+            <div className="text-xs text-ar-gray-400">{dailyProgress.dailyXp} / {dailyProgress.threshold} XP</div>
           </div>
         </div>
         
         <div className="flex items-center gap-1 text-ar-violet">
           <Sparkles size={14} />
-          <span className="text-sm font-medium">{xpNeeded} to next</span>
+          <span className="text-sm font-medium">{xpNeeded} to goal</span>
         </div>
       </div>
 
@@ -37,20 +38,17 @@ export default function XpProgress({ className = "" }) {
         />
       </div>
 
-      {/* XP Breakdown */}
-      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-        <div className="text-center">
-          <div className="text-ar-gray-400">Focus</div>
-          <div className="text-ar-blue font-medium">+25 XP</div>
-        </div>
-        <div className="text-center">
-          <div className="text-ar-gray-400">Workout</div>
-          <div className="text-ar-green font-medium">+50 XP</div>
-        </div>
-        <div className="text-center">
-          <div className="text-ar-gray-400">Streak</div>
-          <div className="text-ar-yellow font-medium">+10 XP</div>
-        </div>
+      {/* Daily Status */}
+      <div className="mt-3 text-center">
+        {dailyProgress.isThresholdReached ? (
+          <div className="text-ar-green text-xs font-medium">
+            ✓ Daily goal achieved! Keep the streak going!
+          </div>
+        ) : (
+          <div className="text-ar-gray-400 text-xs">
+            Focus for {xpNeeded} more minutes to reach today's goal
+          </div>
+        )}
       </div>
     </div>
   )

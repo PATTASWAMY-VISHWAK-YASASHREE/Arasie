@@ -32,7 +32,10 @@ const useSettingsStore = create(
         timezone: 'auto',
         units: 'metric', // 'metric', 'imperial'
         animations: true,
-        hapticFeedback: true
+        hapticFeedback: true,
+        dailyFocusGoal: 60, // Daily focus goal in minutes
+        dailyWaterGoal: 3000, // Daily water goal in ml
+        dailyCalorieGoal: 2000 // Daily calorie goal
       },
 
       // Privacy Settings
@@ -129,6 +132,23 @@ const useSettingsStore = create(
         if (key === 'vibration') {
           // Update haptic feedback settings
           window.ARAISE_VIBRATION_ENABLED = value
+        }
+
+        if (key === 'dailyFocusGoal') {
+          // Update XP store daily goal
+          import('../store/xpStore').then(({ useXpStore }) => {
+            useXpStore.getState().setDailyGoal(value)
+          })
+        }
+
+        if (key === 'dailyWaterGoal') {
+          // Update user store water goal
+          import('../store/userStore').then(({ useUserStore }) => {
+            const state = useUserStore.getState()
+            if (state.firebaseService && state.firebaseService.updateProgress) {
+              state.firebaseService.updateProgress('waterGoal', value)
+            }
+          })
         }
       },
 
@@ -268,7 +288,10 @@ const useSettingsStore = create(
             timezone: 'auto',
             units: 'metric',
             animations: true,
-            hapticFeedback: true
+            hapticFeedback: true,
+            dailyFocusGoal: 60,
+            dailyWaterGoal: 3000,
+            dailyCalorieGoal: 2000
           },
           privacy: {
             profileVisibility: 'friends',

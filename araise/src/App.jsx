@@ -17,6 +17,8 @@ import Signup from "./pages/Signup"
 import Welcome from "./pages/Welcome"
 import Feedback from "./pages/Feedback"
 import { useUserStore } from "./store/userStore"
+import { useXpStore } from "./store/xpStore"
+import useSettingsStore from "./store/settingsStore"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
 
 function AppContent() {
@@ -25,6 +27,10 @@ function AppContent() {
   const isChatOpen = useUserStore(state => state.isChatOpen)
   const setUser = useUserStore(state => state.setUser)
   const logout = useUserStore(state => state.logout)
+  const updateWaterGoal = useUserStore(state => state.updateWaterGoal)
+  const checkAndResetDaily = useXpStore(state => state.checkAndResetDaily)
+  const setDailyGoal = useXpStore(state => state.setDailyGoal)
+  const { preferences } = useSettingsStore()
   const { currentUser, loading } = useAuth()
 
   // Sync Firebase auth state with Zustand store
@@ -48,6 +54,27 @@ function AppContent() {
       resetDaily()
     }
   }, [resetDaily, isAuthenticated])
+
+  // Reset daily XP on app start and check periodically
+  useEffect(() => {
+    // Initial check when app loads
+    checkAndResetDaily()
+    
+    // Sync goals from settings
+    if (preferences.dailyFocusGoal) {
+      setDailyGoal(preferences.dailyFocusGoal)
+    }
+    if (preferences.dailyWaterGoal && updateWaterGoal) {
+      updateWaterGoal(preferences.dailyWaterGoal)
+    }
+    
+    // Check every hour for day changes
+    const interval = setInterval(() => {
+      checkAndResetDaily()
+    }, 3600000) // Check every hour
+    
+    return () => clearInterval(interval)
+  }, [checkAndResetDaily, setDailyGoal, updateWaterGoal, preferences.dailyFocusGoal, preferences.dailyWaterGoal])
 
   // Show loading screen while Firebase initializes
   if (loading) {

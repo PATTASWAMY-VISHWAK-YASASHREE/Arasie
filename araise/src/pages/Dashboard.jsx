@@ -22,7 +22,7 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [currentQuote, setCurrentQuote] = useState(0)
   const { currentUser, loading } = useAuth()
-  
+
   const {
     name,
     level,
@@ -35,6 +35,7 @@ export default function Dashboard() {
     focusProgress,
     mentalHealthProgress,
     waterProgress,
+    waterGoal,
     workoutCompleted,
     dietGoalMet,
     meals
@@ -65,18 +66,16 @@ export default function Dashboard() {
     mentalHealth: 0,
     focus: 0
   })
-  const streakStats = getStreakStats()
-
   // Update progress stats in real-time (only when data actually changes)
   useEffect(() => {
     setProgressStats({
       workout: workoutCompleted ? 100 : 0,
-      water: Math.min((waterProgress / 3000) * 100, 100), // 3000ml = 3L goal
+      water: Math.min((waterProgress / (waterGoal || 3000)) * 100, 100), // Use configurable water goal
       diet: dietGoalMet ? 100 : Math.min((meals.length / 3) * 100, 100), // Show gradual progress based on meals logged
       mentalHealth: mentalHealthProgress,
       focus: focusProgress
     })
-  }, [workoutCompleted, waterProgress, dietGoalMet, mentalHealthProgress, focusProgress, meals.length])
+  }, [workoutCompleted, waterProgress, waterGoal, dietGoalMet, mentalHealthProgress, focusProgress, meals.length])
 
   // Rotate quotes every 5 seconds
   useEffect(() => {
@@ -102,7 +101,7 @@ export default function Dashboard() {
         console.error('Error loading focus tasks:', error)
       })
     }
-    
+
     // Initial streak check when component mounts
     checkStreak().catch(error => {
       console.error('Error checking streak on mount:', error)
@@ -118,34 +117,12 @@ export default function Dashboard() {
     { subject: 'Focus', progress: progressStats.focus, fullMark: 100 },
   ], [progressStats.workout, progressStats.diet, progressStats.water, progressStats.mentalHealth, progressStats.focus])
 
-  // Generate calendar heatmap (last 35 days - 5 weeks)
-  const generateCalendar = () => {
-    const days = []
-    const today = new Date()
-    
-    for (let i = 34; i >= 0; i--) {
-      const date = new Date(today)
-      date.setDate(date.getDate() - i)
-      const dateStr = date.toISOString().slice(0, 10)
-      const dayData = calendar.find(c => c.date === dateStr)
-      
-      days.push({
-        date: dateStr,
-        completed: dayData?.completed || false,
-        day: date.getDate(),
-        isToday: dateStr === today.toISOString().slice(0, 10)
-      })
-    }
-    
-    return days
-  }
-
-  const calendarDays = generateCalendar()
+  // Real-time calendar data is now handled by the Calendar component
 
   return (
     <div className="max-w-7xl mx-auto space-y-4 md:space-y-6 pt-6">
       {/* Top Section - Greeting, Level, Streak */}
-      <motion.div 
+      <motion.div
         className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -155,7 +132,7 @@ export default function Dashboard() {
           <h1 className="text-4xl md:text-5xl font-hagrid font-light text-ar-white mb-2 tracking-tight">
             Hello, {name}!
           </h1>
-          <motion.p 
+          <motion.p
             className="text-ar-gray-400 text-lg italic font-hagrid font-light"
             key={currentQuote}
             initial={{ opacity: 0 }}
@@ -165,13 +142,13 @@ export default function Dashboard() {
             "{quotes[currentQuote]}"
           </motion.p>
         </div>
-        
+
         <div className="flex items-center gap-4">
           {/* Level Badge */}
           <div className="bg-ar-blue text-ar-white px-6 py-2 rounded-full font-hagrid font-light text-lg shadow-card-hover">
             Level {level}
           </div>
-          
+
           {/* Streak Counter */}
           <div className="flex items-center gap-2 text-ar-green">
             <div className="relative">
@@ -179,13 +156,13 @@ export default function Dashboard() {
               {streakCount > 0 && (
                 <motion.div
                   className="absolute inset-0 text-ar-green/50"
-                  animate={{ 
-                    opacity: [0.3, 0.7, 0.3] 
+                  animate={{
+                    opacity: [0.3, 0.7, 0.3]
                   }}
-                  transition={{ 
-                    duration: 2, 
+                  transition={{
+                    duration: 2,
                     repeat: Infinity,
-                    ease: "easeInOut" 
+                    ease: "easeInOut"
                   }}
                 >
                   <Flame size={28} />
@@ -212,14 +189,14 @@ export default function Dashboard() {
             <ResponsiveContainer width="98%" height="98%">
               <RadarChart data={radarData} margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
                 <PolarGrid gridType="polygon" stroke="#22D2FF" strokeWidth={0.5} />
-                <PolarAngleAxis 
-                  dataKey="subject" 
+                <PolarAngleAxis
+                  dataKey="subject"
                   tick={{ fill: '#D4D4D4', fontSize: 14, fontWeight: 'light', fontFamily: 'Hagrid' }}
                   tickOffset={20}
                 />
-                <PolarRadiusAxis 
-                  angle={90} 
-                  domain={[0, 100]} 
+                <PolarRadiusAxis
+                  angle={90}
+                  domain={[0, 100]}
                   tick={false}
                   axisLine={false}
                 />
@@ -278,7 +255,7 @@ export default function Dashboard() {
           <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-500/20 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
-              <motion.div 
+              <motion.div
                 className="p-4 bg-gradient-to-br from-red-500/20 to-red-600/10 rounded-2xl border border-red-500/20"
                 whileHover={{ rotate: 5 }}
               >
@@ -299,14 +276,14 @@ export default function Dashboard() {
               </motion.div>
             )}
           </div>
-          
+
           <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <span className="text-ar-gray-400 font-inter text-sm">Progress</span>
               <span className="text-red-400 font-poppins font-semibold">{Math.round(progressStats.workout)}%</span>
             </div>
             <div className="w-full bg-ar-gray-800 rounded-full h-3 overflow-hidden">
-              <motion.div 
+              <motion.div
                 className="bg-gradient-to-r from-red-500 to-red-400 h-3 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressStats.workout}%` }}
@@ -314,8 +291,8 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          
-          <motion.button 
+
+          <motion.button
             className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white font-poppins font-medium py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -337,7 +314,7 @@ export default function Dashboard() {
           <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-ar-green/20 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
-              <motion.div 
+              <motion.div
                 className="p-4 bg-gradient-to-br from-ar-green/20 to-ar-green/10 rounded-2xl border border-ar-green/20"
                 whileHover={{ rotate: 5 }}
               >
@@ -358,14 +335,14 @@ export default function Dashboard() {
               </motion.div>
             )}
           </div>
-          
+
           <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <span className="text-ar-gray-400 font-inter text-sm">Progress</span>
               <span className="text-ar-green font-poppins font-semibold">{Math.round(progressStats.diet)}%</span>
             </div>
             <div className="w-full bg-ar-gray-800 rounded-full h-3 overflow-hidden">
-              <motion.div 
+              <motion.div
                 className="bg-gradient-to-r from-ar-green to-ar-green-light h-3 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressStats.diet}%` }}
@@ -373,8 +350,8 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          
-          <motion.button 
+
+          <motion.button
             className="w-full bg-gradient-to-r from-ar-green to-ar-green-light hover:from-ar-green-light hover:to-ar-green text-white font-poppins font-medium py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -396,7 +373,7 @@ export default function Dashboard() {
           <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
-              <motion.div 
+              <motion.div
                 className="p-4 bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-2xl border border-purple-500/20"
                 whileHover={{ rotate: 5 }}
               >
@@ -417,14 +394,14 @@ export default function Dashboard() {
               </motion.div>
             )}
           </div>
-          
+
           <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <span className="text-ar-gray-400 font-inter text-sm">Progress</span>
               <span className="text-purple-400 font-poppins font-semibold">{Math.round(progressStats.mentalHealth)}%</span>
             </div>
             <div className="w-full bg-ar-gray-800 rounded-full h-3 overflow-hidden">
-              <motion.div 
+              <motion.div
                 className="bg-gradient-to-r from-purple-500 to-purple-400 h-3 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressStats.mentalHealth}%` }}
@@ -432,8 +409,8 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          
-          <motion.button 
+
+          <motion.button
             className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white font-poppins font-medium py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -455,10 +432,10 @@ export default function Dashboard() {
           <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-ar-blue/20 to-transparent rounded-full -translate-y-10 translate-x-10"></div>
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
-              <motion.div 
+              <motion.div
                 className="p-4 bg-gradient-to-br from-ar-blue/20 to-ar-blue/10 rounded-2xl border border-ar-blue/20"
                 whileHover={{ rotate: 5 }}
-                animate={{ 
+                animate={{
                   backgroundColor: progressStats.focus === 100 ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'
                 }}
               >
@@ -472,14 +449,14 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               {progressStats.focus > 0 && (
                 <motion.div
-                  animate={{ 
+                  animate={{
                     scale: [1, 1.2, 1],
                     opacity: [0.5, 1, 0.5]
                   }}
-                  transition={{ 
-                    duration: 2, 
-                    repeat: Infinity, 
-                    ease: "easeInOut" 
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
                   }}
                   className="w-3 h-3 bg-ar-blue rounded-full"
                   title="Active Progress"
@@ -496,13 +473,13 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-          
+
           <div className="mb-6">
             <div className="flex justify-between items-center mb-3">
               <span className="text-ar-gray-400 font-inter text-sm">Progress</span>
-              <motion.span 
+              <motion.span
                 className="text-ar-blue font-poppins font-semibold"
-                animate={{ 
+                animate={{
                   scale: progressStats.focus === 100 ? [1, 1.1, 1] : 1
                 }}
                 transition={{ duration: 0.3 }}
@@ -511,7 +488,7 @@ export default function Dashboard() {
               </motion.span>
             </div>
             <div className="w-full bg-ar-gray-800 rounded-full h-3 overflow-hidden">
-              <motion.div 
+              <motion.div
                 className="bg-gradient-to-r from-ar-blue to-ar-blue-light h-3 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressStats.focus}%` }}
@@ -519,14 +496,14 @@ export default function Dashboard() {
               />
             </div>
           </div>
-          
-          <motion.button 
+
+          <motion.button
             className="w-full bg-gradient-to-r from-ar-blue to-ar-blue-light hover:from-ar-blue-light hover:to-ar-blue text-white font-poppins font-medium py-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            animate={{ 
-              background: progressStats.focus >= 100 
-                ? 'linear-gradient(to right, #22c55e, #16a34a)' 
+            animate={{
+              background: progressStats.focus >= 100
+                ? 'linear-gradient(to right, #22c55e, #16a34a)'
                 : 'linear-gradient(to right, #3b82f6, #60a5fa)'
             }}
             transition={{ duration: 0.5 }}

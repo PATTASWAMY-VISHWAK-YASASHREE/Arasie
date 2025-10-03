@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 const persistKey = 'focus:xp'
-const DAILY_XP_THRESHOLD = 60 // 60 minutes of focus = 60 XP minimum for streak
+const DEFAULT_DAILY_GOAL = 60 // Default 60 minutes of focus
 
 function load() {
   try {
@@ -12,7 +12,8 @@ function load() {
       streakDays: 0, 
       lastActiveDate: null, 
       dailyXp: 0,
-      lastStreakDate: null 
+      lastStreakDate: null,
+      dailyGoal: DEFAULT_DAILY_GOAL
     }
     return JSON.parse(raw)
   } catch {
@@ -22,7 +23,8 @@ function load() {
       streakDays: 0, 
       lastActiveDate: null, 
       dailyXp: 0,
-      lastStreakDate: null 
+      lastStreakDate: null,
+      dailyGoal: DEFAULT_DAILY_GOAL
     }
   }
 }
@@ -33,6 +35,18 @@ function save(state) {
 
 export const useXpStore = create((set, get) => ({
   ...load(),
+
+  // Set daily focus goal (in minutes)
+  setDailyGoal: (minutes) => {
+    set((state) => {
+      const next = { 
+        ...state, 
+        dailyGoal: Math.max(15, Math.min(480, minutes)) // Min 15 minutes, max 8 hours
+      }
+      save(next)
+      return next
+    })
+  },
 
   awardXp: (amount) => {
     set((state) => {
@@ -54,15 +68,16 @@ export const useXpStore = create((set, get) => ({
           lastStreakDate = null
         }
         
-        // Reset daily XP to 0 for new day
+        // Reset daily XP to 0 for new day - this is the key fix
         dailyXp = 0
       }
       
       // Add to daily XP (can be negative for deductions)
-      dailyXp += amount
+      dailyXp = Math.max(0, dailyXp + amount) // Ensure daily XP doesn't go below 0
       
       // Check if daily threshold is reached and update streak
-      if (dailyXp >= DAILY_XP_THRESHOLD) {
+      const dailyGoal = state.dailyGoal || DEFAULT_DAILY_GOAL
+      if (dailyXp >= dailyGoal) {
         if (streakDays === 0) {
           // Starting new streak
           streakDays = 1
@@ -108,29 +123,66 @@ export const useXpStore = create((set, get) => ({
     })
   },
 
-  getDailyProgress: () => {
+  // Method to reset daily XP (called on new day)
+  resetDailyXp: () => {
+    set((state) => {
+      const today = new Date().toISOString().slice(0, 10)
+      const next = { 
+        ...state, 
+        dailyXp: 0,
+        lastActiveDate: today
+      }
+      save(next)
+      return next
+    })
+  },
+
+  // Method to check and reset if new day
+  checkAndResetDaily: () => {
     const state = get()
-    // If user missed one or more full days since lastActiveDate, reset streak to 0.
-    const todayStr = new Date().toISOString().slice(0, 10)
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayStr = yesterday.toISOString().slice(0, 10)
-    if (state.lastActiveDate && state.lastActiveDate !== todayStr && state.lastActiveDate !== yesterdayStr && state.streakDays !== 0) {
-      const next = { ...state, streakDays: 0 }
+    const today = new Date().toISOString().slice(0, 10)
+    
+    // If it's a new day, reset daily XP
+    if (state.lastActiveDate && state.lastActiveDate !== today) {
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = yesterday.toISOString().slice(0, 10)
+      
+      let streakDays = state.streakDays
+      let lastStreakDate = state.lastStreakDate
+      
+      // If last active was not yesterday, reset streak
+      if (state.lastActiveDate !== yesterdayStr) {
+        streakDays = 0
+        lastStreakDate = null
+      }
+      
+      const next = { 
+        ...state, 
+        dailyXp: 0, // Reset daily XP to 0
+        streakDays,
+        lastStreakDate,
+        lastActiveDate: today
+      }
       save(next)
       set(next)
-      return {
-        dailyXp: next.dailyXp,
-        threshold: DAILY_XP_THRESHOLD,
-        progress: Math.min((next.dailyXp / DAILY_XP_THRESHOLD) * 100, 100),
-        isThresholdReached: next.dailyXp >= DAILY_XP_THRESHOLD
-      }
     }
+  },
+
+  getDailyProgress: () => {
+    const state = get()
+    // First check and reset if it's a new day
+    get().checkAndResetDaily()
+    
+    // Get updated state after potential reset
+    const updatedState = get()
+    const dailyGoal = updatedState.dailyGoal || DEFAULT_DAILY_GOAL
+    
     return {
-      dailyXp: state.dailyXp,
-      threshold: DAILY_XP_THRESHOLD,
-      progress: Math.min((state.dailyXp / DAILY_XP_THRESHOLD) * 100, 100),
-      isThresholdReached: state.dailyXp >= DAILY_XP_THRESHOLD
+      dailyXp: updatedState.dailyXp,
+      threshold: dailyGoal,
+      progress: Math.min((updatedState.dailyXp / dailyGoal) * 100, 100),
+      isThresholdReached: updatedState.dailyXp >= dailyGoal
     }
   }
 }))

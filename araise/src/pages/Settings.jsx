@@ -20,12 +20,15 @@ import {
   Droplets,
   Brain,
   Dumbbell,
-  Clock
+  Clock,
+  Utensils
 } from "lucide-react"
 import { useUserStore } from "../store/userStore"
+import { useXpStore } from "../store/xpStore"
 import useSettingsStore from "../store/settingsStore"
 import notificationService from "../services/NotificationService"
 import { useNavigate } from "react-router-dom"
+import GoalsModal from "../components/GoalsModal"
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -43,6 +46,9 @@ export default function Settings() {
   
   // Notification permission state
   const [notificationPermission, setNotificationPermission] = useState('default')
+  
+  // Goals modal state
+  const [goalsModal, setGoalsModal] = useState({ isOpen: false, type: 'focus' })
 
   // Check notification permission on mount
   useEffect(() => {
@@ -167,6 +173,33 @@ export default function Settings() {
       ]
     },
     {
+      title: "Goals",
+      icon: Brain,
+      items: [
+        {
+          label: "Daily Focus Goal",
+          description: `${preferences.dailyFocusGoal || 60} minutes per day`,
+          icon: Clock,
+          showArrow: true,
+          action: () => setGoalsModal({ isOpen: true, type: 'focus' })
+        },
+        {
+          label: "Daily Water Goal",
+          description: `${(preferences.dailyWaterGoal || 3000) / 1000}L per day`,
+          icon: Droplets,
+          showArrow: true,
+          action: () => setGoalsModal({ isOpen: true, type: 'water' })
+        },
+        {
+          label: "Daily Calorie Goal",
+          description: `${(preferences.dailyCalorieGoal || 2000).toLocaleString()} calories per day`,
+          icon: Utensils,
+          showArrow: true,
+          action: () => setGoalsModal({ isOpen: true, type: 'calories' })
+        }
+      ]
+    },
+    {
       title: "Data & Storage",
       icon: Smartphone,
       items: [
@@ -261,6 +294,109 @@ export default function Settings() {
           icon: MessageSquare,
           showArrow: true,
           action: () => navigate('/feedback')
+        }
+      ]
+    },
+    {
+      title: "Developer",
+      icon: Activity,
+      items: [
+        {
+          label: "Reset Daily XP",
+          description: "Reset today's XP progress to 0 (for testing)",
+          icon: Clock,
+          showArrow: false,
+          action: () => {
+            if (confirm('Are you sure you want to reset today\'s XP progress to 0?')) {
+              const { resetDailyXp } = useXpStore.getState()
+              resetDailyXp()
+              alert('Daily XP has been reset to 0')
+            }
+          }
+        },
+        {
+          label: "Archive Current Day",
+          description: "Manually archive today's data (for testing)",
+          icon: Activity,
+          showArrow: false,
+          action: async () => {
+            if (confirm('Archive current day data? This will clear today\'s activities.')) {
+              const { firebaseService } = useUserStore.getState()
+              if (firebaseService && firebaseService.resetDaily) {
+                try {
+                  await firebaseService.resetDaily()
+                  alert('Current day data has been archived!')
+                  window.location.reload() // Refresh to see changes
+                } catch (error) {
+                  alert('Error archiving data: ' + error.message)
+                }
+              } else {
+                alert('Firebase service not available')
+              }
+            }
+          }
+        },
+        {
+          label: "Add Test Historical Data",
+          description: "Add sample data for October 1st (for testing)",
+          icon: Activity,
+          showArrow: false,
+          action: async () => {
+            if (confirm('Add test historical data for October 1st, 2025?')) {
+              const { firebaseService } = useUserStore.getState()
+              if (firebaseService && firebaseService.addArchivedData) {
+                try {
+                  await firebaseService.addArchivedData('2025-10-01', {
+                    water: [
+                      { id: Date.now() + 1, amount: 500, time: '2025-10-01T08:00:00.000Z' },
+                      { id: Date.now() + 2, amount: 750, time: '2025-10-01T12:00:00.000Z' },
+                      { id: Date.now() + 3, amount: 500, time: '2025-10-01T16:00:00.000Z' },
+                      { id: Date.now() + 4, amount: 250, time: '2025-10-01T20:00:00.000Z' }
+                    ],
+                    meals: [
+                      { id: Date.now() + 5, name: 'Breakfast', calories: 400, time: '2025-10-01T08:00:00.000Z' },
+                      { id: Date.now() + 6, name: 'Lunch', calories: 600, time: '2025-10-01T12:30:00.000Z' },
+                      { id: Date.now() + 7, name: 'Dinner', calories: 700, time: '2025-10-01T19:00:00.000Z' }
+                    ],
+                    workouts: [
+                      { 
+                        id: Date.now() + 8,
+                        planName: 'Morning Cardio', 
+                        type: 'cardio', 
+                        date: '2025-10-01',
+                        duration: 30,
+                        exercises: [{ exerciseName: 'Running', duration: 30 }],
+                        completed: true
+                      }
+                    ],
+                    focus: [
+                      { 
+                        id: Date.now() + 9,
+                        title: 'Deep Work Session', 
+                        date: '2025-10-01',
+                        planned: 60, 
+                        completed: 60,
+                        status: 'completed'
+                      }
+                    ],
+                    mentalWellness: [
+                      {
+                        id: Date.now() + 10,
+                        type: 'mood_check',
+                        mood: 'good',
+                        time: '2025-10-01T18:00:00.000Z'
+                      }
+                    ]
+                  })
+                  alert('Test historical data added for October 1st!')
+                } catch (error) {
+                  alert('Error adding test data: ' + error.message)
+                }
+              } else {
+                alert('Firebase service not available')
+              }
+            }
+          }
         }
       ]
     }
@@ -403,6 +539,27 @@ export default function Settings() {
           </motion.div>
         </div>
       </div>
+
+      {/* Goals Modal */}
+      <GoalsModal
+        isOpen={goalsModal.isOpen}
+        onClose={() => setGoalsModal({ isOpen: false, type: 'focus' })}
+        goalType={goalsModal.type}
+        currentGoal={
+          goalsModal.type === 'focus' ? preferences.dailyFocusGoal || 60 :
+          goalsModal.type === 'water' ? preferences.dailyWaterGoal || 3000 :
+          preferences.dailyCalorieGoal || 2000
+        }
+        onSave={(newGoal) => {
+          if (goalsModal.type === 'focus') {
+            updatePreference('dailyFocusGoal', newGoal)
+          } else if (goalsModal.type === 'water') {
+            updatePreference('dailyWaterGoal', newGoal)
+          } else if (goalsModal.type === 'calories') {
+            updatePreference('dailyCalorieGoal', newGoal)
+          }
+        }}
+      />
     </div>
   )
 }

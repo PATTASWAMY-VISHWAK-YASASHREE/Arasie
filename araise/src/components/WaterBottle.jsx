@@ -8,7 +8,7 @@ export default function WaterBottle() {
   const [waterAmount, setWaterAmount] = useState(250)
   const [showAnimation, setShowAnimation] = useState(false)
 
-  const { logWater, getProgressStats } = useUserStore()
+  const { logWater, getProgressStats, waterGoal } = useUserStore()
   const progressStats = getProgressStats()
 
   // Quick add amounts
@@ -24,7 +24,8 @@ export default function WaterBottle() {
   }
 
   const fillPercentage = Math.min(progressStats.water, 100)
-  const waterAmountMl = Math.round((fillPercentage / 100) * 3000)
+  const currentWaterGoal = waterGoal || 3000
+  const waterAmountMl = Math.round((fillPercentage / 100) * currentWaterGoal)
 
   return (
     <>
@@ -239,7 +240,7 @@ export default function WaterBottle() {
 
           {/* Water amount indicator */}
           <div className="text-xs text-ar-gray-400 mb-2">
-            {waterAmountMl}ml / 3000ml
+            {waterAmountMl}ml / {currentWaterGoal}ml
           </div>
 
           <p className="text-ar-gray-500 text-xs">

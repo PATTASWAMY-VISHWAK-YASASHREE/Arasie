@@ -47,7 +47,20 @@ export default function Focus() {
     focusTasks = []
   } = useUserStore()
 
-  const { xp, level, streakDays, awardXp, touchStreak } = useXpStore()
+  const { xp, level, streakDays, awardXp, touchStreak, checkAndResetDaily, getDailyProgress } = useXpStore()
+
+  // Check and reset daily XP on component mount and every minute
+  useEffect(() => {
+    // Initial check when component mounts
+    checkAndResetDaily()
+    
+    // Check every minute for day changes
+    const interval = setInterval(() => {
+      checkAndResetDaily()
+    }, 60000) // Check every minute
+    
+    return () => clearInterval(interval)
+  }, [checkAndResetDaily])
 
   // Function to trigger dashboard refresh
   const refreshDashboard = () => {
@@ -439,8 +452,8 @@ export default function Focus() {
             quote="Win the next block of time."
             plannedMinutes={calculatePlannedForToday(focusTasks)}
             completedMinutes={getTotalFocusedToday()}
-            xp={xp}
-            nextLevelXp={(useXpStore.getState().level) * 100}
+            xp={getDailyProgress().dailyXp}
+            nextLevelXp={getDailyProgress().threshold}
             streakDays={streakDays}
           />
 

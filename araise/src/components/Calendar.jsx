@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useNavigate } from "react-router-dom"
@@ -8,9 +8,29 @@ export default function Calendar() {
   const navigate = useNavigate()
   const { calendar } = useUserStore()
   
-  // Initialize with current date (October 2025)
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 9, 1)) // October 1, 2025
-  const today = new Date(2025, 9, 1) // Force today to be October 1, 2025
+  // Initialize with current real date
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), 1)
+  })
+  
+  // Real-time today date that updates
+  const [today, setToday] = useState(new Date())
+
+  // Update today's date every minute for real-time accuracy
+  useEffect(() => {
+    const updateToday = () => {
+      setToday(new Date())
+    }
+    
+    // Update immediately
+    updateToday()
+    
+    // Update every minute
+    const interval = setInterval(updateToday, 60000)
+    
+    return () => clearInterval(interval)
+  }, [])
 
   // Get first day of the month and calculate calendar grid
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
@@ -22,9 +42,8 @@ export default function Calendar() {
   const calendarDays = []
   
   // Add previous month days to fill first week
-  // Get the last day of previous month to know how many days it has
   const lastDayOfPrevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0)
-  const daysInPrevMonth = lastDayOfPrevMonth.getDate() // September has 30 days
+  const daysInPrevMonth = lastDayOfPrevMonth.getDate()
   
   for (let i = firstDayWeekday - 1; i >= 0; i--) {
     const day = daysInPrevMonth - i
@@ -50,15 +69,6 @@ export default function Calendar() {
     })
   }
   
-  // Debug: Log the first few dates to verify correctness
-  console.log('📅 Calendar Debug:')
-  console.log('Days in previous month (September):', daysInPrevMonth)
-  console.log('First day weekday:', firstDayWeekday)
-  console.log('First 7 calendar dates:')
-  calendarDays.slice(0, 7).forEach((dayObj, index) => {
-    console.log(`  ${index}: ${dayObj.date.toDateString()} (day ${dayObj.day})`)
-  })
-  
   // Add next month days to fill remaining slots (up to 42 total)
   const remainingSlots = 42 - calendarDays.length
   for (let day = 1; day <= remainingSlots; day++) {
@@ -80,7 +90,6 @@ export default function Calendar() {
     const day = String(date.getDate()).padStart(2, '0')
     const dateStr = `${year}-${month}-${day}`
     
-    console.log('🔗 Navigating to date:', dateStr, 'from clicked date:', date.toDateString())
     navigate(`/history/${dateStr}`)
   }
 
@@ -95,15 +104,7 @@ export default function Calendar() {
     const day = String(date.getDate()).padStart(2, '0')
     const dateStr = `${year}-${month}-${day}`
     
-    const isCompleted = calendar.some(entry => entry.date === dateStr && entry.completed)
-    
-    // Debug completion check
-    if (date.getDate() <= 3 && date.getMonth() === 9) { // October 1-3
-      console.log(`🟢 Completion check for ${dateStr} (${date.toDateString()}):`, isCompleted)
-      console.log('Calendar entries:', calendar.filter(entry => entry.date.includes('2025-10')))
-    }
-    
-    return isCompleted
+    return calendar.some(entry => entry.date === dateStr && entry.completed)
   }
 
   const isDateClickable = (date) => {

@@ -315,19 +315,88 @@ export class FirebaseUserService {
     return { streakCount: 0 };
   }
 
-  // Reset daily progress
+  // Archive current day data before reset
+  async archiveDayData(date, data) {
+    try {
+      // Get existing daily archives
+      const dailyArchives = data.dailyArchives || {};
+      
+      // Archive current day's data
+      const dayArchive = {
+        date,
+        archived: new Date().toISOString(),
+        activities: {
+          water: (data.waterLogs || []).filter(log => {
+            if (!log.time) return false;
+            try {
+              return new Date(log.time).toISOString().slice(0, 10) === date;
+            } catch { return false; }
+          }),
+          meals: (data.meals || []).filter(meal => {
+            if (!meal.time) return false;
+            try {
+              return new Date(meal.time).toISOString().slice(0, 10) === date;
+            } catch { return false; }
+          }),
+          workouts: (data.workoutHistory || []).filter(workout => workout.date === date),
+          focus: (data.focusTasks || []).filter(task => task.date === date),
+          mentalWellness: (data.mentalHealthLogs || []).filter(log => {
+            if (!log.time) return false;
+            try {
+              return new Date(log.time).toISOString().slice(0, 10) === date;
+            } catch { return false; }
+          })
+        },
+        progress: {
+          waterProgress: data.waterProgress || 0,
+          dietCalories: data.dietCalories || 0,
+          focusProgress: data.focusProgress || 0,
+          mentalHealthProgress: data.mentalHealthProgress || 0,
+          workoutCompleted: data.workoutCompleted || false,
+          waterGoalMet: data.waterGoalMet || false,
+          dietGoalMet: data.dietGoalMet || false
+        }
+      };
+
+      // Only archive if there's actual data
+      const hasData = dayArchive.activities.water.length > 0 ||
+                     dayArchive.activities.meals.length > 0 ||
+                     dayArchive.activities.workouts.length > 0 ||
+                     dayArchive.activities.focus.length > 0 ||
+                     dayArchive.activities.mentalWellness.length > 0;
+
+      if (hasData) {
+        dailyArchives[date] = dayArchive;
+        return dailyArchives;
+      }
+
+      return dailyArchives;
+    } catch (error) {
+      console.error('Error archiving day data:', error);
+      return data.dailyArchives || {};
+    }
+  }
+
+  // Reset daily progress with proper archiving
   async resetDaily() {
     const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
 
     try {
       const userDoc = await getDoc(this.userRef);
-      if (userDoc.exists()) {
-        const data = userDoc.data();
+      if (!userDoc.exists()) return false;
 
-        // Check if we already reset today
-        if (data.lastReset === today) return false;
-      }
+      const data = userDoc.data();
 
+      // Check if we already reset today
+      if (data.lastReset === today) return false;
+
+      // Archive yesterday's data before resetting
+      const dailyArchives = await this.archiveDayData(yesterdayStr, data);
+
+      // Clear current day data but keep historical archives
       const updates = {
         workoutCompleted: false,
         waterGoalMet: false,
@@ -336,10 +405,18 @@ export class FirebaseUserService {
         dietCalories: 0,
         mentalHealthProgress: 0,
         focusProgress: 0,
+        
+        // Clear current day arrays but preserve in archives
         meals: [],
         waterLogs: [],
         mentalHealthLogs: [],
         focusLogs: [],
+        
+        // Keep focus tasks for today (they might be scheduled for today)
+        focusTasks: (data.focusTasks || []).filter(task => task.date === today),
+        
+        // Update archives and reset info
+        dailyArchives,
         lastReset: today,
         lastUpdated: serverTimestamp()
       };
@@ -849,7 +926,56 @@ export class FirebaseUserService {
 
 
 
-  // Get activities for a specific date
+  // Add archived data directly to daily archives
+  async addArchivedData(date, activities) {
+    try {
+      const userDoc = await getDoc(this.userRef);
+      if (!userDoc.exists()) {
+        console.error('User document does not exist');
+        return;
+      }
+
+      const data = userDoc.data();
+      const dailyArchives = data.dailyArchives || {};
+
+      // Create archived day entry
+      const dayArchive = {
+        date,
+        archived: new Date().toISOString(),
+        activities: {
+          water: activities.water || [],
+          meals: activities.meals || [],
+          workouts: activities.workouts || [],
+          focus: activities.focus || [],
+          mentalWellness: activities.mentalWellness || []
+        },
+        progress: {
+          waterProgress: activities.water ? activities.water.reduce((sum, log) => sum + log.amount, 0) : 0,
+          dietCalories: activities.meals ? activities.meals.reduce((sum, meal) => sum + meal.calories, 0) : 0,
+          focusProgress: activities.focus ? Math.min((activities.focus.reduce((sum, task) => sum + (task.completed || 0), 0) / 60) * 100, 100) : 0,
+          mentalHealthProgress: activities.mentalWellness ? 100 : 0,
+          workoutCompleted: activities.workouts ? activities.workouts.length > 0 : false,
+          waterGoalMet: activities.water ? activities.water.reduce((sum, log) => sum + log.amount, 0) >= 3000 : false,
+          dietGoalMet: activities.meals ? activities.meals.reduce((sum, meal) => sum + meal.calories, 0) >= 2000 : false
+        }
+      };
+
+      // Add to archives
+      dailyArchives[date] = dayArchive;
+
+      const updates = {
+        dailyArchives,
+        lastUpdated: serverTimestamp()
+      };
+
+      await updateDoc(this.userRef, updates);
+      console.log('✅ Archived data added for', date);
+    } catch (error) {
+      console.error('Error adding archived data:', error);
+    }
+  }
+
+  // Get activities for a specific date (checks both current data and archives)
   async getActivitiesForDate(date) {
     try {
       const userDoc = await getDoc(this.userRef);
@@ -865,24 +991,113 @@ export class FirebaseUserService {
 
       const data = userDoc.data();
       const targetDate = new Date(date).toISOString().slice(0, 10);
+      const today = new Date().toISOString().slice(0, 10);
 
-      return {
-        water: (data.waterLogs || []).filter(log => 
-          new Date(log.time).toISOString().slice(0, 10) === targetDate
-        ),
-        diet: (data.meals || []).filter(meal => 
-          new Date(meal.time).toISOString().slice(0, 10) === targetDate
-        ),
-        workout: (data.workoutHistory || []).filter(workout => 
-          workout.date === targetDate
-        ),
-        focus: (data.focusTasks || []).filter(task => 
-          task.date === targetDate
-        ),
-        mentalWellness: (data.mentalHealthLogs || []).filter(log => 
-          new Date(log.time).toISOString().slice(0, 10) === targetDate
-        )
+      // Check if we have archived data for this date
+      const dailyArchives = data.dailyArchives || {};
+      const archivedData = dailyArchives[targetDate];
+
+      let activities = {
+        water: [],
+        diet: [],
+        workout: [],
+        focus: [],
+        mentalWellness: []
       };
+
+      // If we have archived data for this date, use it
+      if (archivedData && archivedData.activities) {
+        activities = {
+          water: archivedData.activities.water || [],
+          diet: archivedData.activities.meals || [],
+          workout: archivedData.activities.workouts || [],
+          focus: archivedData.activities.focus || [],
+          mentalWellness: archivedData.activities.mentalWellness || []
+        };
+      } else if (targetDate === today) {
+        // For today, get current data
+        activities = {
+          water: (data.waterLogs || []).filter(log => {
+            if (!log.time) return false;
+            try {
+              const logDate = new Date(log.time).toISOString().slice(0, 10);
+              return logDate === targetDate;
+            } catch (error) {
+              console.warn('Invalid water log time format:', log.time);
+              return false;
+            }
+          }),
+          diet: (data.meals || []).filter(meal => {
+            if (!meal.time) return false;
+            try {
+              const mealDate = new Date(meal.time).toISOString().slice(0, 10);
+              return mealDate === targetDate;
+            } catch (error) {
+              console.warn('Invalid meal time format:', meal.time);
+              return false;
+            }
+          }),
+          workout: (data.workoutHistory || []).filter(workout => {
+            if (!workout.date) return false;
+            return workout.date === targetDate;
+          }),
+          focus: (data.focusTasks || []).filter(task => {
+            if (!task.date) return false;
+            return task.date === targetDate;
+          }),
+          mentalWellness: (data.mentalHealthLogs || []).filter(log => {
+            if (!log.time) return false;
+            try {
+              const logDate = new Date(log.time).toISOString().slice(0, 10);
+              return logDate === targetDate;
+            } catch (error) {
+              console.warn('Invalid mental health log time format:', log.time);
+              return false;
+            }
+          })
+        };
+      } else {
+        // For past dates, also check current arrays (fallback for data not yet archived)
+        activities = {
+          water: (data.waterLogs || []).filter(log => {
+            if (!log.time) return false;
+            try {
+              const logDate = new Date(log.time).toISOString().slice(0, 10);
+              return logDate === targetDate;
+            } catch (error) {
+              return false;
+            }
+          }),
+          diet: (data.meals || []).filter(meal => {
+            if (!meal.time) return false;
+            try {
+              const mealDate = new Date(meal.time).toISOString().slice(0, 10);
+              return mealDate === targetDate;
+            } catch (error) {
+              return false;
+            }
+          }),
+          workout: (data.workoutHistory || []).filter(workout => {
+            if (!workout.date) return false;
+            return workout.date === targetDate;
+          }),
+          focus: (data.focusTasks || []).filter(task => {
+            if (!task.date) return false;
+            return task.date === targetDate;
+          }),
+          mentalWellness: (data.mentalHealthLogs || []).filter(log => {
+            if (!log.time) return false;
+            try {
+              const logDate = new Date(log.time).toISOString().slice(0, 10);
+              return logDate === targetDate;
+            } catch (error) {
+              return false;
+            }
+          })
+        };
+      }
+
+      return activities;
     } catch (error) {
       console.error('Error getting activities for date:', error);
       return {
