@@ -144,10 +144,7 @@ const useSettingsStore = create(
         if (key === 'dailyWaterGoal') {
           // Update user store water goal
           import('../store/userStore').then(({ useUserStore }) => {
-            const state = useUserStore.getState()
-            if (state.firebaseService && state.firebaseService.updateProgress) {
-              state.firebaseService.updateProgress('waterGoal', value)
-            }
+            useUserStore.getState().updateWaterGoal(value)
           })
         }
       },

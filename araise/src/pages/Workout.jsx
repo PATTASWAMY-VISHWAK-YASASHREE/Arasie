@@ -11,7 +11,8 @@ import {
   Trophy,
   Sparkles,
   Heart,
-  Flame
+  Flame,
+  Plus
 } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import PoseAnalyzer from "../components/PoseAnalyzer"
@@ -442,7 +443,18 @@ function CustomWorkoutBuilder() {
   const [isSaving, setIsSaving] = useState(false)
 
   const addExercise = (exercise) => {
-    setSelectedExercises([...selectedExercises, { ...exercise, id: Date.now() }])
+    setSelectedExercises([...selectedExercises, { 
+      ...exercise, 
+      id: Date.now(),
+      customSets: exercise.sets || 3,
+      customReps: exercise.reps || '8-12'
+    }])
+  }
+
+  const updateExercise = (id, field, value) => {
+    setSelectedExercises(selectedExercises.map(ex => 
+      ex.id === id ? { ...ex, [field]: value } : ex
+    ))
   }
 
   const removeExercise = (id) => {
@@ -454,10 +466,18 @@ function CustomWorkoutBuilder() {
 
     setIsSaving(true)
     try {
+      // Prepare exercises with custom sets/reps
+      const exercisesToSave = selectedExercises.map(exercise => ({
+        ...exercise,
+        sets: exercise.customSets || exercise.sets,
+        reps: exercise.customReps || exercise.reps,
+        exerciseName: exercise.name || exercise.exerciseName // Ensure consistent naming
+      }))
+
       await saveCustomWorkout({
         name: workoutName,
         goal: workoutGoal,
-        exercises: selectedExercises
+        exercises: exercisesToSave
       })
 
       navigate('/workout/custom/my-workouts')
@@ -478,7 +498,7 @@ function CustomWorkoutBuilder() {
         transition={{ duration: 0.6 }}
       >
         <button
-          onClick={() => navigate('/workout/custom')}
+          onClick={() => navigate('/workout')}
           className="p-2 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300"
         >
           <ArrowLeft size={24} className="text-ar-blue" />
@@ -531,19 +551,46 @@ function CustomWorkoutBuilder() {
             <h4 className="font-bold mb-3">Selected Exercises ({selectedExercises.length})</h4>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {selectedExercises.map((exercise, index) => (
-                <div key={exercise.id} className="flex items-center justify-between p-2 bg-ar-dark-gray/30 rounded-lg">
-                  <div>
-                    <span className="text-sm font-medium">{index + 1}. {exercise.exerciseName}</span>
-                    <div className="text-xs text-ar-gray">
-                      {exercise.sets ? `${exercise.sets} sets × ${exercise.reps}` : exercise.duration}
-                    </div>
+                <div key={exercise.id} className="p-3 bg-ar-dark-gray/30 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{index + 1}. {exercise.name || exercise.exerciseName}</span>
+                    <button
+                      onClick={() => removeExercise(exercise.id)}
+                      className="text-red-400 hover:text-red-300 p-1"
+                    >
+                      ×
+                    </button>
                   </div>
-                  <button
-                    onClick={() => removeExercise(exercise.id)}
-                    className="text-red-400 hover:text-red-300 p-1"
-                  >
-                    ×
-                  </button>
+                  
+                  {exercise.sets ? (
+                    <div className="flex items-center gap-3 text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="text-ar-gray">Sets:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={exercise.customSets}
+                          onChange={(e) => updateExercise(exercise.id, 'customSets', parseInt(e.target.value))}
+                          className="w-12 px-1 py-0.5 bg-ar-gray-800 border border-ar-gray-600 rounded text-ar-white text-center"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-ar-gray">Reps:</span>
+                        <input
+                          type="text"
+                          value={exercise.customReps}
+                          onChange={(e) => updateExercise(exercise.id, 'customReps', e.target.value)}
+                          className="w-16 px-1 py-0.5 bg-ar-gray-800 border border-ar-gray-600 rounded text-ar-white text-center"
+                          placeholder="8-12"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-ar-gray">
+                      Duration: {exercise.duration}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -588,7 +635,7 @@ function CustomWorkoutBuilder() {
               <div key={exercise.id} className="glass-card p-4 rounded-xl">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h4 className="font-bold">{exercise.exerciseName}</h4>
+                    <h4 className="font-bold">{exercise.name || exercise.exerciseName}</h4>
                     <p className="text-sm text-ar-gray">
                       {exercise.sets ? `${exercise.sets} sets × ${exercise.reps}` : exercise.duration}
                     </p>
@@ -654,7 +701,7 @@ function MyCustomWorkouts() {
         transition={{ duration: 0.6 }}
       >
         <button
-          onClick={() => navigate('/workout/custom')}
+          onClick={() => navigate('/workout')}
           className="p-2 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300"
         >
           <ArrowLeft size={24} className="text-ar-blue" />

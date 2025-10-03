@@ -97,6 +97,19 @@ export class FirebaseUserService {
     }
   }
 
+  // Update water goal
+  async updateWaterGoal(newGoal) {
+    try {
+      await updateDoc(this.userRef, {
+        waterGoal: newGoal,
+        lastUpdated: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error updating water goal:', error);
+      throw error;
+    }
+  }
+
   // Log water intake
   async logWater(amount, currentProgress, waterGoal, currentLogs) {
     const newProgress = currentProgress + amount;
@@ -955,7 +968,7 @@ export class FirebaseUserService {
           focusProgress: activities.focus ? Math.min((activities.focus.reduce((sum, task) => sum + (task.completed || 0), 0) / 60) * 100, 100) : 0,
           mentalHealthProgress: activities.mentalWellness ? 100 : 0,
           workoutCompleted: activities.workouts ? activities.workouts.length > 0 : false,
-          waterGoalMet: activities.water ? activities.water.reduce((sum, log) => sum + log.amount, 0) >= 3000 : false,
+          waterGoalMet: activities.water ? activities.water.reduce((sum, log) => sum + log.amount, 0) >= 3000 : false, // Note: This is test data, using default 3L
           dietGoalMet: activities.meals ? activities.meals.reduce((sum, meal) => sum + meal.calories, 0) >= 2000 : false
         }
       };

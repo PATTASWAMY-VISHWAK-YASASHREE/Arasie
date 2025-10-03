@@ -28,10 +28,10 @@ export default function FocusGoalCard({
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 mt-4">
-        <Stat label="Planned" value={`${Math.floor(plannedMinutes / 60)}h ${plannedMinutes % 60}m`} />
+        <Stat label="Daily Goal" value={`${Math.floor(plannedMinutes / 60)}h ${plannedMinutes % 60}m`} />
         <Stat label="Completed" value={`${Math.floor(completedMinutes / 60)}h ${completedMinutes % 60}m`} />
         <Stat label="XP" value={`${xp}/${nextLevelXp}`} />
-        <Stat label="Focus" value={`${Math.round(progress)}%`} />
+        <Stat label="Progress" value={`${Math.round(progress)}%`} />
       </div>
 
       <div className="mt-4 space-y-3">

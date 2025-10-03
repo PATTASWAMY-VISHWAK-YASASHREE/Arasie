@@ -52,7 +52,19 @@ export const useUserStore = create(
       // User actions
       updateName: (name) => set({ name }),
       updateLevel: (level) => set({ level }),
-      updateWaterGoal: (goal) => set({ waterGoal: goal }),
+      updateWaterGoal: async (goal) => {
+        const state = get();
+        set({ waterGoal: goal });
+        
+        // Also update in Firebase if available
+        if (state.firebaseService && state.firebaseService.updateWaterGoal) {
+          try {
+            await state.firebaseService.updateWaterGoal(goal);
+          } catch (error) {
+            console.error('Error updating water goal in Firebase:', error);
+          }
+        }
+      },
 
       // UI actions
       setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
@@ -433,7 +445,7 @@ export const useUserStore = create(
         // First, check for missed days and reset streak if necessary
         await get().checkAndResetStreakForMissedDays();
 
-        // Check if focus goal is met (60+ minutes or 100% progress)
+        // Check if focus goal is met (100% progress based on daily goal)
         const focusGoalMet = state.focusProgress >= 100;
 
         if (state.workoutCompleted && state.waterGoalMet && state.dietGoalMet && focusGoalMet) {
@@ -930,8 +942,12 @@ export const useUserStore = create(
           return total + (task.completed || task.planned || 25);
         }, 0);
 
-        // Calculate progress percentage (60 minutes = 100%)
-        const progressPercentage = Math.min((totalMinutesCompleted / 60) * 100, 100);
+        // Get daily focus goal from XP store (which syncs with settings)
+        const { useXpStore } = await import('./xpStore');
+        const dailyGoal = useXpStore.getState().getDailyProgress().threshold;
+
+        // Calculate progress percentage based on configurable goal
+        const progressPercentage = Math.min((totalMinutesCompleted / dailyGoal) * 100, 100);
 
         // Update focus progress
         if (state.firebaseService) {

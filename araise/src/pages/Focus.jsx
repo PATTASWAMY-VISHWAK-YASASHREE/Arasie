@@ -243,7 +243,9 @@ export default function Focus() {
       }
       // Custom task minutes are already included via updateFocusTaskProgress
       
-      await updateFocusProgress(Math.min((totalMinutes / 60) * 100, 100)) // 60 min = 1h goal
+      // Get daily focus goal and calculate progress
+      const dailyGoal = getDailyProgress().threshold
+      await updateFocusProgress(Math.min((totalMinutes / dailyGoal) * 100, 100))
     }
     
     // Only show completion flow if session was actually completed
@@ -315,7 +317,9 @@ export default function Focus() {
             
             // Add current progress (this is a custom task session)
             const totalMinutes = focusLogMinutes + taskMinutes + progressToAdd
-            await updateFocusProgress(Math.min((totalMinutes / 60) * 100, 100))
+            // Get daily focus goal and calculate progress
+            const dailyGoal = getDailyProgress().threshold
+            await updateFocusProgress(Math.min((totalMinutes / dailyGoal) * 100, 100))
           }
           
           setLastProgressUpdate(minutesSpent)
@@ -384,7 +388,9 @@ export default function Focus() {
         
         // Add current session minutes
         const totalMinutes = focusLogMinutes + taskMinutes + totalMinutes
-        updateFocusProgress(Math.min((totalMinutes / 60) * 100, 100))
+        // Get daily focus goal and calculate progress
+        const dailyGoal = getDailyProgress().threshold
+        updateFocusProgress(Math.min((totalMinutes / dailyGoal) * 100, 100))
       }
       
       // Show completion flow
@@ -422,7 +428,14 @@ export default function Focus() {
     return focusLogMinutes + taskMinutes
   }
 
-  const calculatePlannedForToday = (allTasks) => {
+  const getPlannedFocusGoal = () => {
+    // Get the daily focus goal from settings (via XP store)
+    const dailyProgress = getDailyProgress()
+    return dailyProgress.threshold // This is the daily focus goal in minutes
+  }
+
+  const calculateScheduledForToday = (allTasks) => {
+    // Calculate time from scheduled tasks (for reference)
     const today = new Date().toISOString().slice(0, 10)
     return (allTasks || [])
       .filter(t => t.date === today && t.startTime && t.endTime)
@@ -450,7 +463,7 @@ export default function Focus() {
           )}
           <FocusGoalCard
             quote="Win the next block of time."
-            plannedMinutes={calculatePlannedForToday(focusTasks)}
+            plannedMinutes={getPlannedFocusGoal()}
             completedMinutes={getTotalFocusedToday()}
             xp={getDailyProgress().dailyXp}
             nextLevelXp={getDailyProgress().threshold}
