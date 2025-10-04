@@ -1,107 +1,117 @@
 import { create } from 'zustand'
 
-const persistKey = 'focus:xp'
 const DEFAULT_DAILY_GOAL = 60 // Default 60 minutes of focus
 
-function load() {
-  try {
-    const raw = localStorage.getItem(persistKey)
-    if (!raw) return { 
-      xp: 0, 
-      level: 1, 
-      streakDays: 0, 
-      lastActiveDate: null, 
-      dailyXp: 0,
-      lastStreakDate: null,
-      dailyGoal: DEFAULT_DAILY_GOAL
-    }
-    return JSON.parse(raw)
-  } catch {
-    return { 
-      xp: 0, 
-      level: 1, 
-      streakDays: 0, 
-      lastActiveDate: null, 
-      dailyXp: 0,
-      lastStreakDate: null,
-      dailyGoal: DEFAULT_DAILY_GOAL
-    }
+// Default XP state
+function getDefaultXpState() {
+  return {
+    xp: 0,
+    level: 1,
+    streakDays: 0,
+    lastActiveDate: null,
+    dailyXp: 0,
+    lastStreakDate: null,
+    firebaseService: null,
+    userId: null
   }
 }
 
-function save(state) {
-  try { localStorage.setItem(persistKey, JSON.stringify(state)) } catch {}
-}
-
 export const useXpStore = create((set, get) => ({
-  ...load(),
+  ...getDefaultXpState(),
 
-  // Set daily focus goal (in minutes)
-  setDailyGoal: (minutes) => {
-    set((state) => {
-      const next = { 
-        ...state, 
-        dailyGoal: Math.max(15, Math.min(480, minutes)) // Min 15 minutes, max 8 hours
-      }
-      save(next)
-      return next
-    })
+  // Initialize store for specific user with Firebase service
+  initializeForUser: async (userId, firebaseService) => {
+    if (!firebaseService) {
+      console.error('Firebase service required for XP store initialization')
+      return
+    }
+
+    set({ userId, firebaseService })
+
+    try {
+      // Load XP data from Firebase
+      const xpData = await firebaseService.loadXpData()
+      set({ ...xpData, userId, firebaseService })
+    } catch (error) {
+      console.error('Error loading XP data:', error)
+      // Use default state if loading fails
+      set({ ...getDefaultXpState(), userId, firebaseService })
+    }
   },
 
-  awardXp: (amount) => {
-    set((state) => {
-      const today = new Date().toISOString().slice(0, 10)
-      let xp = Math.max(0, state.xp + amount) // Ensure XP doesn't go below 0
-      let dailyXp = state.dailyXp
-      let streakDays = state.streakDays
-      let lastStreakDate = state.lastStreakDate
+  // Set daily focus goal (in minutes) - now gets from userStore
+  setDailyGoal: (minutes) => {
+    // This method is kept for compatibility but the goal should come from userStore
+    console.warn('setDailyGoal is deprecated, use userStore.updateFocusGoal instead')
+  },
 
-      // Check if it's a new day and reset daily XP to 0
-      if (state.lastActiveDate && state.lastActiveDate !== today) {
-        const yesterday = new Date()
-        yesterday.setDate(yesterday.getDate() - 1)
-        const yesterdayStr = yesterday.toISOString().slice(0, 10)
-        
-        // If last active was not yesterday, reset streak
-        if (state.lastActiveDate !== yesterdayStr) {
-          streakDays = 0
-          lastStreakDate = null
-        }
-        
-        // Reset daily XP to 0 for new day - this is the key fix
-        dailyXp = 0
+  awardXp: async (amount, dailyGoal = DEFAULT_DAILY_GOAL) => {
+    const state = get()
+    if (!state.firebaseService) {
+      console.error('Firebase service not available for XP update')
+      return
+    }
+
+    const today = new Date().toISOString().slice(0, 10)
+    let xp = Math.max(0, state.xp + amount) // Ensure XP doesn't go below 0
+    let dailyXp = state.dailyXp
+    let streakDays = state.streakDays
+    let lastStreakDate = state.lastStreakDate
+
+    // Check if it's a new day and reset daily XP to 0
+    if (state.lastActiveDate && state.lastActiveDate !== today) {
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = yesterday.toISOString().slice(0, 10)
+      
+      // If last active was not yesterday, reset streak
+      if (state.lastActiveDate !== yesterdayStr) {
+        streakDays = 0
+        lastStreakDate = null
       }
       
-      // Add to daily XP (can be negative for deductions)
-      dailyXp = Math.max(0, dailyXp + amount) // Ensure daily XP doesn't go below 0
-      
-      // Check if daily threshold is reached and update streak
-      const dailyGoal = state.dailyGoal || DEFAULT_DAILY_GOAL
-      if (dailyXp >= dailyGoal) {
-        if (streakDays === 0) {
-          // Starting new streak
-          streakDays = 1
-          lastStreakDate = today
-        } else if (lastStreakDate !== today) {
-          // Continuing streak on new day
-          streakDays += 1
-          lastStreakDate = today
-        }
-        // If lastStreakDate === today, don't change streak (already counted today)
+      // Reset daily XP to 0 for new day - this is the key fix
+      dailyXp = 0
+    }
+    
+    // Add to daily XP (can be negative for deductions)
+    dailyXp = Math.max(0, dailyXp + amount) // Ensure daily XP doesn't go below 0
+    
+    // Check if daily threshold is reached and update streak
+    if (dailyXp >= dailyGoal) {
+      if (streakDays === 0) {
+        // Starting new streak
+        streakDays = 1
+        lastStreakDate = today
+      } else if (lastStreakDate !== today) {
+        // Continuing streak on new day
+        streakDays += 1
+        lastStreakDate = today
       }
+      // If lastStreakDate === today, don't change streak (already counted today)
+    }
 
-      const next = { 
-        ...state, 
-        xp, 
-        level: 1, // Always level 1
-        dailyXp, 
-        streakDays, 
-        lastActiveDate: today,
-        lastStreakDate 
-      }
-      save(next)
-      return next
-    })
+    const newXpData = { 
+      xp, 
+      level: 1, // Always level 1
+      dailyXp, 
+      streakDays, 
+      lastActiveDate: today,
+      lastStreakDate 
+    }
+
+    try {
+      // Save to Firebase
+      await state.firebaseService.updateXpData(newXpData)
+      
+      // Update local state
+      set({ 
+        ...state,
+        ...newXpData
+      })
+    } catch (error) {
+      console.error('Error updating XP data:', error)
+    }
   },
 
   touchStreak: () => {
@@ -110,36 +120,59 @@ export const useXpStore = create((set, get) => ({
     return
   },
 
-  resetStreak: () => {
-    set((state) => {
-      const next = { 
-        ...state, 
-        streakDays: 0, 
-        lastStreakDate: null,
-        dailyXp: 0 
-      }
-      save(next)
-      return next
-    })
+  resetStreak: async () => {
+    const state = get()
+    if (!state.firebaseService) {
+      console.error('Firebase service not available for streak reset')
+      return
+    }
+
+    const newXpData = { 
+      ...state,
+      streakDays: 0, 
+      lastStreakDate: null,
+      dailyXp: 0 
+    }
+
+    try {
+      await state.firebaseService.updateXpData(newXpData)
+      set(newXpData)
+    } catch (error) {
+      console.error('Error resetting streak:', error)
+    }
   },
 
   // Method to reset daily XP (called on new day)
-  resetDailyXp: () => {
-    set((state) => {
-      const today = new Date().toISOString().slice(0, 10)
-      const next = { 
-        ...state, 
-        dailyXp: 0,
-        lastActiveDate: today
-      }
-      save(next)
-      return next
-    })
+  resetDailyXp: async () => {
+    const state = get()
+    if (!state.firebaseService) {
+      console.error('Firebase service not available for daily XP reset')
+      return
+    }
+
+    const today = new Date().toISOString().slice(0, 10)
+    const newXpData = { 
+      ...state,
+      dailyXp: 0,
+      lastActiveDate: today
+    }
+
+    try {
+      await state.firebaseService.updateXpData(newXpData)
+      set(newXpData)
+    } catch (error) {
+      console.error('Error resetting daily XP:', error)
+    }
   },
 
   // Method to check and reset if new day
-  checkAndResetDaily: () => {
+  checkAndResetDaily: async () => {
     const state = get()
+    if (!state.firebaseService) {
+      console.error('Firebase service not available for daily reset')
+      return
+    }
+
     const today = new Date().toISOString().slice(0, 10)
     
     // If it's a new day, reset daily XP
@@ -157,26 +190,31 @@ export const useXpStore = create((set, get) => ({
         lastStreakDate = null
       }
       
-      const next = { 
-        ...state, 
+      const newXpData = { 
+        xp: state.xp,
+        level: state.level,
         dailyXp: 0, // Reset daily XP to 0
         streakDays,
         lastStreakDate,
         lastActiveDate: today
       }
-      save(next)
-      set(next)
+
+      try {
+        await state.firebaseService.updateXpData(newXpData)
+        set({ ...state, ...newXpData })
+      } catch (error) {
+        console.error('Error resetting daily XP:', error)
+      }
     }
   },
 
-  getDailyProgress: () => {
+  getDailyProgress: async (dailyGoal = DEFAULT_DAILY_GOAL) => {
     const state = get()
     // First check and reset if it's a new day
-    get().checkAndResetDaily()
+    await get().checkAndResetDaily()
     
     // Get updated state after potential reset
     const updatedState = get()
-    const dailyGoal = updatedState.dailyGoal || DEFAULT_DAILY_GOAL
     
     return {
       dailyXp: updatedState.dailyXp,
@@ -184,6 +222,11 @@ export const useXpStore = create((set, get) => ({
       progress: Math.min((updatedState.dailyXp / dailyGoal) * 100, 100),
       isThresholdReached: updatedState.dailyXp >= dailyGoal
     }
+  },
+
+  // Clear XP data (for logout)
+  clearXpData: () => {
+    set(getDefaultXpState())
   }
 }))
 

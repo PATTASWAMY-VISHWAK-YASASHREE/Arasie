@@ -1,10 +1,7 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import notificationService from '../services/NotificationService'
 
-const useSettingsStore = create(
-  persist(
-    (set, get) => ({
+const useSettingsStore = create((set, get) => ({
       // Notification Settings
       notifications: {
         push: true,
@@ -314,18 +311,6 @@ const useSettingsStore = create(
         
         get().initializeSettings()
       }
-    }),
-    {
-      name: 'araise-settings',
-      version: 1,
-      partialize: (state) => ({
-        notifications: state.notifications,
-        preferences: state.preferences,
-        privacy: state.privacy,
-        reminderSchedules: state.reminderSchedules
-      })
-    }
-  )
-)
+    }))
 
 export default useSettingsStore

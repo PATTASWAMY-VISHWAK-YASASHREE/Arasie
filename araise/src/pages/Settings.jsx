@@ -32,7 +32,16 @@ import GoalsModal from "../components/GoalsModal"
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { name, logout } = useUserStore()
+  const { 
+    name, 
+    logout, 
+    dailyFocusGoal, 
+    dailyCalorieGoal, 
+    waterGoal,
+    updateFocusGoal,
+    updateCalorieGoal,
+    updateWaterGoal
+  } = useUserStore()
   const {
     notifications,
     preferences,
@@ -178,21 +187,21 @@ export default function Settings() {
       items: [
         {
           label: "Daily Focus Goal",
-          description: `${preferences.dailyFocusGoal || 60} minutes per day`,
+          description: `${dailyFocusGoal || 60} minutes per day`,
           icon: Clock,
           showArrow: true,
           action: () => setGoalsModal({ isOpen: true, type: 'focus' })
         },
         {
           label: "Daily Water Goal",
-          description: `${(preferences.dailyWaterGoal || 3000) / 1000}L per day`,
+          description: `${(waterGoal || 3000) / 1000}L per day`,
           icon: Droplets,
           showArrow: true,
           action: () => setGoalsModal({ isOpen: true, type: 'water' })
         },
         {
           label: "Daily Calorie Goal",
-          description: `${(preferences.dailyCalorieGoal || 2000).toLocaleString()} calories per day`,
+          description: `${(dailyCalorieGoal || 2000).toLocaleString()} calories per day`,
           icon: Utensils,
           showArrow: true,
           action: () => setGoalsModal({ isOpen: true, type: 'calories' })
@@ -546,17 +555,17 @@ export default function Settings() {
         onClose={() => setGoalsModal({ isOpen: false, type: 'focus' })}
         goalType={goalsModal.type}
         currentGoal={
-          goalsModal.type === 'focus' ? preferences.dailyFocusGoal || 60 :
-          goalsModal.type === 'water' ? preferences.dailyWaterGoal || 3000 :
-          preferences.dailyCalorieGoal || 2000
+          goalsModal.type === 'focus' ? dailyFocusGoal || 60 :
+          goalsModal.type === 'water' ? waterGoal || 3000 :
+          dailyCalorieGoal || 2000
         }
         onSave={(newGoal) => {
           if (goalsModal.type === 'focus') {
-            updatePreference('dailyFocusGoal', newGoal)
+            updateFocusGoal(newGoal)
           } else if (goalsModal.type === 'water') {
-            updatePreference('dailyWaterGoal', newGoal)
+            updateWaterGoal(newGoal)
           } else if (goalsModal.type === 'calories') {
-            updatePreference('dailyCalorieGoal', newGoal)
+            updateCalorieGoal(newGoal)
           }
         }}
       />

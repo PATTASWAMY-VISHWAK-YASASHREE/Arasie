@@ -28,6 +28,10 @@ export const useUserStore = create(
       mentalHealthProgress: 0, // 0-100 percentage
       focusProgress: 0, // 0-100 percentage
 
+      // User-specific goals
+      dailyFocusGoal: 60, // minutes
+      dailyCalorieGoal: 2000, // calories
+
       // Logs and history
       meals: [], // [{ id, name, calories, time, macros }]
       waterLogs: [], // [{ id, amount, time }]
@@ -66,6 +70,34 @@ export const useUserStore = create(
         }
       },
 
+      updateFocusGoal: async (goal) => {
+        const state = get();
+        set({ dailyFocusGoal: goal });
+        
+        // Update in Firebase if available
+        if (state.firebaseService) {
+          try {
+            await state.firebaseService.updateProgress('dailyFocusGoal', goal);
+          } catch (error) {
+            console.error('Error updating focus goal in Firebase:', error);
+          }
+        }
+      },
+
+      updateCalorieGoal: async (goal) => {
+        const state = get();
+        set({ dailyCalorieGoal: goal });
+        
+        // Update in Firebase if available
+        if (state.firebaseService) {
+          try {
+            await state.firebaseService.updateProgress('dailyCalorieGoal', goal);
+          } catch (error) {
+            console.error('Error updating calorie goal in Firebase:', error);
+          }
+        }
+      },
+
       // UI actions
       setChatOpen: (isOpen) => set({ isChatOpen: isOpen }),
 
@@ -98,24 +130,36 @@ export const useUserStore = create(
             // Reset daily progress if needed
             await firebaseService.resetDaily();
 
+            // Ensure all historical data is properly archived
+            await firebaseService.ensureHistoricalDataArchived();
+
             // Check for missed days and reset streak if necessary
             await get().checkAndResetStreakForMissedDays();
 
             // Update focus progress based on completed tasks
             await get().updateFocusProgress();
+
+            // Initialize XP store with Firebase service
+            const { initializeForUser } = await import('./xpStore');
+            const xpStore = await import('./xpStore');
+            await xpStore.useXpStore.getState().initializeForUser(user.uid, firebaseService);
           } catch (error) {
             console.error('Error loading user progress:', error);
           }
         }
       },
 
-      logout: () => {
+      logout: async () => {
         const state = get();
 
         // Unsubscribe from real-time updates
         if (state.unsubscribeFromUpdates) {
           state.unsubscribeFromUpdates();
         }
+
+        // Clear XP store data
+        const { useXpStore } = await import('./xpStore');
+        useXpStore.getState().clearXpData();
 
         set({
           user: null,

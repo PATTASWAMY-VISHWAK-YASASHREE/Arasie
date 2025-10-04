@@ -28,6 +28,13 @@ export class FirebaseUserService {
           dietGoalMet: data.dietGoalMet || false,
           mentalHealthProgress: data.mentalHealthProgress || 0,
           focusProgress: data.focusProgress || 0,
+          dailyFocusGoal: data.dailyFocusGoal || 60,
+          dailyCalorieGoal: data.dailyCalorieGoal || 2000,
+          xp: data.xp || 0,
+          dailyXp: data.dailyXp || 0,
+          streakDays: data.streakDays || 0,
+          lastActiveDate: data.lastActiveDate || null,
+          lastStreakDate: data.lastStreakDate || null,
           meals: data.meals || [],
           waterLogs: data.waterLogs || [],
           workoutHistory: data.workoutHistory || [],
@@ -60,6 +67,13 @@ export class FirebaseUserService {
       dietGoalMet: false,
       mentalHealthProgress: 0,
       focusProgress: 0,
+      dailyFocusGoal: 60,
+      dailyCalorieGoal: 2000,
+      xp: 0,
+      dailyXp: 0,
+      streakDays: 0,
+      lastActiveDate: null,
+      lastStreakDate: null,
       meals: [],
       waterLogs: [],
       workoutHistory: [],
@@ -1008,7 +1022,22 @@ export class FirebaseUserService {
 
       // Check if we have archived data for this date
       const dailyArchives = data.dailyArchives || {};
-      const archivedData = dailyArchives[targetDate];
+      let archivedData = dailyArchives[targetDate];
+
+      // If no archived data exists for a past date, try to create it from current data
+      if (!archivedData && targetDate !== today) {
+        console.log(`No archived data found for ${targetDate}, attempting to archive from current data`);
+        const updatedArchives = await this.archiveDayData(targetDate, data);
+        archivedData = updatedArchives[targetDate];
+        
+        // Save the updated archives
+        if (archivedData) {
+          await updateDoc(this.userRef, {
+            dailyArchives: updatedArchives,
+            lastUpdated: serverTimestamp()
+          });
+        }
+      }
 
       let activities = {
         water: [],
@@ -1138,12 +1167,24 @@ export class FirebaseUserService {
           workoutCompleted: data.workoutCompleted || false,
           waterGoalMet: data.waterGoalMet || false,
           dietGoalMet: data.dietGoalMet || false,
+          // Goals
+          dailyFocusGoal: data.dailyFocusGoal || 60,
+          dailyCalorieGoal: data.dailyCalorieGoal || 2000,
+          waterGoal: data.waterGoal || 3000,
+          // Data arrays
           meals: data.meals || [],
           waterLogs: data.waterLogs || [],
           mentalHealthLogs: data.mentalHealthLogs || [],
           workoutHistory: data.workoutHistory || [],
           customWorkouts: data.customWorkouts || [],
           journalEntries: data.journalEntries || [],
+          // XP data
+          xp: data.xp || 0,
+          dailyXp: data.dailyXp || 0,
+          streakDays: data.streakDays || 0,
+          lastActiveDate: data.lastActiveDate || null,
+          lastStreakDate: data.lastStreakDate || null,
+          // Other fields
           level: data.level || 1,
           streakCount: data.streakCount || 0,
           calendar: data.calendar || []
@@ -1181,6 +1222,135 @@ export class FirebaseUserService {
     } catch (error) {
       console.error('Error logging mental health activity:', error);
       throw error;
+    }
+  }
+
+  // XP Data Management
+  async loadXpData() {
+    try {
+      const userDoc = await getDoc(this.userRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        return {
+          xp: data.xp || 0,
+          level: data.level || 1,
+          streakDays: data.streakDays || 0,
+          lastActiveDate: data.lastActiveDate || null,
+          dailyXp: data.dailyXp || 0,
+          lastStreakDate: data.lastStreakDate || null
+        };
+      }
+      return {
+        xp: 0,
+        level: 1,
+        streakDays: 0,
+        lastActiveDate: null,
+        dailyXp: 0,
+        lastStreakDate: null
+      };
+    } catch (error) {
+      console.error('Error loading XP data:', error);
+      throw error;
+    }
+  }
+
+  async updateXpData(xpData) {
+    try {
+      await updateDoc(this.userRef, {
+        xp: xpData.xp,
+        level: xpData.level,
+        streakDays: xpData.streakDays,
+        lastActiveDate: xpData.lastActiveDate,
+        dailyXp: xpData.dailyXp,
+        lastStreakDate: xpData.lastStreakDate,
+        lastUpdated: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error updating XP data:', error);
+      throw error;
+    }
+  }
+
+  // Ensure all historical data is properly archived
+  async ensureHistoricalDataArchived() {
+    try {
+      const userDoc = await getDoc(this.userRef);
+      if (!userDoc.exists()) return;
+
+      const data = userDoc.data();
+      const dailyArchives = data.dailyArchives || {};
+      const today = new Date().toISOString().slice(0, 10);
+      
+      // Get all unique dates from current data
+      const allDates = new Set();
+      
+      // Add dates from water logs
+      (data.waterLogs || []).forEach(log => {
+        if (log.time) {
+          try {
+            const date = new Date(log.time).toISOString().slice(0, 10);
+            if (date !== today) allDates.add(date);
+          } catch (e) {}
+        }
+      });
+      
+      // Add dates from meals
+      (data.meals || []).forEach(meal => {
+        if (meal.time) {
+          try {
+            const date = new Date(meal.time).toISOString().slice(0, 10);
+            if (date !== today) allDates.add(date);
+          } catch (e) {}
+        }
+      });
+      
+      // Add dates from workout history
+      (data.workoutHistory || []).forEach(workout => {
+        if (workout.date && workout.date !== today) {
+          allDates.add(workout.date);
+        }
+      });
+      
+      // Add dates from focus tasks
+      (data.focusTasks || []).forEach(task => {
+        if (task.date && task.date !== today) {
+          allDates.add(task.date);
+        }
+      });
+      
+      // Add dates from mental health logs
+      (data.mentalHealthLogs || []).forEach(log => {
+        if (log.time) {
+          try {
+            const date = new Date(log.time).toISOString().slice(0, 10);
+            if (date !== today) allDates.add(date);
+          } catch (e) {}
+        }
+      });
+
+      // Archive any dates that don't have archived data yet
+      let updatedArchives = { ...dailyArchives };
+      let hasUpdates = false;
+
+      for (const date of allDates) {
+        if (!updatedArchives[date]) {
+          console.log(`Archiving historical data for ${date}`);
+          updatedArchives = await this.archiveDayData(date, data);
+          hasUpdates = true;
+        }
+      }
+
+      // Save updated archives if we made changes
+      if (hasUpdates) {
+        await updateDoc(this.userRef, {
+          dailyArchives: updatedArchives,
+          lastUpdated: serverTimestamp()
+        });
+        console.log('Historical data archiving completed');
+      }
+
+    } catch (error) {
+      console.error('Error ensuring historical data archived:', error);
     }
   }
 

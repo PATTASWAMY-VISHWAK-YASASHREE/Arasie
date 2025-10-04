@@ -44,7 +44,8 @@ export default function Focus() {
     saveFocusTask, 
     updateFocusTaskProgress, 
     addFocusTaskReflection,
-    focusTasks = []
+    focusTasks = [],
+    dailyFocusGoal = 60
   } = useUserStore()
 
   const { xp, level, streakDays, awardXp, touchStreak, checkAndResetDaily, getDailyProgress } = useXpStore()
@@ -244,8 +245,7 @@ export default function Focus() {
       // Custom task minutes are already included via updateFocusTaskProgress
       
       // Get daily focus goal and calculate progress
-      const dailyGoal = getDailyProgress().threshold
-      await updateFocusProgress(Math.min((totalMinutes / dailyGoal) * 100, 100))
+      await updateFocusProgress(Math.min((totalMinutes / dailyFocusGoal) * 100, 100))
     }
     
     // Only show completion flow if session was actually completed
@@ -253,7 +253,7 @@ export default function Focus() {
       // Award XP: 1 XP per focused minute (streak logic handled automatically)
       if (sessionResult.duration > 0) {
         const prevLevel = useXpStore.getState().level
-        awardXp(sessionResult.duration)
+        awardXp(sessionResult.duration, dailyFocusGoal)
         const nextLevel = useXpStore.getState().level
         setCompletionMeta({ xpGained: sessionResult.duration, leveledUp: nextLevel > prevLevel })
       }
@@ -318,8 +318,7 @@ export default function Focus() {
             // Add current progress (this is a custom task session)
             const totalMinutes = focusLogMinutes + taskMinutes + progressToAdd
             // Get daily focus goal and calculate progress
-            const dailyGoal = getDailyProgress().threshold
-            await updateFocusProgress(Math.min((totalMinutes / dailyGoal) * 100, 100))
+            await updateFocusProgress(Math.min((totalMinutes / dailyFocusGoal) * 100, 100))
           }
           
           setLastProgressUpdate(minutesSpent)
@@ -356,7 +355,7 @@ export default function Focus() {
       const xpEarned = Math.round(totalMinutes / 5) // 5 minutes = 1 XP base
       const boostedXp = totalMinutes >= 60 ? Math.round(xpEarned * 1.2) : xpEarned // 20% boost for sessions 60+ min
       
-      awardXp(boostedXp)
+      awardXp(boostedXp, dailyFocusGoal)
       
       // Log the completed session
       if (typeof logFocusSession === 'function') {
@@ -389,8 +388,7 @@ export default function Focus() {
         // Add current session minutes
         const totalMinutes = focusLogMinutes + taskMinutes + totalMinutes
         // Get daily focus goal and calculate progress
-        const dailyGoal = getDailyProgress().threshold
-        updateFocusProgress(Math.min((totalMinutes / dailyGoal) * 100, 100))
+        updateFocusProgress(Math.min((totalMinutes / dailyFocusGoal) * 100, 100))
       }
       
       // Show completion flow
@@ -429,9 +427,8 @@ export default function Focus() {
   }
 
   const getPlannedFocusGoal = () => {
-    // Get the daily focus goal from settings (via XP store)
-    const dailyProgress = getDailyProgress()
-    return dailyProgress.threshold // This is the daily focus goal in minutes
+    // Get the daily focus goal from userStore
+    return dailyFocusGoal // This is the daily focus goal in minutes
   }
 
   const calculateScheduledForToday = (allTasks) => {
@@ -465,8 +462,8 @@ export default function Focus() {
             quote="Win the next block of time."
             plannedMinutes={getPlannedFocusGoal()}
             completedMinutes={getTotalFocusedToday()}
-            xp={getDailyProgress().dailyXp}
-            nextLevelXp={getDailyProgress().threshold}
+            xp={getDailyProgress(dailyFocusGoal).dailyXp}
+            nextLevelXp={dailyFocusGoal}
             streakDays={streakDays}
           />
 
