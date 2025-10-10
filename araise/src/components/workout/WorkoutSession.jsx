@@ -9,12 +9,16 @@ import {
   Heart
 } from "lucide-react"
 import { workoutData } from "../../data/workoutData"
+import CameraSelectionModal from "../CameraSelectionModal"
+import { isMobile } from "../../utils/helpers"
 
 // Workout Session Component
 export default function WorkoutSession() {
   const { category, splitId, dayId } = useParams()
   const navigate = useNavigate()
   const [currentExercise, setCurrentExercise] = useState(0)
+  const [showCameraModal, setShowCameraModal] = useState(false)
+  const [pendingExercise, setPendingExercise] = useState(null)
   
   const getSessionData = () => {
     const splitData = workoutData[category]?.[splitId]
@@ -67,10 +71,37 @@ export default function WorkoutSession() {
   }
 
   const handleAnalyzer = () => {
-    const analyzerPath = dayId
-      ? `/workout/${category}/${splitId}/${dayId}/session/${exercise.id}/analyzer/${exercise.uniqueName}`
-      : `/workout/${category}/${splitId}/session/${exercise.id}/analyzer/${exercise.uniqueName}`
-    navigate(analyzerPath)
+    if (isMobile()) {
+      // On mobile, show camera selection modal first
+      setPendingExercise(exercise)
+      setShowCameraModal(true)
+    } else {
+      // On desktop, proceed directly with default camera
+      const analyzerPath = dayId
+        ? `/workout/${category}/${splitId}/${dayId}/session/${exercise.id}/analyzer/${exercise.uniqueName}`
+        : `/workout/${category}/${splitId}/session/${exercise.id}/analyzer/${exercise.uniqueName}`
+      navigate(analyzerPath, {
+        state: { cameraFacingMode: 'user' }
+      })
+    }
+  }
+
+  const handleCameraSelection = (facingMode) => {
+    if (pendingExercise) {
+      const analyzerPath = dayId
+        ? `/workout/${category}/${splitId}/${dayId}/session/${pendingExercise.id}/analyzer/${pendingExercise.uniqueName}`
+        : `/workout/${category}/${splitId}/session/${pendingExercise.id}/analyzer/${pendingExercise.uniqueName}`
+      navigate(analyzerPath, {
+        state: { cameraFacingMode: facingMode }
+      })
+    }
+    setShowCameraModal(false)
+    setPendingExercise(null)
+  }
+
+  const handleCameraModalClose = () => {
+    setShowCameraModal(false)
+    setPendingExercise(null)
   }
 
   const getExerciseIcon = () => {
@@ -196,6 +227,13 @@ export default function WorkoutSession() {
           </button>
         </div>
       </motion.div>
+
+      {/* Camera Selection Modal */}
+      <CameraSelectionModal
+        isOpen={showCameraModal}
+        onClose={handleCameraModalClose}
+        onSelect={handleCameraSelection}
+      />
     </div>
   )
 }
