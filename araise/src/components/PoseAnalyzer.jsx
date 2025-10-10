@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { poseDetectionService } from '../utils/poseDetection';
 import { webSocketService } from '../utils/websocket';
+import { textToSpeechService } from '../utils/textToSpeech';
+import VoiceIndicator from './VoiceIndicator';
 import { PoseLandmarker, DrawingUtils } from '@mediapipe/tasks-vision';
 
 const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', onComplete, onBack }) => {
@@ -41,6 +43,13 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [timeTaken, setTimeTaken] = useState(0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isVoiceMuted, setIsVoiceMuted] = useState(false);
+  const [lastSpokenFeedback, setLastSpokenFeedback] = useState('');
+  
+  // Use refs to avoid dependency issues
+  const isVoiceMutedRef = useRef(false);
+  const lastSpokenFeedbackRef = useRef('');
 
   // Start video feed display
   const startVideoFeed = useCallback(() => {
@@ -152,6 +161,49 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
     console.log('✅ Complete cleanup finished');
   }, [isRecording]);
 
+  // Voice functionality
+  const speakFeedback = useCallback(async (feedbackText, type = 'neutral') => {
+    if (!feedbackText || isVoiceMutedRef.current) {
+      return;
+    }
+
+    // Use ref check to avoid re-renders
+    if (feedbackText === lastSpokenFeedbackRef.current) {
+      return;
+    }
+
+    try {
+      lastSpokenFeedbackRef.current = feedbackText;
+      setLastSpokenFeedback(feedbackText);
+      await textToSpeechService.speakFeedback(feedbackText, type);
+    } catch (error) {
+      console.error('Voice synthesis error:', error);
+    }
+  }, []); // No dependencies needed since we use refs
+
+  const toggleVoiceMute = useCallback(() => {
+    const newMutedState = textToSpeechService.toggleMute();
+    setIsVoiceMuted(newMutedState);
+    isVoiceMutedRef.current = newMutedState;
+  }, []);
+
+  // Initialize voice service event listeners
+  useEffect(() => {
+    textToSpeechService.setEventListeners({
+      onSpeakStart: () => setIsSpeaking(true),
+      onSpeakEnd: () => setIsSpeaking(false),
+      onSpeakError: (error) => {
+        console.error('Voice error:', error);
+        setIsSpeaking(false);
+      }
+    });
+
+    // Sync initial mute state
+    const initialMutedState = textToSpeechService.getState().isMuted;
+    setIsVoiceMuted(initialMutedState);
+    isVoiceMutedRef.current = initialMutedState;
+  }, []);
+
   // Initialize pose detection and websocket
   useEffect(() => {
     const initialize = async () => {
@@ -212,10 +264,26 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
           if (data.feedback) {
             console.log('💬 Updating feedback:', data.feedback);
             setFeedback(data.feedback);
+            // Speak feedback after state update using refs to avoid dependencies
+            setTimeout(() => {
+              if (!isVoiceMutedRef.current && data.feedback !== lastSpokenFeedbackRef.current) {
+                lastSpokenFeedbackRef.current = data.feedback;
+                setLastSpokenFeedback(data.feedback);
+                textToSpeechService.speakFeedback(data.feedback, 'encouraging');
+              }
+            }, 0);
             updated = true;
           } else if (data.message) {
             console.log('💬 Updating feedback from message:', data.message);
             setFeedback(data.message);
+            // Speak feedback after state update using refs to avoid dependencies
+            setTimeout(() => {
+              if (!isVoiceMutedRef.current && data.message !== lastSpokenFeedbackRef.current) {
+                lastSpokenFeedbackRef.current = data.message;
+                setLastSpokenFeedback(data.message);
+                textToSpeechService.speakFeedback(data.message, 'neutral');
+              }
+            }, 0);
             updated = true;
           }
           
@@ -398,14 +466,16 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
     setIsRecording(true);
     setReps(0);
     setStartTime(Date.now());
-    setFeedback('Position yourself in frame and start the exercise');
+    const startMessage = 'Position yourself in frame and start the exercise';
+    setFeedback(startMessage);
+    speakFeedback(startMessage, 'encouraging');
     
     // Send workout start signal
     webSocketService.sendWorkoutStart(exerciseName, planId, level);
     
     // Start processing frames
     animationFrameRef.current = requestAnimationFrame(processFrame);
-  }, [isInitialized, exerciseName, planId, level, processFrame]);
+  }, [isInitialized, exerciseName, planId, level, processFrame, speakFeedback]);
 
   // Stop recording
   const stopRecording = useCallback(() => {
@@ -425,8 +495,10 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
     // Send workout end signal
     webSocketService.sendWorkoutEnd(exerciseName);
     
-    setFeedback('Recording stopped. Great job!');
-  }, [exerciseName, startTime]);
+    const stopMessage = 'Recording stopped. Great job!';
+    setFeedback(stopMessage);
+    speakFeedback(stopMessage, 'completion');
+  }, [exerciseName, startTime, speakFeedback]);
 
   // Generate feedback based on rep count
   const generateCompletionFeedback = useCallback((repCount) => {
@@ -481,9 +553,13 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
       stopRecording();
     }
     
+    // Generate and speak completion feedback
+    const completionFeedbackText = generateCompletionFeedback(reps);
+    speakFeedback(completionFeedbackText, 'completion');
+    
     // Show completion modal
     setShowCompletionModal(true);
-  }, [isRecording, stopRecording]);
+  }, [isRecording, stopRecording, reps, generateCompletionFeedback, speakFeedback]);
 
   // Continue exercise (restart)
   const handleContinueExercise = useCallback(() => {
@@ -491,8 +567,10 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
     setReps(0);
     setTimeTaken(0);
     setStartTime(null);
-    setFeedback('Ready to continue! Position yourself and start when ready.');
-  }, []);
+    const continueMessage = 'Ready to continue! Position yourself and start when ready.';
+    setFeedback(continueMessage);
+    speakFeedback(continueMessage, 'encouraging');
+  }, [speakFeedback]);
 
   // Move to next exercise
   const handleNextExercise = useCallback(() => {
@@ -966,6 +1044,13 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
           </motion.div>
         </motion.div>
       )}
+
+      {/* Voice Indicator */}
+      <VoiceIndicator
+        isSpeaking={isSpeaking}
+        isMuted={isVoiceMuted}
+        onToggleMute={toggleVoiceMute}
+      />
     </div>
   );
 };
