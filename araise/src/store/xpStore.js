@@ -169,7 +169,7 @@ export const useXpStore = create((set, get) => ({
   checkAndResetDaily: async () => {
     const state = get()
     if (!state.firebaseService) {
-      console.error('Firebase service not available for daily reset')
+      console.warn('Firebase service not available for daily reset, skipping...')
       return
     }
 
@@ -208,19 +208,21 @@ export const useXpStore = create((set, get) => ({
     }
   },
 
-  getDailyProgress: async (dailyGoal = DEFAULT_DAILY_GOAL) => {
+  getDailyProgress: (dailyGoal = DEFAULT_DAILY_GOAL) => {
     const state = get()
-    // First check and reset if it's a new day
-    await get().checkAndResetDaily()
     
-    // Get updated state after potential reset
-    const updatedState = get()
+    // Silently check and reset daily if Firebase service is available
+    if (state.firebaseService) {
+      get().checkAndResetDaily().catch(() => {
+        // Silently handle errors to prevent UI disruption
+      })
+    }
     
     return {
-      dailyXp: updatedState.dailyXp,
+      dailyXp: state.dailyXp || 0,
       threshold: dailyGoal,
-      progress: Math.min((updatedState.dailyXp / dailyGoal) * 100, 100),
-      isThresholdReached: updatedState.dailyXp >= dailyGoal
+      progress: Math.min(((state.dailyXp || 0) / dailyGoal) * 100, 100),
+      isThresholdReached: (state.dailyXp || 0) >= dailyGoal
     }
   },
 

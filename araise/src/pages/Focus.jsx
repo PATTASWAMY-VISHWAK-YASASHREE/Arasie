@@ -462,7 +462,14 @@ export default function Focus() {
             quote="Win the next block of time."
             plannedMinutes={getPlannedFocusGoal()}
             completedMinutes={getTotalFocusedToday()}
-            xp={getDailyProgress(dailyFocusGoal).dailyXp}
+            xp={(() => {
+              try {
+                return getDailyProgress(dailyFocusGoal).dailyXp || 0
+              } catch (error) {
+                console.warn('Error getting daily progress:', error)
+                return 0
+              }
+            })()}
             nextLevelXp={dailyFocusGoal}
             streakDays={streakDays}
           />

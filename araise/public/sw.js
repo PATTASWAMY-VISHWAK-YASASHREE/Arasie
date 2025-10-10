@@ -1,4 +1,4 @@
-const CACHE_NAME = 'araise-v1'
+const CACHE_NAME = 'araise-v2'
 const urlsToCache = [
   '/',
   '/dashboard',
@@ -54,13 +54,19 @@ self.addEventListener('fetch', event => {
             .then(cache => {
               cache.put(event.request, responseToCache)
             })
+            .catch(error => {
+              console.warn('Failed to cache response:', error)
+            })
           
           return response
-        }).catch(() => {
+        }).catch(error => {
+          console.warn('Fetch failed:', error)
           // Return a fallback page for navigation requests when offline
           if (event.request.destination === 'document') {
             return caches.match('/')
           }
+          // Return a generic error response for other requests
+          return new Response('Network error', { status: 408, statusText: 'Request Timeout' })
         })
       })
   )
