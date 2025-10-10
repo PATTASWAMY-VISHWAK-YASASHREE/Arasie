@@ -59,7 +59,7 @@ export const useUserStore = create(
       updateWaterGoal: async (goal) => {
         const state = get();
         set({ waterGoal: goal });
-        
+
         // Also update in Firebase if available
         if (state.firebaseService && state.firebaseService.updateWaterGoal) {
           try {
@@ -73,7 +73,7 @@ export const useUserStore = create(
       updateFocusGoal: async (goal) => {
         const state = get();
         set({ dailyFocusGoal: goal });
-        
+
         // Update in Firebase if available
         if (state.firebaseService) {
           try {
@@ -87,7 +87,7 @@ export const useUserStore = create(
       updateCalorieGoal: async (goal) => {
         const state = get();
         set({ dailyCalorieGoal: goal });
-        
+
         // Update in Firebase if available
         if (state.firebaseService) {
           try {
@@ -240,7 +240,7 @@ export const useUserStore = create(
           if (wasReset) {
             // Get today's date for filtering
             const today = new Date().toISOString().slice(0, 10);
-            
+
             set({
               workoutCompleted: false,
               waterGoalMet: false,
@@ -249,13 +249,13 @@ export const useUserStore = create(
               dietCalories: 0,
               mentalHealthProgress: 0,
               focusProgress: 0,
-              
+
               // Clear current day data (archived data is preserved in Firebase)
               meals: [],
               waterLogs: [],
               mentalHealthLogs: [],
               focusLogs: [],
-              
+
               // Keep only today's focus tasks (scheduled tasks)
               focusTasks: (state.focusTasks || []).filter(task => task.date === today),
             });

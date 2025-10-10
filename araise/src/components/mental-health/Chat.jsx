@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Send, Mic, ArrowLeft, Menu, MessageSquare, Trash2, Sparkles, Heart } from "lucide-react"
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import { useUserStore } from "../../../store/userStore"
+import { useUserStore } from "../../store/userStore"
 import VoiceModal from "./VoiceModal"
 
 // Initialize Gemini AI
