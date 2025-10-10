@@ -24,7 +24,7 @@ import { poseDetectionService } from '../utils/poseDetection';
 import { webSocketService } from '../utils/websocket';
 import { PoseLandmarker, DrawingUtils } from '@mediapipe/tasks-vision';
 
-const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
+const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', onComplete, onBack }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -77,7 +77,7 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
         video: { 
           width: 640, 
           height: 480,
-          facingMode: 'user'
+          facingMode: cameraFacingMode
         } 
       });
       
@@ -95,7 +95,7 @@ const PoseAnalyzer = ({ exerciseName, planId, level, onComplete, onBack }) => {
       setCameraPermission('denied');
       setError(`Camera access failed: ${err.message}`);
     }
-  }, [startVideoFeed]);
+  }, [startVideoFeed, cameraFacingMode]);
 
   // Stop camera
   const stopCamera = useCallback(() => {

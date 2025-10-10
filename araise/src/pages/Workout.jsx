@@ -1,6 +1,5 @@
-import { Routes, Route, useNavigate, useParams } from "react-router-dom"
+import { Routes, Route, useNavigate, useParams, useLocation } from "react-router-dom"
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
 import {
   Dumbbell,
   Target,
@@ -20,12 +19,16 @@ import WorkoutHub from "../components/workout/WorkoutHub"
 import CategorySelection from "../components/workout/CategorySelection"
 import SplitDetail from "../components/workout/SplitDetail"
 import WorkoutSession from "../components/workout/WorkoutSession"
+import CameraSelectionModal from "../components/CameraSelectionModal"
 import { exerciseLibrary, workoutData } from "../data/workoutData"
+import { isMobile } from "../utils/helpers"
 
 // Form Analyzer Component
 function FormAnalyzer() {
   const { category, splitId, dayId, exerciseId, exerciseName } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const { cameraFacingMode } = location.state || { cameraFacingMode: 'user' }
 
   const handleBack = () => {
     const sessionPath = dayId
@@ -49,6 +52,7 @@ function FormAnalyzer() {
           category={category}
           splitId={splitId}
           dayId={dayId}
+          cameraFacingMode={cameraFacingMode}
           onComplete={handleComplete}
           onBack={handleBack}
         />
@@ -785,6 +789,8 @@ function CustomWorkoutSession() {
   const [currentExercise, setCurrentExercise] = useState(0)
   const [workout, setWorkout] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showCameraModal, setShowCameraModal] = useState(false)
+  const [pendingExercise, setPendingExercise] = useState(null)
 
   useEffect(() => {
     const loadWorkout = async () => {
@@ -832,7 +838,31 @@ function CustomWorkoutSession() {
   }
 
   const handleAnalyzer = () => {
-    navigate(`/workout/custom/${workoutId}/session/${exercise.id}/analyzer/${exercise.exerciseName}`)
+    if (isMobile()) {
+      // On mobile, show camera selection modal first
+      setPendingExercise(exercise)
+      setShowCameraModal(true)
+    } else {
+      // On desktop, proceed directly with default camera
+      navigate(`/workout/custom/${workoutId}/session/${exercise.id}/analyzer/${exercise.exerciseName}`, {
+        state: { cameraFacingMode: 'user' }
+      })
+    }
+  }
+
+  const handleCameraSelection = (facingMode) => {
+    if (pendingExercise) {
+      navigate(`/workout/custom/${workoutId}/session/${pendingExercise.id}/analyzer/${pendingExercise.exerciseName}`, {
+        state: { cameraFacingMode: facingMode }
+      })
+    }
+    setShowCameraModal(false)
+    setPendingExercise(null)
+  }
+
+  const handleCameraModalClose = () => {
+    setShowCameraModal(false)
+    setPendingExercise(null)
   }
 
   return (
@@ -919,6 +949,13 @@ function CustomWorkoutSession() {
           </button>
         </div>
       </motion.div>
+
+      {/* Camera Selection Modal */}
+      <CameraSelectionModal
+        isOpen={showCameraModal}
+        onClose={handleCameraModalClose}
+        onSelect={handleCameraSelection}
+      />
     </div>
   )
 }
