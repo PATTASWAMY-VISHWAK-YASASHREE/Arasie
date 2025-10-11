@@ -1,0 +1,7 @@
+Query: Google Identity Services token client calendar events React
+Source snippets:
+- https://stateful.com/blog/google-calendar-react : Guide describing usage of Google Calendar API in React, highlights generating access tokens with Google Identity Services and adding events programmatically.
+- https://github.com/googleapis/google-api-nodejs-client/issues/1385 : Discussion on retrieving tokens for Google Calendar API in React, warns about using correct OAuth flow.
+- https://www.youtube.com/watch?v=tgcCl52EN84 : Supabase-based tutorial demonstrating Google OAuth provider and Calendar event creation.
+- https://github.com/react-native-google-signin/google-signin/issues/1279 : Notes on repeatedly calling getTokens or requesting offline access for Calendar integration.
+- https://techmusings.optisolbusiness.com/implementation-of-google-calendar-with-react-js-and-node-js-19ad7c3b1651 : Article implementing Google Calendar with React/Node and Google API libraries.

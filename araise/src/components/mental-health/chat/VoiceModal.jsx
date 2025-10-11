@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
 
+const ENABLE_VIOLET_PARTICLE_SYSTEM = false
 
 // ChatGPT-style Voice Orb
 function ParticleSphere({ audioLevel, isListening }) {
@@ -548,7 +549,7 @@ export default function VoiceModal({
                                         ))}
 
                                         {/* New Violet Particle System for listening state - DISABLED for 3D sphere */}
-                                        {false && isListening && (
+                                        {ENABLE_VIOLET_PARTICLE_SYSTEM && isListening && (
                                             <>
                                                 {/* Dense particle field */}
                                                 {[...Array(200)].map((_, i) => {

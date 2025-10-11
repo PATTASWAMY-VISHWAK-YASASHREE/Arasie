@@ -73,7 +73,7 @@ export default function DietHistoryBox({ activities, isExpanded, onToggle }) {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-2 mb-4">
         {Object.entries(groupedMeals)
-          .filter(([_, meals]) => meals.length > 0)
+          .filter(([, meals]) => meals.length > 0)
           .slice(0, 4)
           .map(([type, meals]) => (
             <div key={type} className="bg-ar-gray-800/30 rounded-lg p-2">
@@ -102,7 +102,7 @@ export default function DietHistoryBox({ activities, isExpanded, onToggle }) {
           ) : (
             <div className="space-y-4 max-h-60 overflow-y-auto">
               {Object.entries(groupedMeals)
-                .filter(([_, meals]) => meals.length > 0)
+                .filter(([, meals]) => meals.length > 0)
                 .map(([type, meals]) => (
                   <div key={type} className="space-y-2">
                     <h5 className="text-ar-gray-300 text-sm font-medium capitalize flex items-center gap-2">

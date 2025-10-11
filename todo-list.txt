@@ -1,0 +1,32 @@
+Analysis Phase:
+- [x] Catalogue all schedule-like data (workouts, cardio, focus sessions, streaks, mental logs, reminders) and note source stores/services for each.
+- [x] Trace how user identity is managed (AuthContext, Firebase service) to understand available Google credentials.
+- [x] Review existing sync-related store (`calendarSyncStore`) and identify integration points with other modules.
+
+Research Phase:
+- [x] Perform high-level web search on integrating Google Calendar API with React and Firebase-authenticated users (see mcp_tool_outputs/websearch_20251011_4.txt).
+- [x] Fetch authoritative Google Calendar API documentation on authorization scopes and event creation flows.
+- [x] Investigate guidance on using Google Identity Services token client within Vite/React builds.
+
+Implementation Phase:
+- [x] Draft calendar sync architecture (token acquisition strategy, event batching, deduplication referencing `calendarSyncStore`).
+- [x] Implement Google Identity Services loader and token handling utility with Calendar scope.
+- [x] Build `GoogleCalendarService` covering authorize, revoke, and event sync operations (create/update/delete as needed).
+- [x] Integrate service with existing stores: persist sync status, call service when user triggers sync or auto-sync is enabled.
+- [x] Map domain data (workouts, focus, streaks, mental wellness) into Google Calendar event payloads with sensible titles/descriptions.
+- [x] Add non-intrusive "Sync with Google Calendar" trigger (button) with status feedback, ensuring no UI regression.
+- [x] Hook sync trigger into relevant data updates or provide manual resync flow respecting performance constraints.
+
+Testing Phase:
+- [x] Implement unit tests (or integration mocks) for event mapping and service error handling.
+- [ ] Perform manual verification using a test Google account to ensure events appear correctly and duplicates are avoided.
+- [ ] Test revoked-permission scenarios to ensure graceful fallback and user notification.
+- [ ] Triage and resolve existing lint violations across legacy modules to restore clean `npm run lint` output.
+- [ ] Remove unused imports, selectors, and helper assignments flagged by ESLint.
+- [ ] Refactor components with conditional React Hook usage or missing dependencies to satisfy `react-hooks` rules.
+- [ ] Address duplicate keys and empty blocks reported in FirebaseUserService and related stores.
+- [ ] Reduce outstanding ESLint errors to 50 or fewer without regressing functionality (focus on history, mental-health, firebase, store modules first).
+
+Documentation Phase:
+- [ ] Document Google Cloud project setup, required OAuth client ID, and environment variables in README/DEPLOYMENT.
+- [ ] Record developer instructions for triggering sync, handling consent, and troubleshooting token errors.

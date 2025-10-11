@@ -2,6 +2,8 @@ import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Clock, Target, Droplets, Utensils } from "lucide-react"
 
+const MotionDiv = motion.div
+
 const GOAL_CONFIGS = {
   focus: {
     title: "Daily Focus Goal",
@@ -83,7 +85,7 @@ export default function GoalsModal({ isOpen, onClose, currentGoal, onSave, goalT
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -92,7 +94,7 @@ export default function GoalsModal({ isOpen, onClose, currentGoal, onSave, goalT
           />
 
           {/* Modal */}
-          <motion.div
+          <MotionDiv
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -209,7 +211,7 @@ export default function GoalsModal({ isOpen, onClose, currentGoal, onSave, goalT
                 Save Goal
               </button>
             </div>
-          </motion.div>
+          </MotionDiv>
         </div>
       )}
     </AnimatePresence>

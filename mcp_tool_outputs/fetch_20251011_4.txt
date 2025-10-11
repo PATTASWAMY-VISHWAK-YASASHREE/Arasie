@@ -1,0 +1,7 @@
+URL: https://developers.google.com/identity/oauth2/web/guides/use-token-model
+Query: initTokenClient React single page application guidelines
+Extract:
+- Describes initializing token client via google.accounts.oauth2.initTokenClient with client ID and scopes (e.g., Calendar scope) and callback.
+- Token flow triggered via requestAccessToken from user gesture (popup UX only); supports incremental authorization and granular permissions.
+- Guidance on checking hasGrantedAnyScope/hasGrantedAllScopes to verify granted scopes, and re-requesting with prompt=consent when needed.
+- Tokens expire quickly; reacquire via requestAccessToken, revoke via google.accounts.oauth2.revoke.

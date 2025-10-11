@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useUserStore } from "../store/userStore"
 
+const MotionButton = motion.button
+
 export default function Calendar() {
   const navigate = useNavigate()
   const { calendar } = useUserStore()
@@ -168,14 +170,14 @@ export default function Calendar() {
         ))}
         
         {/* Calendar days */}
-        {calendarDays.map((dayObj, index) => {
-          const { date, day, isCurrentMonth, isPrevMonth, isNextMonth } = dayObj
+        {calendarDays.map((dayObj) => {
+          const { date, day, isCurrentMonth } = dayObj
           const clickable = isDateClickable(date)
           const completed = isDateCompleted(date)
           const todayDate = isToday(date)
           
           return (
-            <motion.button
+            <MotionButton
               key={`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`}
               onClick={() => clickable && handleDateClick(date)}
               disabled={!clickable}
@@ -199,7 +201,7 @@ export default function Calendar() {
               whileTap={clickable ? { scale: 0.95 } : {}}
             >
               {day}
-            </motion.button>
+            </MotionButton>
           )
         })}
       </div>

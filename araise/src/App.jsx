@@ -18,7 +18,6 @@ import Welcome from "./pages/Welcome"
 import Feedback from "./pages/Feedback"
 import { useUserStore } from "./store/userStore"
 import { useXpStore } from "./store/xpStore"
-import useSettingsStore from "./store/settingsStore"
 import { AuthProvider, useAuth } from "./contexts/AuthContext"
 
 function AppContent() {
@@ -27,10 +26,7 @@ function AppContent() {
   const isChatOpen = useUserStore(state => state.isChatOpen)
   const setUser = useUserStore(state => state.setUser)
   const logout = useUserStore(state => state.logout)
-  const updateWaterGoal = useUserStore(state => state.updateWaterGoal)
   const checkAndResetDaily = useXpStore(state => state.checkAndResetDaily)
-  const dailyFocusGoal = useUserStore(state => state.dailyFocusGoal)
-  const { preferences } = useSettingsStore()
   const { currentUser, loading } = useAuth()
 
   // Sync Firebase auth state with Zustand store

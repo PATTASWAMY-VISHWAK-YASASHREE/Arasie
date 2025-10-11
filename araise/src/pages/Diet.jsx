@@ -77,7 +77,6 @@ export default function Diet() {
   const handleImageSelect = (event) => {
     const file = event.target.files[0]
     if (file) {
-      setSelectedImage(file)
       scanFoodImage(file)
     }
   }
@@ -167,7 +166,6 @@ export default function Diet() {
     setShowScanResults(false)
     setIsScanning(false)
     setScanResults(null)
-    setSelectedImage(null)
   }
 
   const mockFoodScan = async () => {

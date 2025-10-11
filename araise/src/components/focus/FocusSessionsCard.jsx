@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Clock, Play, Square, CheckCircle, Sparkles } from "lucide-react"
-import { useXpStore } from "../../store/xpStore"
+import { useState } from "react"
+import { motion } from "framer-motion"
+import { Play } from "lucide-react"
 import CustomSessionModal from "./CustomSessionModal"
 
 
@@ -48,9 +47,8 @@ const SESSION_MODES = [
   }
 ]
 
-export default function FocusSessionsCard({ onStartSession, onEndSession }) {
+export default function FocusSessionsCard({ onStartSession }) {
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false)
-  const { awardXp } = useXpStore()
 
   const handleStartSession = (mode) => {
     if (mode === 'custom') {
@@ -82,14 +80,6 @@ export default function FocusSessionsCard({ onStartSession, onEndSession }) {
     }
   }
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-
-
   const getCardColor = (color) => {
     const colors = {
       green: 'bg-green-500/10 border-green-500/30 text-green-300',
@@ -120,8 +110,6 @@ export default function FocusSessionsCard({ onStartSession, onEndSession }) {
       {/* Mobile: Horizontal scroll layout for small screens */}
       <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide sm:hidden">
         {SESSION_MODES.map((mode) => {
-          const isCustom = mode.id === 'custom'
-
           return (
             <motion.div
               key={mode.id}
@@ -146,8 +134,6 @@ export default function FocusSessionsCard({ onStartSession, onEndSession }) {
       {/* Desktop: Horizontal scroll layout */}
       <div className="hidden sm:flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {SESSION_MODES.map((mode) => {
-          const isCustom = mode.id === 'custom'
-
           return (
             <motion.div
               key={mode.id}

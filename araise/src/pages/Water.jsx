@@ -11,11 +11,8 @@ export default function Water() {
     waterProgress,
     waterGoal,
     waterLogs,
-    logWater,
-    waterGoalMet
+    logWater
   } = useUserStore()
-
-  const progressPercentage = Math.min((waterProgress / waterGoal) * 100, 100)
   const remainingWater = Math.max(waterGoal - waterProgress, 0)
 
   const quickAddAmounts = [250, 500, 750, 1000]

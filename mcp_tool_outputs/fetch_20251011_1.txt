@@ -1,0 +1,7 @@
+URL: https://developers.google.com/calendar/api/guides/overview
+Query focus: scope calendar.events
+Summary:
+- Confirms Google Calendar API is RESTful and can be accessed via HTTP or client libraries.
+- Related links include scope selection guidance (https://developers.google.com/workspace/calendar/api/auth).
+- Provides overview of event resources and mentions authentication/authorization setup references.
+- Notes content licensed under CC BY 4.0, last updated 2025-08-28 UTC.

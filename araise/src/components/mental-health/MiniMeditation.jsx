@@ -41,7 +41,7 @@ const meditations = [
 
 export default function MiniMeditation({ onBack }) {
   const [selectedMeditation, setSelectedMeditation] = useState(null)
-  const { updateMentalHealthProgress, logMeditationSession } = useUserStore()
+  const { updateMentalHealthProgress } = useUserStore()
 
   const handleStartMeditation = (meditation) => {
     setSelectedMeditation(meditation)
