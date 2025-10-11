@@ -128,9 +128,24 @@ class PoseDetectionService {
   }
 
   async initialize() {
-    if (this.isInitialized) return;
+    if (this.isInitialized && this.poseLandmarker) {
+      console.log("Pose detection already initialized");
+      return;
+    }
+
+    // Clean up any existing instance before reinitializing
+    if (this.poseLandmarker) {
+      console.log("Cleaning up existing pose landmarker before reinitialization");
+      try {
+        this.poseLandmarker.close();
+      } catch (e) {
+        console.warn("Error closing existing pose landmarker:", e);
+      }
+      this.poseLandmarker = null;
+    }
 
     try {
+      console.log("Initializing pose detection...");
       const vision = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
       );
@@ -152,6 +167,8 @@ class PoseDetectionService {
       console.log("Pose detection initialized successfully");
     } catch (error) {
       console.error("Failed to initialize pose detection:", error);
+      this.isInitialized = false;
+      this.poseLandmarker = null;
       throw error;
     }
   }
@@ -161,12 +178,43 @@ class PoseDetectionService {
       throw new Error("Pose detection not initialized");
     }
 
+    // Validate video element before processing
+    if (!videoElement || 
+        videoElement.readyState < 2 || 
+        !videoElement.videoWidth || 
+        !videoElement.videoHeight ||
+        videoElement.videoWidth === 0 || 
+        videoElement.videoHeight === 0) {
+      console.warn("Video element not ready for pose detection:", {
+        exists: !!videoElement,
+        readyState: videoElement?.readyState,
+        videoWidth: videoElement?.videoWidth,
+        videoHeight: videoElement?.videoHeight
+      });
+      return null;
+    }
+
     try {
       const results = await this.poseLandmarker.detectForVideo(videoElement, timestamp);
       return results;
     } catch (error) {
       console.error("Pose detection failed:", error);
       return null;
+    }
+  }
+
+  // Add cleanup method
+  cleanup() {
+    try {
+      if (this.poseLandmarker) {
+        this.poseLandmarker.close();
+        this.poseLandmarker = null;
+      }
+      this.isInitialized = false;
+      this.drawingUtils = null;
+      console.log("Pose detection cleaned up successfully");
+    } catch (error) {
+      console.error("Error during pose detection cleanup:", error);
     }
   }
 
