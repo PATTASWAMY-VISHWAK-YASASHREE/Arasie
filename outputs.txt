@@ -1,0 +1,25 @@
+Web search logs:
+
+[2025-10-11 00:00] Query: React app sync events to Google Calendar using OAuth Firebase integration
+Results snippet summary stored at mcp_tool_outputs/websearch_20251011_1.txt
+
+[2025-10-11 00:00] Query: Use Google Calendar API with Firebase authenticated users React
+Results snippet summary stored at mcp_tool_outputs/websearch_20251011_2.txt
+[2025-10-11 00:00] Query: Google Identity Services token client calendar events React
+Results snippet summary stored at mcp_tool_outputs/websearch_20251011_3.txt
+[2025-10-11 00:01] Fetch: https://developers.google.com/calendar/api/guides/overview (query: scope calendar.events)
+Excerpt stored at mcp_tool_outputs/fetch_20251011_1.txt
+[2025-10-11 00:02] Fetch: https://developers.google.com/identity/oauth2/web/guides/use-token-model (query: initTokenClient)
+Excerpt stored at mcp_tool_outputs/fetch_20251011_2.txt
+[2025-10-11 00:03] Query: React integrate Google Calendar API sync user events button sync schedules training routine
+Results snippet summary stored at mcp_tool_outputs/websearch_20251011_4.txt
+[2025-10-11 00:04] Fetch: https://developers.google.com/calendar/api/guides/overview (query: scope calendar events create)
+Excerpt stored at mcp_tool_outputs/fetch_20251011_3.txt
+[2025-10-11 00:05] Fetch: https://developers.google.com/identity/oauth2/web/guides/use-token-model (query: initTokenClient React single page application guidelines)
+Excerpt stored at mcp_tool_outputs/fetch_20251011_4.txt
+[2025-10-11 00:06] Query: React Google Calendar API integration manual sync button best practices 2025
+Results snippet summary stored at mcp_tool_outputs/websearch_20251011_5.txt
+[2025-10-11 09:15] Query: eslint fix unused framer motion imports react remove unused imports
+Results snippet summary stored at mcp_tool_outputs/websearch_20251011_6.txt
+[2025-10-11 10:05] Query: React fast refresh only works when a file only exports components solution
+Results snippet summary stored at mcp_tool_outputs/websearch_20251011_7.txt

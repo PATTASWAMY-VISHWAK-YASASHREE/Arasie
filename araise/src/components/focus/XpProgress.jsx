@@ -3,7 +3,7 @@ import { Sparkles, Star } from "lucide-react"
 import { useXpStore } from "../../store/xpStore"
 
 export default function XpProgress({ className = "" }) {
-  const { level, getDailyProgress } = useXpStore()
+  const { getDailyProgress } = useXpStore()
   const dailyProgress = getDailyProgress()
   
   const progress = dailyProgress.progress

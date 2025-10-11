@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, X, Smartphone } from 'lucide-react';
 
+const MotionDiv = motion.div;
+const MotionButton = motion.button;
+
 const CameraSelectionModal = ({ isOpen, onClose, onSelect }) => {
   const [selectedCamera, setSelectedCamera] = useState(null);
 
@@ -27,7 +30,7 @@ const CameraSelectionModal = ({ isOpen, onClose, onSelect }) => {
       {isOpen && (
         <>
           {/* Backdrop */}
-          <motion.div
+          <MotionDiv
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -36,13 +39,13 @@ const CameraSelectionModal = ({ isOpen, onClose, onSelect }) => {
           />
 
           {/* Modal */}
-          <motion.div
+          <MotionDiv
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div
+            <MotionDiv
               className="glass-card p-6 rounded-3xl max-w-md w-full mx-4"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -71,7 +74,7 @@ const CameraSelectionModal = ({ isOpen, onClose, onSelect }) => {
               {/* Camera Options */}
               <div className="space-y-3 mb-6">
                 {/* Front Camera Option */}
-                <motion.button
+                <MotionButton
                   onClick={() => handleCameraSelect('user')}
                   className={`w-full p-4 rounded-2xl border-2 transition-all duration-200 ${
                     selectedCamera === 'user'
@@ -105,10 +108,10 @@ const CameraSelectionModal = ({ isOpen, onClose, onSelect }) => {
                       </div>
                     )}
                   </div>
-                </motion.button>
+                </MotionButton>
 
                 {/* Back Camera Option */}
-                <motion.button
+                <MotionButton
                   onClick={() => handleCameraSelect('environment')}
                   className={`w-full p-4 rounded-2xl border-2 transition-all duration-200 ${
                     selectedCamera === 'environment'
@@ -142,7 +145,7 @@ const CameraSelectionModal = ({ isOpen, onClose, onSelect }) => {
                       </div>
                     )}
                   </div>
-                </motion.button>
+                </MotionButton>
               </div>
 
               {/* Action Buttons */}
@@ -165,8 +168,8 @@ const CameraSelectionModal = ({ isOpen, onClose, onSelect }) => {
                   Continue
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </MotionDiv>
+          </MotionDiv>
         </>
       )}
     </AnimatePresence>

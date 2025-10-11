@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useUserStore } from "../store/userStore"
 import { useAuth } from "../contexts/AuthContext"
 
+const MotionDiv = motion.div
+
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
   { to: "/workout", label: "Workout", icon: Dumbbell },
@@ -100,7 +102,7 @@ export default function Navigation() {
               {/* Enhanced Profile Dropdown with Landing Page Theme */}
               <AnimatePresence>
                 {showProfileMenu && (
-                  <motion.div
+                  <MotionDiv
                     initial={{ opacity: 0, y: -15, scale: 0.90 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -15, scale: 0.90 }}
@@ -150,7 +152,7 @@ export default function Navigation() {
                         <span className="text-sm font-hagrid font-light">Logout</span>
                       </button>
                     </div>
-                  </motion.div>
+                  </MotionDiv>
                 )}
               </AnimatePresence>
             </div>
@@ -199,7 +201,7 @@ export default function Navigation() {
   return (
     <nav className="fixed left-0 top-0 h-full w-64 bg-black/80 backdrop-blur-xl border-r border-white/10 flex flex-col py-8 z-50 shadow-2xl">
       {/* Logo/Brand */}
-      <motion.div 
+      <MotionDiv 
         className="mb-12 flex items-center gap-3 px-6"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -211,14 +213,14 @@ export default function Navigation() {
         <span className="font-hurion font-bold text-2xl text-white tracking-tight">
           Araise
         </span>
-      </motion.div>
+  </MotionDiv>
 
       {/* Navigation Links */}
       <div className="flex-1 space-y-3 px-4">
         {navItems.map((item, index) => {
           const Icon = item.icon
           return (
-            <motion.div
+            <MotionDiv
               key={item.to}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -246,13 +248,13 @@ export default function Navigation() {
                   </div>
                 )}
               </NavLink>
-            </motion.div>
+            </MotionDiv>
           )
         })}
       </div>
 
       {/* Footer/User Avatar section */}
-      <motion.div 
+      <MotionDiv 
         className="px-6 py-4 border-t border-white/10"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -292,7 +294,7 @@ export default function Navigation() {
           {/* Desktop Profile Dropdown */}
           <AnimatePresence>
             {showProfileMenu && (
-              <motion.div
+              <MotionDiv
                 initial={{ opacity: 0, y: 10, scale: 0.90 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.90 }}
@@ -329,11 +331,11 @@ export default function Navigation() {
                     <span className="text-sm font-hagrid font-light">Logout</span>
                   </button>
                 </div>
-              </motion.div>
+              </MotionDiv>
             )}
           </AnimatePresence>
         </div>
-      </motion.div>
+      </MotionDiv>
     </nav>
   )
 }

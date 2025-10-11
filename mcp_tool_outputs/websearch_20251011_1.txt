@@ -1,0 +1,7 @@
+Query: React app sync events to Google Calendar using OAuth Firebase integration
+Source snippets:
+- https://www.youtube.com/watch?v=c2b2yUNWFzI : Tutorial covering OAuth2 setup for Google Calendar API with React frontend and Express backend, includes creating events via Calendar API.
+- https://www.youtube.com/watch?v=tgcCl52EN84 : React + Supabase example showing Google OAuth provider setup and creating Google Calendar events.
+- https://medium.com/towardsdev/setting-up-oauth-2-0-for-google-login-using-react-and-firebase-846f0903e3ba : Guide for enabling Google OAuth in Firebase Auth.
+- https://blockchain.oodles.io/dev-blog/integrating-google-calendar-api-into-react-application/ : General React Google Calendar integration guide covering project and component setup.
+- https://buttercms.com/blog/react-firebase-google-analytics-set-up-log-events/ : Firebase analytics setup article (less relevant but noted).

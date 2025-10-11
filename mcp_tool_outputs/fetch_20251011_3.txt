@@ -1,0 +1,7 @@
+URL: https://developers.google.com/calendar/api/guides/overview
+Query: scope calendar events create
+Extract:
+- Google Calendar API overview describes Event, Calendar, Calendar List, Setting, ACL resources.
+- API accessible via HTTP REST or client libraries; features align with Calendar UI.
+- Related topics include authentication and authorization guidance, quickstarts, choosing scopes.
+- Page last updated 2025-08-28 UTC.

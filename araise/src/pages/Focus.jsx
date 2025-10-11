@@ -19,9 +19,7 @@ import { useXpStore } from "../store/xpStore"
 export default function Focus() {
   const [activeView, setActiveView] = useState('dashboard') // 'dashboard', 'create', 'session', 'complete'
   const [currentSession, setCurrentSession] = useState(null)
-  const [dashboardRefresh, setDashboardRefresh] = useState(0) // Trigger dashboard refresh
   const [isAddOpen, setIsAddOpen] = useState(false)
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const [completionMeta, setCompletionMeta] = useState({ xpGained: 0, leveledUp: false })
   const [stickyTimer, setStickyTimer] = useState({ 
     visible: false, 
@@ -48,7 +46,7 @@ export default function Focus() {
     dailyFocusGoal = 60
   } = useUserStore()
 
-  const { xp, level, streakDays, awardXp, touchStreak, checkAndResetDaily, getDailyProgress } = useXpStore()
+  const { streakDays, awardXp, checkAndResetDaily, getDailyProgress } = useXpStore()
 
   // Check and reset daily XP on component mount and every minute
   useEffect(() => {
@@ -65,7 +63,7 @@ export default function Focus() {
 
   // Function to trigger dashboard refresh
   const refreshDashboard = () => {
-    setDashboardRefresh(prev => prev + 1)
+    // Placeholder: trigger downstream data refresh when backend integration is ready
   }
 
   // Real-time progress update handler (throttled to avoid too many Firebase calls)
@@ -159,10 +157,6 @@ export default function Focus() {
 
     return () => clearInterval(interval)
   }, [stickyTimer.visible, stickyTimer.isPaused, currentSession, stickyTimer.remaining])
-
-  const handleCreateCustom = () => {
-    setActiveView('create')
-  }
 
   const handleSaveTask = async (taskData) => {
     try {
@@ -429,18 +423,6 @@ export default function Focus() {
   const getPlannedFocusGoal = () => {
     // Get the daily focus goal from userStore
     return dailyFocusGoal // This is the daily focus goal in minutes
-  }
-
-  const calculateScheduledForToday = (allTasks) => {
-    // Calculate time from scheduled tasks (for reference)
-    const today = new Date().toISOString().slice(0, 10)
-    return (allTasks || [])
-      .filter(t => t.date === today && t.startTime && t.endTime)
-      .reduce((m, t) => {
-        const startAt = new Date(`${t.date}T${t.startTime}:00`).getTime()
-        const endAt = new Date(`${t.date}T${t.endTime}:00`).getTime()
-        return m + Math.max(0, Math.round((endAt - startAt) / 60000))
-      }, 0)
   }
 
   return (

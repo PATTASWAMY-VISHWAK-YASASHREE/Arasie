@@ -1,0 +1,8 @@
+Query: React Google Calendar API integration manual sync button best practices 2025
+Timestamp: 2025-10-11T00:00:00Z
+Results Summary:
+1. YouTube tutorial on automating Google Calendar sync workflows (ClickUp integration) emphasising removal of manual updates.
+2. Blog (blockchain.oodles.io) detailing steps to integrate Google Calendar API into a React application, covering setup and components.
+3. StackOverflow thread discussing integrating Google Calendar API with React hooks for creating and managing appointments.
+4. GetKnit developer guide outlining calendar API integration best practices, including handling time zones and normalization.
+5. CalendarSync article comparing methods to sync Google Calendars in 2025 with recommendations.

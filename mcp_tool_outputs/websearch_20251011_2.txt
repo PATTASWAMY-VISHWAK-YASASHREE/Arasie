@@ -1,0 +1,7 @@
+Query: Use Google Calendar API with Firebase authenticated users React
+Source snippets:
+- https://www.reddit.com/r/Firebase/comments/1fo9sux/firebase_user_token_to_use_google_calendar_api/ : Discussion distinguishing Firebase authentication vs authorization; need separate OAuth scope for Calendar.
+- https://medium.com/@mulhoon/integrating-google-calendar-with-firebase-a-step-by-step-guide-d28ab68097b9 : Step-by-step guide covering Firebase auth, user consent, server-side token exchange, Firestore storage.
+- https://stackoverflow.com/questions/39914899/using-firebase-auth-to-access-the-google-calendar-api : StackOverflow Q/A on accessing Google Calendar API with Firebase-authenticated users.
+- https://github.com/googleapis/google-api-nodejs-client/issues/1385 : Issue discussing obtaining proper tokens to access Google Calendar in React.
+- https://www.youtube.com/watch?v=tgcCl52EN84 : React + Supabase tutorial (duplicate but relevant) for Calendar API event creation.

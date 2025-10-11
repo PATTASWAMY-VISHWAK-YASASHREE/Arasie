@@ -161,11 +161,15 @@ self.addEventListener('notificationclick', event => {
   event.notification.close()
   
   if (event.action === 'explore') {
-    event.waitUntil(clients.openWindow('/'))
+    if (self.clients && self.clients.openWindow) {
+      event.waitUntil(self.clients.openWindow('/'))
+    }
   } else if (event.action === 'close') {
     // Just close the notification
   } else {
     // Default action - open the app
-    event.waitUntil(clients.openWindow('/'))
+    if (self.clients && self.clients.openWindow) {
+      event.waitUntil(self.clients.openWindow('/'))
+    }
   }
 })

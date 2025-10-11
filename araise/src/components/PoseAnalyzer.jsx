@@ -38,14 +38,12 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
   const [feedback, setFeedback] = useState('');
   const [reps, setReps] = useState(0);
   const [angle, setAngle] = useState(0);
-  const [stage, setStage] = useState('');
   const [cameraPermission, setCameraPermission] = useState('prompt');
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [timeTaken, setTimeTaken] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isVoiceMuted, setIsVoiceMuted] = useState(false);
-  const [lastSpokenFeedback, setLastSpokenFeedback] = useState('');
   
   // Use refs to avoid dependency issues
   const isVoiceMutedRef = useRef(false);
@@ -154,7 +152,6 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
     setIsInitialized(false);
     setReps(0);
     setAngle(0);
-    setStage('');
     setFeedback('');
     setPoseStatus('Adjust');
     setError(null);
@@ -174,7 +171,6 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
 
     try {
       lastSpokenFeedbackRef.current = feedbackText;
-      setLastSpokenFeedback(feedbackText);
       await textToSpeechService.speakFeedback(feedbackText, type);
     } catch (error) {
       console.error('Voice synthesis error:', error);
@@ -268,7 +264,6 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
             setTimeout(() => {
               if (!isVoiceMutedRef.current && data.feedback !== lastSpokenFeedbackRef.current) {
                 lastSpokenFeedbackRef.current = data.feedback;
-                setLastSpokenFeedback(data.feedback);
                 textToSpeechService.speakFeedback(data.feedback, 'encouraging');
               }
             }, 0);
@@ -280,7 +275,6 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
             setTimeout(() => {
               if (!isVoiceMutedRef.current && data.message !== lastSpokenFeedbackRef.current) {
                 lastSpokenFeedbackRef.current = data.message;
-                setLastSpokenFeedback(data.message);
                 textToSpeechService.speakFeedback(data.message, 'neutral');
               }
             }, 0);
@@ -290,7 +284,6 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
           // Update stage if present
           if (data.stage) {
             console.log('📊 Updating stage:', data.stage);
-            setStage(data.stage);
             setPoseStatus(data.stage === 'up' ? 'Good Form' : 'Adjust Position');
             updated = true;
           }

@@ -1,0 +1,9 @@
+Query: eslint fix unused framer motion imports react remove unused imports
+Source: https://openillumi.com/en/en-eslint-fix-react-ts-unused-imports/
+Summary: Article explains causes of unused imports in React/TypeScript projects and recommends automating cleanup via eslint-plugin-unused-imports, including installation commands and configuration snippets for ESLint flat config. Notes benefits of maintaining clean imports.
+
+Source: https://www.npmjs.com/package/eslint-plugin-unused-imports
+Summary: Package documentation for eslint-plugin-unused-imports detailing version, downloads, installation command, and repository resources.
+
+Source: https://stackoverflow.com/questions/64365300/how-can-i-remove-unused-imports-declarations-from-the-entire-project-of-react-ty
+Summary: Stack Overflow thread discussing removal of unused imports in React TypeScript projects. Suggests using eslint-plugin-unused-imports or running ESLint with --fix when no-unused-vars rule is enabled.

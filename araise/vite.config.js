@@ -27,7 +27,7 @@ export default defineConfig({
   },
   define: {
     // Ensure NODE_ENV is available at build time
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+    'import.meta.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
   },
   preview: {
     port: 3000,

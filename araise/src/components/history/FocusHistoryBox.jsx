@@ -20,13 +20,6 @@ export default function FocusHistoryBox({ activities, isExpanded, onToggle }) {
     return sum + (task.completed || task.planned || task.focusDuration || 25)
   }, 0)
 
-  const formatTime = (timeStr) => {
-    return new Date(timeStr).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    })
-  }
-
   const formatDuration = (minutes) => {
     if (minutes < 60) {
       return `${minutes}m`

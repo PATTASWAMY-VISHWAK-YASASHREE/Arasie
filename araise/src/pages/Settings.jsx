@@ -21,7 +21,8 @@ import {
   Brain,
   Dumbbell,
   Clock,
-  Utensils
+  Utensils,
+  Calendar
 } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import { useXpStore } from "../store/xpStore"
@@ -29,11 +30,11 @@ import useSettingsStore from "../store/settingsStore"
 import notificationService from "../services/NotificationService"
 import { useNavigate } from "react-router-dom"
 import GoalsModal from "../components/GoalsModal"
+import useGoogleCalendarSync from "../hooks/useGoogleCalendarSync"
 
 export default function Settings() {
   const navigate = useNavigate()
   const { 
-    name, 
     logout, 
     dailyFocusGoal, 
     dailyCalorieGoal, 
@@ -47,11 +48,20 @@ export default function Settings() {
     preferences,
     privacy,
     updateNotificationSetting,
-    updatePreference,
-    updatePrivacySetting,
-    exportData,
+  updatePreference,
+  updatePrivacySetting,
     initializeSettings
   } = useSettingsStore()
+  const {
+    isSyncing: calendarSyncing,
+    statusMessage: calendarStatusMessage,
+    syncEnabled: calendarSyncEnabled,
+    lastSyncedAt: calendarLastSyncedAt,
+    lastError: calendarLastError,
+    connectAndSync,
+    manualSync,
+    disconnect: disconnectCalendar
+  } = useGoogleCalendarSync()
   
   // Notification permission state
   const [notificationPermission, setNotificationPermission] = useState('default')
@@ -67,6 +77,60 @@ export default function Settings() {
     // Initialize settings
     initializeSettings()
   }, [initializeSettings])
+
+  const formatLastSynced = (isoString) => {
+    if (!isoString) return null
+    const parsed = new Date(isoString)
+    if (Number.isNaN(parsed.getTime())) return null
+    return parsed.toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })
+  }
+
+  const calendarDescription = (() => {
+    const defaultMessage = 'Sync workouts, focus sessions, and streak milestones to your Google Calendar.'
+    if (calendarSyncing) {
+      return 'Syncing with Google Calendar…'
+    }
+    if (calendarLastError) {
+      const truncated = calendarLastError.length > 80 ? `${calendarLastError.slice(0, 80)}…` : calendarLastError
+      return `Action needed: ${truncated}`
+    }
+    if (calendarStatusMessage) {
+      return calendarStatusMessage
+    }
+    if (calendarSyncEnabled && calendarLastSyncedAt) {
+      const lastSynced = formatLastSynced(calendarLastSyncedAt)
+      if (lastSynced) {
+        return `Last synced ${lastSynced}`
+      }
+    }
+    return defaultMessage
+  })()
+
+  const handleCalendarRowClick = async () => {
+    if (calendarSyncing) return
+    try {
+      if (calendarSyncEnabled) {
+        await manualSync()
+      } else {
+        await connectAndSync()
+      }
+    } catch (error) {
+      console.warn('Calendar sync action failed:', error)
+    }
+  }
+
+  const handleCalendarToggle = async (value) => {
+    if (calendarSyncing) return
+    try {
+      if (value) {
+        await connectAndSync()
+      } else {
+        await disconnectCalendar()
+      }
+    } catch (error) {
+      console.warn('Calendar sync toggle failed:', error)
+    }
+  }
 
   const requestNotificationPermission = async () => {
     const granted = await notificationService.requestPermission()
@@ -212,6 +276,16 @@ export default function Settings() {
       title: "Data & Storage",
       icon: Smartphone,
       items: [
+        {
+          label: "Google Calendar Sync",
+          description: calendarDescription,
+          icon: Calendar,
+          toggle: true,
+          value: calendarSyncEnabled,
+          onChange: (value) => handleCalendarToggle(value),
+          action: () => handleCalendarRowClick(),
+          special: calendarLastError ? 'error' : undefined
+        },
         {
           label: "Language",
           description: "English (US)",
@@ -473,11 +547,15 @@ export default function Settings() {
                         <h3 className="font-poppins font-medium text-ar-white text-sm truncate leading-tight">
                           {item.label}
                         </h3>
-                        <p className={`text-xs mt-1 leading-tight ${
-                          item.special === 'permission' && notificationPermission !== 'granted'
-                            ? 'text-orange-400'
-                            : 'text-ar-gray-400'
-                        }`}>
+                        <p className={`text-xs mt-1 leading-tight ${(() => {
+                          if (item.special === 'error') {
+                            return 'text-red-400'
+                          }
+                          if (item.special === 'permission' && notificationPermission !== 'granted') {
+                            return 'text-orange-400'
+                          }
+                          return 'text-ar-gray-400'
+                        })()}`}>
                           {item.description}
                         </p>
                       </div>

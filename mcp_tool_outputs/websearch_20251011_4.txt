@@ -1,0 +1,7 @@
+Query: React integrate Google Calendar API sync user events button sync schedules training routine
+Result Count: 5
+1. https://blockchain.oodles.io/dev-blog/integrating-google-calendar-api-into-react-application/ - A Guide to Google Calendar API Integration into Your React ...
+2. https://www.youtube.com/watch?v=m5-eP7sv32M - Integrating Google Calendar Events with Syncfusion React Scheduler
+3. https://stackoverflow.com/questions/59866754/integrating-google-calendar-api-to-react-hooks - integrating google calendar API to react hooks - Stack Overflow
+4. https://ej2.syncfusion.com/react/demos/schedule/calendar-integration/ - React Scheduler Sync Google Calendar Example - Syncfusion Demos
+5. https://js.devexpress.com/React/Demos/WidgetsGallery/Demo/Scheduler/GoogleCalendarIntegration/ - Google Calendar Integration - React Scheduler - DevExtreme

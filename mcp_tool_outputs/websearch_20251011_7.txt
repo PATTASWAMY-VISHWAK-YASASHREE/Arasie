@@ -1,0 +1,9 @@
+Query: React fast refresh only works when a file only exports components solution
+Timestamp: 2025-10-11
+Results:
+1. https://www.gatsbyjs.com/docs/reference/local-development/fast-refresh/
+   - Discusses Fast Refresh limitations, including requirement that files export only React components.
+2. https://www.reddit.com/r/react/comments/1k2tgid/how_is_this_done_in_real_life_work_react_context/
+   - Community discussion on resolving the ESLint warning by separating context/provider exports.
+3. https://dev.to/md_belayethossain_56e787/fast-refresh-only-works-when-a-file-only-exports-components-why-does-this-problem-occur-and-how-1b4
+   - Explains why the warning occurs and suggests splitting non-component exports into separate files or suppressing rule.

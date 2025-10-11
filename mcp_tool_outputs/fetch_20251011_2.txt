@@ -1,0 +1,8 @@
+URL: https://developers.google.com/identity/oauth2/web/guides/use-token-model
+Query focus: initTokenClient
+Summary:
+- Details initialization of Google Identity Services token client with `google.accounts.oauth2.initTokenClient` specifying client ID, scopes, and callback.
+- Describes `requestAccessToken()` usage, consent handling, incremental authorization, and granular permissions.
+- Notes tokens obtained via token model obviate need for storing refresh tokens; new tokens requested via user gesture when needed.
+- Provides example REST calls using access token and guidance on token expiration and revocation.
+- Emphasizes only popup UX is supported and references OAuth 2.0 policies.
