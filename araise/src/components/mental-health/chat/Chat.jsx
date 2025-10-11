@@ -1,82 +1,203 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Send, Mic, ArrowLeft, Menu, MessageSquare, Trash2, Sparkles, Heart } from "lucide-react"
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { Send, Mic, ArrowLeft, Menu, MessageSquare, Trash2, Sparkles, Heart, Volume2, VolumeX } from "lucide-react"
 import { useUserStore } from "../../../store/userStore"
+import { useAuth } from "../../../contexts/AuthContext"
 import VoiceModal from "./VoiceModal"
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
+// API Base URL
+const API_BASE_URL = "https://mental-health-agent-0oib.onrender.com"
 
 export default function Chat({ onBack }) {
   const { updateMentalHealthProgress, logChatSession } = useUserStore()
+  const { currentUser } = useAuth()
 
   const handleBack = async () => {
+    // Stop any ongoing speech
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+    }
+
     // Log chat session when user leaves
-    const session = chatSessions.find(s => s.id === currentSessionId)
-    if (session && session.messages.length > 1) { // More than just the initial AI message
-      const userMessages = session.messages.filter(m => m.type === 'user')
-      const topics = userMessages.map(m => m.content.substring(0, 50)).slice(0, 3) // First 3 user messages as topics
+    const session = chatSessions.find(s => s.session_id === currentSessionId)
+    if (session && session.messages.length > 0) {
+      const userMessages = session.messages.filter(m => m.role === 'user')
+      const topics = userMessages.map(m => m.content.substring(0, 50)).slice(0, 3)
       const summary = `Chat session with ${userMessages.length} messages`
 
       await logChatSession(summary, topics)
-      await updateMentalHealthProgress(15) // 15% for chat session
+      await updateMentalHealthProgress(15)
     }
 
     onBack()
   }
-  const [chatSessions, setChatSessions] = useState([
-    {
-      id: 1,
-      title: "Today's Chat",
-      date: new Date().toISOString().slice(0, 10),
-      messages: [
-        {
-          id: 1,
-          type: 'ai',
-          content: "Hello! I'm Nivi, your wellness companion. I'm always here to listen. How are you feeling today?",
-          timestamp: new Date()
-        }
-      ]
-    }
-  ])
-  const [currentSessionId, setCurrentSessionId] = useState(1)
+
+  const [chatSessions, setChatSessions] = useState([])
+  const [currentSessionId, setCurrentSessionId] = useState(null)
   const [currentMessage, setCurrentMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
   const [showVoiceModal, setShowVoiceModal] = useState(false)
+  const [autoSpeak, setAutoSpeak] = useState(false) // Auto-speak AI responses
+  const [isSpeaking, setIsSpeaking] = useState(false)
 
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
+  const speechSynthRef = useRef(null)
 
-  const currentSession = chatSessions.find(session => session.id === currentSessionId)
+  const currentSession = chatSessions.find(session => session.session_id === currentSessionId)
   const chatMessages = currentSession?.messages || []
 
-  // Chat state is managed by parent component (MentalHealth)
+  // Initialize speech synthesis
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      speechSynthRef.current = window.speechSynthesis
+    }
+
+    return () => {
+      // Cleanup: stop any ongoing speech
+      if (speechSynthRef.current) {
+        speechSynthRef.current.cancel()
+      }
+    }
+  }, [])
+
+  // Function to speak text
+  const speakText = (text) => {
+    if (!speechSynthRef.current || !text) return
+
+    try {
+      // Cancel any ongoing speech
+      speechSynthRef.current.cancel()
+
+      const utterance = new SpeechSynthesisUtterance(text)
+      
+      // Set voice properties for a warm, friendly female voice
+      utterance.rate = 0.95 // Slightly slower for better comprehension
+      utterance.pitch = 1.1 // Slightly higher pitch for warmth
+      utterance.volume = 1.0
+      
+      // Try to get a female voice
+      const voices = speechSynthRef.current.getVoices()
+      const femaleVoice = voices.find(voice => 
+        voice.name.includes('Female') || 
+        voice.name.includes('Samantha') ||
+        voice.name.includes('Google UK English Female') ||
+        voice.name.includes('Microsoft Zira')
+      )
+      if (femaleVoice) {
+        utterance.voice = femaleVoice
+      }
+
+      utterance.onstart = () => setIsSpeaking(true)
+      utterance.onend = () => setIsSpeaking(false)
+      utterance.onerror = () => setIsSpeaking(false)
+
+      speechSynthRef.current.speak(utterance)
+    } catch (error) {
+      console.error('Error in text-to-speech:', error)
+      setIsSpeaking(false)
+    }
+  }
+
+  // Function to stop speaking
+  const stopSpeaking = () => {
+    if (speechSynthRef.current) {
+      speechSynthRef.current.cancel()
+      setIsSpeaking(false)
+    }
+  }
+
+  // Load chat sessions on mount
+  useEffect(() => {
+    const fetchSessions = async () => {
+      if (!currentUser?.uid) return
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/sessions/${currentUser.uid}`)
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch sessions')
+        }
+
+        const data = await response.json()
+        console.log('Sessions API response:', data)
+        
+        if (data.success && data.sessions && data.sessions.length > 0) {
+          // Transform the sessions to match our structure
+          const transformedSessions = data.sessions.map(session => {
+            // Each message in the API has both query (user) and response (assistant)
+            const messages = []
+            session.messages.forEach(msg => {
+              // Add user message
+              if (msg.query) {
+                messages.push({
+                  role: 'user',
+                  content: msg.query,
+                  timestamp: msg.timestamp
+                })
+              }
+              // Add assistant message
+              if (msg.response) {
+                messages.push({
+                  role: 'assistant',
+                  content: msg.response,
+                  timestamp: msg.timestamp
+                })
+              }
+            })
+            
+            return {
+              session_id: session.session_id,
+              title: session.messages[0]?.query?.substring(0, 50) || 'Chat Session',
+              created_at: session.created_at,
+              messages: messages
+            }
+          })
+          
+          setChatSessions(transformedSessions)
+          // Set the first session as current
+          setCurrentSessionId(transformedSessions[0].session_id)
+        }
+      } catch (error) {
+        console.error('Error fetching sessions:', error)
+      }
+    }
+
+    fetchSessions()
+  }, [currentUser])
 
   // Auto-scroll chat to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [chatMessages])
-
-  // Chat state is managed by parent component (MentalHealth)
+  }, [currentSessionId, chatSessions])
 
   const handleSendMessage = async (messageText = currentMessage) => {
-    if (!messageText.trim()) return
+    if (!messageText.trim() || !currentUser?.uid) return
 
     const userMessage = {
-      id: Date.now(),
-      type: 'user',
+      role: 'user',
       content: messageText,
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     }
 
-    // Update current session with new message
-    setChatSessions(prev => prev.map(session =>
-      session.id === currentSessionId
-        ? { ...session, messages: [...session.messages, userMessage] }
-        : session
-    ))
+    // If it's a new chat, create a session entry first
+    if (!currentSessionId) {
+      const newSession = {
+        session_id: null,
+        title: messageText.substring(0, 50),
+        created_at: new Date().toISOString(),
+        messages: [userMessage]
+      }
+      setChatSessions(prev => [newSession, ...prev])
+    } else {
+      // Update existing session with new message
+      setChatSessions(prev => prev.map(session =>
+        session.session_id === currentSessionId
+          ? { ...session, messages: [...session.messages, userMessage] }
+          : session
+      ))
+    }
 
     setCurrentMessage('')
     setIsLoading(true)
@@ -85,37 +206,98 @@ export default function Chat({ onBack }) {
     setTimeout(() => inputRef.current?.focus(), 100)
 
     try {
-      const aiResponse = await getAIResponse(messageText)
-      const responseMessage = {
-        id: Date.now() + 1,
-        type: 'ai',
-        content: aiResponse,
-        timestamp: new Date()
+      // Prepare URL with query parameters
+      const url = new URL(`${API_BASE_URL}/query/${currentUser.uid}`)
+      url.searchParams.append('query', messageText)
+      
+      // Add session_id only if we have an existing session
+      if (currentSessionId) {
+        url.searchParams.append('session_id', currentSessionId)
       }
 
-      setChatSessions(prev => prev.map(session =>
-        session.id === currentSessionId
-          ? { ...session, messages: [...session.messages, responseMessage] }
-          : session
-      ))
+      console.log('Sending request to:', url.toString())
 
-      // Speak the AI response if voice modal is open
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to get AI response')
+      }
+
+      const data = await response.json()
+      console.log('API Response:', data)
+
+      if (!data.success) {
+        throw new Error('API returned unsuccessful response')
+      }
+
+      const aiMessage = {
+        role: 'assistant',
+        content: data.response,
+        timestamp: data.timestamp || new Date().toISOString()
+      }
+
+      // Update session with AI response and session_id
+      if (!currentSessionId) {
+        // For new chats, update the first session
+        setChatSessions(prev => prev.map((session, index) => {
+          if (index === 0 && session.session_id === null) {
+            return {
+              ...session,
+              session_id: data.session_id,
+              messages: [...session.messages, aiMessage]
+            }
+          }
+          return session
+        }))
+        setCurrentSessionId(data.session_id)
+      } else {
+        // For existing chats, update the matching session
+        setChatSessions(prev => prev.map(session => {
+          if (session.session_id === currentSessionId) {
+            return {
+              ...session,
+              messages: [...session.messages, aiMessage]
+            }
+          }
+          return session
+        }))
+      }
+
+      // Speak the AI response
       if (showVoiceModal && window.voiceModalSpeakText) {
-        setTimeout(() => window.voiceModalSpeakText(aiResponse), 500)
+        // Use voice modal's speech synthesis
+        setTimeout(() => window.voiceModalSpeakText(data.response), 500)
+      } else if (autoSpeak) {
+        // Use regular text-to-speech if auto-speak is enabled
+        setTimeout(() => speakText(data.response), 500)
       }
     } catch (error) {
       console.error('Error getting AI response:', error)
       const errorMessage = {
-        id: Date.now() + 1,
-        type: 'ai',
+        role: 'assistant',
         content: "I'm sorry, I'm having trouble responding right now. Please try again in a moment. Remember, if you're experiencing a mental health crisis, please reach out to a healthcare professional or crisis helpline.",
-        timestamp: new Date()
+        timestamp: new Date().toISOString()
       }
-      setChatSessions(prev => prev.map(session =>
-        session.id === currentSessionId
-          ? { ...session, messages: [...session.messages, errorMessage] }
-          : session
-      ))
+      
+      if (!currentSessionId) {
+        setChatSessions(prev => prev.map((session, index) => {
+          if (index === 0) {
+            return { ...session, messages: [...session.messages, errorMessage] }
+          }
+          return session
+        }))
+      } else {
+        setChatSessions(prev => prev.map(session =>
+          session.session_id === currentSessionId
+            ? { ...session, messages: [...session.messages, errorMessage] }
+            : session
+        ))
+      }
     } finally {
       setIsLoading(false)
     }
@@ -123,28 +305,21 @@ export default function Chat({ onBack }) {
 
   const startNewChat = () => {
     const newSession = {
-      id: Date.now(),
-      title: `Chat ${chatSessions.length + 1}`,
-      date: new Date().toISOString().slice(0, 10),
-      messages: [
-        {
-          id: Date.now(),
-          type: 'ai',
-          content: "Hello! I'm Nivi, your wellness companion. I'm always here to listen. How are you feeling today?",
-          timestamp: new Date()
-        }
-      ]
+      session_id: null, // Will be set when first message is sent
+      title: `New Chat`,
+      created_at: new Date().toISOString(),
+      messages: []
     }
     setChatSessions(prev => [newSession, ...prev])
-    setCurrentSessionId(newSession.id)
+    setCurrentSessionId(null)
     setShowSidebar(false)
   }
 
   const deleteChat = (sessionId) => {
-    setChatSessions(prev => prev.filter(session => session.id !== sessionId))
+    setChatSessions(prev => prev.filter(session => session.session_id !== sessionId))
     if (sessionId === currentSessionId && chatSessions.length > 1) {
-      const remainingSessions = chatSessions.filter(session => session.id !== sessionId)
-      setCurrentSessionId(remainingSessions[0].id)
+      const remainingSessions = chatSessions.filter(session => session.session_id !== sessionId)
+      setCurrentSessionId(remainingSessions[0].session_id)
     }
   }
 
@@ -154,39 +329,6 @@ export default function Chat({ onBack }) {
 
   const handleVoiceModalClose = () => {
     setShowVoiceModal(false)
-  }
-
-  const getAIResponse = async (message) => {
-    try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
-
-      const mentalHealthPrompt = `You are Nivi, a compassionate and supportive mental health companion AI for the Araise wellness app. Your name is Nivi and you're always here to listen. Your role is to provide emotional support, guidance, and resources while maintaining professional boundaries.
-
-GUIDELINES:
-- Be empathetic, non-judgmental, and supportive
-- Provide practical coping strategies and wellness tips
-- Encourage self-care and healthy habits
-- If someone expresses serious mental health concerns, gently suggest professional help
-- Keep responses concise but meaningful (2-3 sentences max)
-- Use warm, encouraging language
-- Never provide medical advice or diagnose conditions
-- Focus on wellness, mindfulness, exercise, and positive mental health practices
-- You are Nivi, always here to listen
-
-CRISIS SITUATIONS:
-If someone mentions self-harm, suicide, or severe mental health crisis, respond with immediate care and provide crisis resources.
-
-Current user message: "${message}"
-
-Respond as Nivi, a caring mental health companion who is always here to listen, focusing on the user's emotional wellbeing and providing helpful, supportive guidance.`
-
-      const result = await model.generateContent(mentalHealthPrompt)
-      const response = await result.response
-      return response.text()
-    } catch (error) {
-      console.error('Gemini API error:', error)
-      throw error
-    }
   }
 
   return (
@@ -266,38 +408,48 @@ Respond as Nivi, a caring mental health companion who is always here to listen, 
 
               {/* Chat History */}
               <div className="flex-1 overflow-y-auto p-2">
-                {chatSessions.map((session, index) => (
-                  <motion.div
-                    key={session.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`group flex items-center justify-between p-3 rounded-xl mb-2 cursor-pointer transition-all duration-300 ${session.id === currentSessionId
-                      ? 'bg-gradient-to-r from-blue-600/30 to-blue-500/15 border border-blue-500/40 text-white shadow-lg shadow-blue-500/10'
-                      : 'text-ar-gray-300 hover:bg-blue-500/10 hover:border hover:border-blue-500/20 hover:text-white backdrop-blur-sm'
-                      }`}
-                    onClick={() => {
-                      setCurrentSessionId(session.id)
-                      setShowSidebar(false)
-                    }}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{session.title}</p>
-                      <p className="text-xs text-ar-gray-400">{session.date}</p>
-                    </div>
-                    {chatSessions.length > 1 && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deleteChat(session.id)
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 text-ar-gray-400 hover:text-red-400 transition-all duration-300"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </motion.div>
-                ))}
+                {chatSessions.length === 0 ? (
+                  <div className="text-center text-ar-gray-400 text-sm mt-8">
+                    No chat history yet
+                  </div>
+                ) : (
+                  chatSessions.map((session, index) => (
+                    <motion.div
+                      key={session.session_id || `new-${index}`}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`group flex items-center justify-between p-3 rounded-xl mb-2 cursor-pointer transition-all duration-300 ${session.session_id === currentSessionId
+                        ? 'bg-gradient-to-r from-blue-600/30 to-blue-500/15 border border-blue-500/40 text-white shadow-lg shadow-blue-500/10'
+                        : 'text-ar-gray-300 hover:bg-blue-500/10 hover:border hover:border-blue-500/20 hover:text-white backdrop-blur-sm'
+                        }`}
+                      onClick={() => {
+                        setCurrentSessionId(session.session_id)
+                        setShowSidebar(false)
+                      }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {session.title || 'New Chat'}
+                        </p>
+                        <p className="text-xs text-ar-gray-400">
+                          {session.created_at ? new Date(session.created_at).toLocaleDateString() : 'Today'}
+                        </p>
+                      </div>
+                      {chatSessions.length > 1 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteChat(session.session_id)
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-ar-gray-400 hover:text-red-400 transition-all duration-300"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </motion.div>
+                  ))
+                )}
               </div>
             </motion.div>
           </>
@@ -364,24 +516,56 @@ Respond as Nivi, a caring mental health companion who is always here to listen, 
                 <h1 className="text-lg font-poppins font-semibold text-white">
                   Nivi
                 </h1>
-                <p className="text-xs text-blue-300">Always here to listen</p>
+                <p className="text-xs text-blue-300">
+                  {isSpeaking ? (
+                    <span className="flex items-center gap-1">
+                      <span className="inline-block w-1 h-1 bg-blue-400 rounded-full animate-pulse" />
+                      Speaking...
+                    </span>
+                  ) : (
+                    'Always here to listen'
+                  )}
+                </p>
               </div>
             </div>
           </div>
 
-          <motion.button
-            onClick={() => setShowSidebar(!showSidebar)}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="p-2 text-ar-gray-300 hover:text-white transition-colors rounded-lg hover:bg-blue-500/10"
-          >
-            <Menu size={20} />
-          </motion.button>
+          <div className="flex items-center gap-2">
+            {/* Auto-speak toggle */}
+            <motion.button
+              onClick={() => {
+                setAutoSpeak(!autoSpeak)
+                if (autoSpeak) {
+                  stopSpeaking()
+                }
+              }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className={`p-2 rounded-lg transition-all ${
+                autoSpeak
+                  ? 'text-blue-400 bg-blue-500/20 border border-blue-400/30'
+                  : 'text-ar-gray-300 hover:text-white hover:bg-blue-500/10'
+              }`}
+              title={autoSpeak ? 'Auto-speak enabled' : 'Auto-speak disabled'}
+            >
+              {autoSpeak ? <Volume2 size={20} /> : <VolumeX size={20} />}
+            </motion.button>
+
+            {/* Menu button */}
+            <motion.button
+              onClick={() => setShowSidebar(!showSidebar)}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 text-ar-gray-300 hover:text-white transition-colors rounded-lg hover:bg-blue-500/10"
+            >
+              <Menu size={20} />
+            </motion.button>
+          </div>
         </motion.div>
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto relative">
-          {chatMessages.length === 1 ? (
+          {chatMessages.length === 0 ? (
             // Welcome Screen
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -475,26 +659,26 @@ Respond as Nivi, a caring mental health companion who is always here to listen, 
           ) : (
             // Chat Messages
             <div className="px-6 py-6 space-y-6 max-w-4xl mx-auto">
-              {chatMessages.slice(1).map((message, index) => (
+              {chatMessages.map((message, index) => (
                 <motion.div
-                  key={message.id}
+                  key={`${message.timestamp}-${index}`}
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className={`flex gap-4 ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                  className={`flex gap-4 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   {/* Avatar */}
                   <motion.div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden ${message.type === 'ai'
+                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden ${message.role === 'assistant'
                       ? 'bg-gradient-to-br from-blue-500/30 to-blue-400/20 backdrop-blur-sm border border-blue-400/30'
                       : 'bg-gradient-to-br from-gray-600/50 to-gray-500/50 backdrop-blur-sm border border-gray-400/30'
                       }`}
                     whileHover={{ scale: 1.1 }}
                   >
                     <span className="text-white text-sm font-semibold relative z-10">
-                      {message.type === 'ai' ? 'N' : 'Y'}
+                      {message.role === 'assistant' ? 'N' : 'Y'}
                     </span>
-                    {message.type === 'ai' && (
+                    {message.role === 'assistant' && (
                       <motion.div
                         className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-blue-300/8"
                         animate={{
@@ -512,7 +696,7 @@ Respond as Nivi, a caring mental health companion who is always here to listen, 
                   {/* Message Content */}
                   <div className="flex-1 max-w-3xl">
                     <motion.div
-                      className={`p-4 rounded-2xl text-sm leading-relaxed backdrop-blur-sm border ${message.type === 'user'
+                      className={`p-4 rounded-2xl text-sm leading-relaxed backdrop-blur-sm border ${message.role === 'user'
                         ? 'bg-gradient-to-br from-blue-600/20 to-blue-500/10 border-blue-400/30 text-white ml-auto max-w-md'
                         : 'bg-gradient-to-br from-gray-800/40 to-gray-700/20 border-gray-600/20 text-gray-100 mr-auto'
                         }`}
@@ -521,9 +705,23 @@ Respond as Nivi, a caring mental health companion who is always here to listen, 
                     >
                       {message.content}
                     </motion.div>
-                    <p className={`text-xs text-gray-400 mt-2 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                    <div className={`flex items-center gap-2 mt-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <p className="text-xs text-gray-400">
+                        {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </p>
+                      {/* Speaker button for AI messages */}
+                      {message.role === 'assistant' && (
+                        <motion.button
+                          onClick={() => speakText(message.content)}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          className="p-1 rounded-md text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                          title="Listen to this message"
+                        >
+                          <Volume2 size={14} />
+                        </motion.button>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               ))}
