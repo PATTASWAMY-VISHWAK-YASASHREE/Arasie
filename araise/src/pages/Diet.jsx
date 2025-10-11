@@ -11,6 +11,7 @@ export default function Diet() {
   const [showScanResults, setShowScanResults] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
   const [scanResults, setScanResults] = useState(null)
+  const [selectedImage, setSelectedImage] = useState(null)
 
   const fileInputRef = useRef(null)
   const cameraInputRef = useRef(null)

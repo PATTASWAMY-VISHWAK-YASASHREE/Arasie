@@ -1,8 +1,11 @@
 import { motion } from "framer-motion"
-import { Utensils, ChevronDown, ChevronUp, Clock } from "lucide-react"
+import { Utensils, ChevronDown, ChevronUp, Clock, Target } from "lucide-react"
+import { useUserStore } from "../../store/userStore"
 
 export default function DietHistoryBox({ activities, isExpanded, onToggle }) {
+  const { dailyCalorieGoal } = useUserStore()
   const totalCalories = activities.reduce((sum, meal) => sum + (meal.calories || 0), 0)
+  const calorieGoal = dailyCalorieGoal || 2000 // Use user's goal or default to 2000
   const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack']
   
   const getMealsByType = () => {
@@ -58,7 +61,7 @@ export default function DietHistoryBox({ activities, isExpanded, onToggle }) {
           <div>
             <h3 className="text-ar-white font-medium">Diet</h3>
             <p className="text-ar-gray-400 text-sm">
-              {totalCalories} calories • {activities.length} {activities.length === 1 ? 'meal' : 'meals'}
+              {totalCalories.toLocaleString()} / {calorieGoal.toLocaleString()} calories • {activities.length} {activities.length === 1 ? 'meal' : 'meals'}
             </p>
           </div>
         </div>
@@ -67,6 +70,30 @@ export default function DietHistoryBox({ activities, isExpanded, onToggle }) {
             {Object.values(groupedMeals).filter(meals => meals.length > 0).length} meal types
           </span>
           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Target className="text-orange-400" size={16} />
+            <span className="text-ar-white text-sm">Daily Calorie Goal</span>
+          </div>
+          <span className="text-orange-400 text-sm font-medium">
+            {Math.round((totalCalories / calorieGoal) * 100)}%
+          </span>
+        </div>
+        <div className="w-full bg-ar-gray-800 rounded-full h-2">
+          <div 
+            className="bg-gradient-to-r from-orange-500 to-orange-400 h-2 rounded-full transition-all duration-500"
+            style={{ 
+              width: `${Math.min((totalCalories / calorieGoal) * 100, 100)}%` 
+            }}
+          />
+        </div>
+        <div className="text-xs text-ar-gray-400 mt-1">
+          {totalCalories >= calorieGoal ? 'Daily goal reached!' : `${calorieGoal - totalCalories} calories remaining`}
         </div>
       </div>
 

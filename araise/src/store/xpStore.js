@@ -169,7 +169,7 @@ export const useXpStore = create((set, get) => ({
   checkAndResetDaily: async () => {
     const state = get()
     if (!state.firebaseService) {
-      console.warn('Firebase service not available for daily reset, skipping...')
+      // Firebase service not yet initialized, will retry when available
       return
     }
 

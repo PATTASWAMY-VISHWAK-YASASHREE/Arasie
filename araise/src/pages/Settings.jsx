@@ -423,9 +423,9 @@ export default function Settings() {
         >
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center justify-center w-9 h-9 text-ar-gray-400 hover:text-white transition-colors touch-manipulation"
+            className="flex items-center justify-center w-12 h-12 text-ar-blue hover:text-ar-blue/80 transition-colors touch-manipulation glass-card rounded-xl hover:border-ar-blue/50"
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={20} />
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-poppins font-bold text-ar-white">Settings</h1>

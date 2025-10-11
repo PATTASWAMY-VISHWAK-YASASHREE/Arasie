@@ -170,36 +170,37 @@ export default function GuidedBreathing({ onBack }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="text-center max-w-2xl mx-auto"
+        className="text-center max-w-md mx-auto px-4"
       >
-        <div className={`glass-card p-8 rounded-2xl bg-gradient-to-br ${exercise?.gradient}`}>
+        <div className="glass-card p-6 rounded-2xl bg-ar-blue/10 border border-ar-blue/20">
+          {/* Simple celebration icon */}
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring" }}
-            className="text-6xl mb-6"
+            className="text-6xl mb-4"
           >
             🎉
           </motion.div>
 
-          <h2 className="text-3xl font-hagrid font-light text-white mb-4">
+          <h2 className="text-2xl font-bold text-white mb-3">
             Session Complete!
           </h2>
 
-          <p className="text-white/80 text-lg mb-6">
+          <p className="text-white/80 text-base mb-4">
             You just completed {exercise?.cycles} cycles of {exercise?.name.toLowerCase()}
           </p>
 
-          <div className="bg-white/10 rounded-xl p-4 mb-8">
+          <div className="bg-ar-blue/10 rounded-xl p-4 mb-6 border border-ar-blue/20">
             <p className="text-white/90 text-sm">
               "Great job taking time for your mental wellness. Regular breathing exercises can help reduce stress, improve focus, and promote overall well-being."
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col gap-3">
             <button
               onClick={handleRestartSession}
-              className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl transition-all font-medium backdrop-blur-sm"
+              className="bg-ar-blue hover:bg-ar-blue/80 text-white px-6 py-3 rounded-xl transition-all font-medium"
             >
               Practice Again
             </button>
@@ -208,7 +209,7 @@ export default function GuidedBreathing({ onBack }) {
                 setSessionComplete(false)
                 setSelectedExercise(null)
               }}
-              className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl transition-all font-medium backdrop-blur-sm"
+              className="bg-ar-blue/20 hover:bg-ar-blue/30 text-white px-6 py-3 rounded-xl transition-all font-medium border border-ar-blue/30"
             >
               Choose Another Exercise
             </button>
@@ -240,9 +241,11 @@ export default function GuidedBreathing({ onBack }) {
         >
           <button
             onClick={sessionComplete ? () => setSessionComplete(false) : (isBreathing ? handleEndSession : onBack)}
-            className="text-ar-gray-400 hover:text-white transition-colors"
+            className="w-12 h-12 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300 flex items-center justify-center"
           >
-            ← Back
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-ar-blue">
+              <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </button>
           <h1 className="text-2xl font-hagrid font-light text-ar-white">🌬 Guided Breathing</h1>
         </motion.div>

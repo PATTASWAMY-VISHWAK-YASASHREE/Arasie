@@ -1,7 +1,9 @@
 import { motion } from "framer-motion"
 import { Brain, ChevronDown, ChevronUp, Clock, CheckCircle, XCircle, Target } from "lucide-react"
+import { useUserStore } from "../../store/userStore"
 
 export default function FocusHistoryBox({ activities, isExpanded, onToggle }) {
+  const { dailyFocusGoal } = useUserStore()
   // Filter tasks by focus mode and completion status
   const focusTasks = activities.filter(task => task.focusMode !== false)
   const nonFocusTasks = activities.filter(task => task.focusMode === false)
@@ -63,21 +65,48 @@ export default function FocusHistoryBox({ activities, isExpanded, onToggle }) {
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        <div className="bg-ar-gray-800/30 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircle className="text-green-400" size={16} />
-            <span className="text-ar-white text-sm">Focused</span>
+      {/* Progress Bar and Stats */}
+      <div className="mb-4">
+        {/* Progress against daily goal */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Target className="text-purple-400" size={16} />
+              <span className="text-ar-white text-sm">Daily Goal Progress</span>
+            </div>
+            <span className="text-purple-400 text-sm font-medium">
+              {formatDuration(totalFocusTime)} / {formatDuration(dailyFocusGoal || 60)}
+            </span>
           </div>
-          <p className="text-green-400 font-medium">{completedFocusTasks.length}</p>
+          <div className="w-full bg-ar-gray-800 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-purple-500 to-purple-400 h-2 rounded-full transition-all duration-500"
+              style={{ 
+                width: `${Math.min((totalFocusTime / (dailyFocusGoal || 60)) * 100, 100)}%` 
+              }}
+            />
+          </div>
+          <div className="text-xs text-ar-gray-400 mt-1">
+            {Math.round((totalFocusTime / (dailyFocusGoal || 60)) * 100)}% of daily focus goal completed
+          </div>
         </div>
-        <div className="bg-ar-gray-800/30 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-1">
-            <XCircle className="text-red-400" size={16} />
-            <span className="text-ar-white text-sm">Uncompleted</span>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-ar-gray-800/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle className="text-green-400" size={16} />
+              <span className="text-ar-white text-sm">Completed</span>
+            </div>
+            <p className="text-green-400 font-medium">{totalCompletedTasks}</p>
           </div>
-          <p className="text-red-400 font-medium">{activities.filter(task => task.status !== 'completed').length}</p>
+          <div className="bg-ar-gray-800/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <XCircle className="text-red-400" size={16} />
+              <span className="text-ar-white text-sm">Pending</span>
+            </div>
+            <p className="text-red-400 font-medium">{activities.filter(task => task.status !== 'completed').length}</p>
+          </div>
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 import { Routes, Route, useNavigate, useParams, useLocation } from "react-router-dom"
 import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
 import {
   Dumbbell,
   Target,
@@ -503,9 +504,9 @@ function CustomWorkoutBuilder() {
       >
         <button
           onClick={() => navigate('/workout')}
-          className="p-2 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300"
+          className="w-12 h-12 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300 flex items-center justify-center"
         >
-          <ArrowLeft size={24} className="text-ar-blue" />
+          <ArrowLeft size={20} className="text-ar-blue" />
         </button>
         <div>
           <h1 className="text-4xl font-bold">Custom Workout Builder</h1>
@@ -706,9 +707,9 @@ function MyCustomWorkouts() {
       >
         <button
           onClick={() => navigate('/workout')}
-          className="p-2 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300"
+          className="w-12 h-12 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300 flex items-center justify-center"
         >
-          <ArrowLeft size={24} className="text-ar-blue" />
+          <ArrowLeft size={20} className="text-ar-blue" />
         </button>
         <div>
           <h1 className="text-4xl font-bold">My Workouts</h1>

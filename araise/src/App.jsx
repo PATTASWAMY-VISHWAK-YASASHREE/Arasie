@@ -27,10 +27,7 @@ function AppContent() {
   const isChatOpen = useUserStore(state => state.isChatOpen)
   const setUser = useUserStore(state => state.setUser)
   const logout = useUserStore(state => state.logout)
-  const updateWaterGoal = useUserStore(state => state.updateWaterGoal)
   const checkAndResetDaily = useXpStore(state => state.checkAndResetDaily)
-  const dailyFocusGoal = useUserStore(state => state.dailyFocusGoal)
-  const { preferences } = useSettingsStore()
   const { currentUser, loading } = useAuth()
 
   // Sync Firebase auth state with Zustand store
@@ -85,7 +82,7 @@ function AppContent() {
   return (
     <BrowserRouter>
       <div className="flex min-h-screen bg-ar-black">
-        {/* Show navigation only when authenticated and chat is not open */}
+        {/* Show navigation when authenticated and chat is not open */}
         {isAuthenticated && !isChatOpen && <Navigation />}
 
         {/* Main content area with conditional spacing */}

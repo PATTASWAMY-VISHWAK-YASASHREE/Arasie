@@ -127,33 +127,34 @@ export default function History() {
 
   return (
     <div className="min-h-screen bg-ar-black">
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-4 md:py-6 space-y-4 md:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <button 
             onClick={() => navigate(-1)} 
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-ar-gray-800 text-ar-gray-200 border border-ar-gray-700 hover:bg-ar-gray-700 transition-colors"
+            className="w-10 h-10 md:w-12 md:h-12 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300 flex items-center justify-center flex-shrink-0"
           >
-            <ArrowLeft size={18} />
-            Back
+            <ArrowLeft size={18} className="text-ar-blue md:w-5 md:h-5" />
           </button>
           
-          <div className="text-center">
-            <div className="flex items-center gap-2 text-ar-white text-xl font-hagrid font-light">
-              <Calendar size={24} />
-              Daily History
+          <div className="text-center flex-1 min-w-0">
+            <div className="flex items-center justify-center gap-2 text-ar-white text-lg md:text-xl font-hagrid font-light">
+              <Calendar size={20} className="md:w-6 md:h-6" />
+              <span className="hidden sm:inline">Daily History</span>
+              <span className="sm:hidden">History</span>
             </div>
-            <p className="text-ar-gray-400 text-sm mt-1">
+            <p className="text-ar-gray-400 text-xs md:text-sm mt-1 truncate">
               {formatDate(date)}
             </p>
           </div>
           
           <button
             onClick={() => setShowCalendar(!showCalendar)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-ar-blue text-white hover:bg-ar-blue-600 transition-colors"
+            className="flex items-center gap-1 md:gap-2 px-2 py-2 md:px-4 md:py-2 rounded-lg bg-ar-blue text-white hover:bg-ar-blue-600 transition-colors flex-shrink-0 text-xs md:text-sm"
           >
-            <CalendarDays size={18} />
-            {showCalendar ? 'Hide Calendar' : 'Browse Dates'}
+            <CalendarDays size={16} className="md:w-[18px] md:h-[18px]" />
+            <span className="hidden sm:inline">{showCalendar ? 'Hide Calendar' : 'Browse Dates'}</span>
+            <span className="sm:hidden">{showCalendar ? 'Hide' : 'Browse'}</span>
           </button>
         </div>
 
