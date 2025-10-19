@@ -81,7 +81,7 @@ function AppContent() {
   return (
     <BrowserRouter>
       <div className="flex min-h-screen bg-ar-black">
-        {/* Show navigation only when authenticated and chat is not open */}
+        {/* Show navigation when authenticated and chat is not open */}
         {isAuthenticated && !isChatOpen && <Navigation />}
 
         {/* Main content area with conditional spacing */}

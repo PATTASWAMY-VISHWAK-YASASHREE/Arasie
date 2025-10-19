@@ -590,10 +590,24 @@ const PoseAnalyzer = ({ exerciseName, planId, level, cameraFacingMode = 'user', 
   // Cleanup
   useEffect(() => {
     return () => {
+      console.log('🧹 PoseAnalyzer component unmounting - cleaning up');
+      
+      // Cancel animation frame
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      
+      // Stop camera
       stopCamera();
+      
+      // Cleanup pose detection service
+      try {
+        poseDetectionService.cleanup();
+      } catch (error) {
+        console.error('Error cleaning up pose detection:', error);
+      }
+      
+      console.log('✅ PoseAnalyzer cleanup complete');
     };
   }, [stopCamera]);
 

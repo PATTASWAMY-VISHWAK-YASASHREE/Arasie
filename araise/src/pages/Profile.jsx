@@ -244,9 +244,9 @@ export default function Profile() {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center justify-center w-10 h-10 text-ar-gray-400 hover:text-white transition-colors touch-manipulation"
+              className="w-12 h-12 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300 flex items-center justify-center"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={20} className="text-ar-blue" />
             </button>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl sm:text-2xl font-poppins font-bold text-ar-white">Profile</h1>

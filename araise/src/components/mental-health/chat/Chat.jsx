@@ -469,9 +469,9 @@ export default function Chat({ onBack }) {
               onClick={handleBack}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className="p-2 text-ar-gray-300 hover:text-white transition-colors rounded-lg hover:bg-blue-500/10"
+              className="w-12 h-12 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300 flex items-center justify-center"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={20} className="text-ar-blue" />
             </motion.button>
 
             <div className="flex items-center gap-3">
@@ -513,9 +513,8 @@ export default function Chat({ onBack }) {
                 />
               </motion.div>
               <div>
-                <h1 className="text-lg font-poppins font-semibold text-white flex items-center gap-2">
+                <h1 className="text-lg font-poppins font-semibold text-white">
                   Nivi
-                  <Heart size={14} className="text-pink-400 animate-pulse" />
                 </h1>
                 <p className="text-xs text-blue-300">
                   {isSpeaking ? (
@@ -641,10 +640,9 @@ export default function Chat({ onBack }) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-3xl font-poppins font-semibold text-white mb-3 flex items-center gap-2"
+                className="text-3xl font-poppins font-semibold text-white mb-3"
               >
                 Always here to listen
-                <Heart size={20} className="text-pink-400 animate-pulse" />
               </motion.h2>
 
               <motion.p

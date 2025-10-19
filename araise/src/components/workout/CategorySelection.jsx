@@ -100,9 +100,9 @@ export default function CategorySelection() {
       >
         <button
           onClick={() => navigate('/workout')}
-          className="p-3 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300 hover:bg-ar-blue/10"
+          className="w-12 h-12 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300 flex items-center justify-center"
         >
-          <ArrowLeft size={28} className="text-ar-blue" />
+          <ArrowLeft size={20} className="text-ar-blue" />
         </button>
         <div>
           <h1 className="text-4xl font-bold">{categoryData.title}</h1>

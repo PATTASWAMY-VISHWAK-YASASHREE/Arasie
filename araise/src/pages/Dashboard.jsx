@@ -38,7 +38,10 @@ export default function Dashboard() {
     waterGoal,
     workoutCompleted,
     dietGoalMet,
-    meals
+    meals,
+    focusLogs,
+    focusTasks,
+    dailyFocusGoal
   } = useUserStore()
 
   // Immediate authentication check - don't render anything if not properly authenticated
@@ -58,6 +61,35 @@ export default function Dashboard() {
     return null // Return nothing, let the ProtectedRoute component handle the redirect
   }
 
+  // Calculate actual focus progress based on completed minutes vs daily goal
+  const calculateFocusProgress = () => {
+    const today = new Date().toISOString().slice(0, 10)
+    
+    // Get focus log sessions (pomodoro sessions)
+    const todaysSessions = focusLogs.filter(log => 
+      log.time && log.time.slice(0, 10) === today && log.completed
+    )
+    const focusLogMinutes = todaysSessions.reduce((total, session) => total + session.duration, 0)
+    
+    // Get completed tasks with focus mode (custom focus sessions)
+    const todaysCompletedTasks = focusTasks.filter(task => 
+      task.date === today && task.status === 'completed'
+    )
+    const taskMinutes = todaysCompletedTasks.reduce((total, task) => {
+      if (task.startTime && task.endTime) {
+        const startAt = new Date(`${task.date}T${task.startTime}:00`).getTime()
+        const endAt = new Date(`${task.date}T${task.endTime}:00`).getTime()
+        return total + Math.max(0, Math.round((endAt - startAt) / 60000))
+      }
+      return total + (task.completed || task.focusDuration || 25) // Use completed time or fallback
+    }, 0)
+    
+    const totalMinutes = focusLogMinutes + taskMinutes
+    const goalMinutes = dailyFocusGoal || 60 // Default to 60 minutes if no goal set
+    
+    return Math.min((totalMinutes / goalMinutes) * 100, 100)
+  }
+
   // Real-time progress stats with live updates
   const [progressStats, setProgressStats] = useState({
     workout: 0,
@@ -73,9 +105,9 @@ export default function Dashboard() {
       water: Math.min((waterProgress / (waterGoal || 3000)) * 100, 100), // Use configurable water goal
       diet: dietGoalMet ? 100 : Math.min((meals.length / 3) * 100, 100), // Show gradual progress based on meals logged
       mentalHealth: mentalHealthProgress,
-      focus: focusProgress
+      focus: calculateFocusProgress() // Use calculated focus progress based on daily goal
     })
-  }, [workoutCompleted, waterProgress, waterGoal, dietGoalMet, mentalHealthProgress, focusProgress, meals.length])
+  }, [workoutCompleted, waterProgress, waterGoal, dietGoalMet, mentalHealthProgress, focusProgress, meals.length, focusLogs, focusTasks, dailyFocusGoal])
 
   // Rotate quotes every 5 seconds
   useEffect(() => {

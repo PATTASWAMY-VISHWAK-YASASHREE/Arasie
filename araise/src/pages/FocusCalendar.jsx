@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { ChevronLeft, ChevronRight, Clock, Play, Edit2, Trash2, Plus } from "lucide-react"
+import { ArrowLeft, ChevronLeft, ChevronRight, Clock, Play, Edit2, Trash2, Plus } from "lucide-react"
 import { useUserStore } from "../store/userStore"
 import AddTaskModal from "../components/focus/AddTaskModal"
 import DeleteTaskModal from "../components/focus/DeleteTaskModal"
@@ -90,20 +90,21 @@ export default function FocusCalendar() {
     <div className="min-h-screen bg-ar-black">
       <div className="max-w-7xl mx-auto px-3 py-4 md:px-4 md:py-6 space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <button 
             onClick={() => navigate(-1)} 
-            className="px-3 py-2 rounded bg-ar-gray-800 text-ar-gray-200 border border-ar-gray-700 hover:bg-ar-gray-700 transition-colors"
+            className="w-10 h-10 md:w-12 md:h-12 glass-card rounded-xl hover:border-ar-blue/50 transition-all duration-300 flex items-center justify-center flex-shrink-0"
           >
-            Back
+            <ArrowLeft size={18} className="text-ar-blue md:w-5 md:h-5" />
           </button>
-          <h1 className="text-ar-white text-xl font-hagrid font-light">Focus Schedule</h1>
+          <h1 className="text-ar-white text-lg md:text-xl font-hagrid font-light flex-1 text-center">Focus Schedule</h1>
           <button
             onClick={() => setIsAddOpen(true)}
-            className="px-3 py-2 rounded bg-ar-blue text-white hover:bg-ar-blue-600 transition-colors flex items-center gap-2"
+            className="px-2 py-2 md:px-3 md:py-2 rounded bg-ar-blue text-white hover:bg-ar-blue-600 transition-colors flex items-center gap-1 md:gap-2 flex-shrink-0 text-xs md:text-sm"
           >
-            <Plus size={16} />
-            Add Task
+            <Plus size={14} className="md:w-4 md:h-4" />
+            <span className="hidden sm:inline">Add Task</span>
+            <span className="sm:hidden">Add</span>
           </button>
         </div>
 

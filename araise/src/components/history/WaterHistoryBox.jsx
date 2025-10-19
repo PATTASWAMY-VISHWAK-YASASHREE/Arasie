@@ -1,9 +1,11 @@
 import { motion } from "framer-motion"
 import { Droplets, ChevronDown, ChevronUp } from "lucide-react"
+import { useUserStore } from "../../store/userStore"
 
 export default function WaterHistoryBox({ activities, isExpanded, onToggle }) {
+  const { waterGoal: userWaterGoal } = useUserStore()
   const totalWater = activities.reduce((sum, log) => sum + log.amount, 0)
-  const waterGoal = 3000 // Default goal in ml
+  const waterGoal = userWaterGoal || 3000 // Use user's goal or default to 3000ml
   const progressPercentage = Math.min((totalWater / waterGoal) * 100, 100)
 
   const formatTime = (timeStr) => {
